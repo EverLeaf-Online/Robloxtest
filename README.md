@@ -1,28 +1,76 @@
 # Grow a Tiny Planet
 
-A complete Roblox/Luau implementation of **Grow a Tiny Planet**. Each player owns an independently saved physical planet made from a sphere plus 144 spherical surface tiles. Water, plants, animals, settlements, cosmetics, a moon companion, milestones, Energy, purchases, and saves are all server-authoritative.
+**Grow a Tiny Planet** is a server-authoritative Roblox planet-growth game built in Luau. Every player owns a separately saved physical world made from a sphere and 144 spherical surface tiles. Water, vegetation, animals, settlements, rare growth, monetization benefits, milestones, Energy, and progression are persisted per player.
 
-## Gameplay
+## Current playable loop
 
-- Start with **100 Energy**.
-- Regenerate **+1 Energy every 5 seconds**. Fast Growth halves the interval.
-- **Add Water** — 50 Energy. Converts a land surface tile into water.
-- **Add Plants** — 75 Energy. Converts land into plants. Rare Seed charges create glowing rare plants.
-- **Add Animals** — 100 Energy. Unlocks at 10 developed tiles. Fish require at least 3 water tiles; land animals require at least 5 plant tiles.
-- **Build Settlement** — 200 Energy. Unlocks at 25 developed tiles and requires a connected cluster of at least 5 developed tiles with plant land available.
-- **Terraform Burst** — 350 Energy. Unlocks at 50 developed tiles and develops up to 3 land tiles at once.
-- Milestones: **10 / 25 / 50 developed tiles**.
+1. Start with **100 Energy**.
+2. Click anywhere on the visible planet to inspect the nearest surface tile.
+3. Add **Water** or **Plants** to exact land tiles, or choose a growth tool first and then click the planet.
+4. Grow connected oceans and vegetation biomes.
+5. Reach **10 developed tiles** to unlock animals and earn **+150 Energy**.
+6. Build at least 3 water tiles for fish or 5 plant tiles for land animals.
+7. Reach **25 developed tiles** to unlock settlements and earn **+350 Energy**.
+8. Found settlements on planted tiles inside connected developed regions.
+9. Reach **50 developed tiles** to unlock Terraform Burst and earn **+750 Energy**.
+10. Continue through planet evolution stages toward a 100-tile **Garden World**.
+
+Energy regenerates at **+1 every 5 seconds**. The Fast Growth pass halves that interval.
+
+## Actions
+
+| Action | Cost | Requirement | Result |
+|---|---:|---|---|
+| Add Water | 50 | Land tile | Creates physical blue water surface |
+| Add Plants | 75 | Land tile | Creates vegetation; rare seed charges create glowing crystal growth |
+| Add Animals | 100 | 10 developed tiles + valid habitat | Adds an animated fish or land animal |
+| Build Settlement | 200 | 25 developed tiles + connected 5-tile developed cluster | Adds a physical settlement |
+| Terraform Burst | 350 | 50 developed tiles | Develops up to 3 random land tiles |
+
+Targeted actions are deterministic: if a selected tile is invalid, the server rejects the action instead of silently changing another tile.
 
 ## Controls
 
-- **Left mouse + drag**: orbit the camera around your planet.
-- **Mouse wheel**: zoom in/out.
-- **Click without dragging**: select a surface tile for targeted actions.
-- **B**: open/close the Cosmic Shop.
+- **Click a planet tile** — select it and open the tile inspector.
+- **Choose a growth tool, then click the planet** — apply that tool to the clicked tile.
+- **1 / 2 / 3 / 4 / 5** — Water / Plants / Animals / Settlement / Terraform Burst.
+- **R** — use the currently armed tool on a random valid tile.
+- **Left mouse + drag** — orbit around the planet.
+- **Mouse wheel** — zoom.
+- **Touch drag** — orbit on touch devices.
+- **Two-finger pinch** — zoom on touch devices.
+- **B** — open/close the Cosmic Shop.
+- **Escape** — clear target/tool selection.
 
-## Repository / Roblox Explorer Mapping
+Planet clicks use an analytic sphere fallback, so gaps between the 144 visible tile discs do not create dead click zones.
 
-Rojo maps these files directly into Roblox Studio:
+## Physical planet rendering
+
+- 40-stud-radius spherical core.
+- 144 server-created surface tiles using Fibonacci-sphere placement.
+- Water uses glass-like blue tiles.
+- Plant tiles grow miniature physical trees.
+- Rare plant tiles grow glowing physical crystal clusters with local light.
+- Settlements and animals are physical procedural models.
+- Optional Moon Companion physically orbits the planet.
+- A translucent atmosphere shell, key light, bloom, and procedural starfield provide the space scene.
+
+No free models are required.
+
+## Planet stages
+
+The HUD derives a stage from developed surface count:
+
+- 0: **Barren World**
+- 5: **Young World**
+- 10: **Living World**
+- 25: **Settled World**
+- 50: **Thriving World**
+- 100: **Garden World**
+
+## Explorer mapping
+
+Rojo maps the project into Roblox Studio:
 
 ```text
 ReplicatedFirst
@@ -69,113 +117,81 @@ StarterGui
 └── MainUI                       LocalScript
 ```
 
-Roblox does not have a service named `ClientScriptService`; client runtime code belongs in `StarterPlayerScripts` and `StarterGui`, which this project uses.
+Roblox does not have a `ClientScriptService`; client runtime scripts belong in `StarterPlayerScripts` and `StarterGui`.
 
-## Exact Setup Guide
+## Rojo setup
 
-### Option A — Rojo (recommended)
+This project can run on a dedicated Rojo port when another Roblox project is already using the default port:
 
-1. Clone this repository.
-2. Install Rojo and the Roblox Studio Rojo plugin.
-3. From the repository root run:
+```powershell
+rojo serve --port 34873
+```
 
-   ```bash
-   rojo serve
-   ```
+Connect the Roblox Studio Rojo plugin to `localhost:34873` and keep the terminal running while developing.
 
-4. Open a new Roblox Studio place.
-5. Connect the Rojo Studio plugin to the running server and sync `default.project.json`.
-6. Confirm the Explorer hierarchy matches the mapping above.
-7. Publish the place to Roblox before testing DataStores or Marketplace purchases.
+## Data persistence
 
-### Option B — Manual Studio copy
+The game saves:
 
-1. Create the Explorer folders and RemoteEvents/RemoteFunction exactly as shown above.
-2. For every `.lua` file in `src/ReplicatedStorage/Shared` and `src/ServerScriptService` without `.server.lua`, create a **ModuleScript** with the same name and paste its source.
-3. For every `.server.lua`, create a normal **Script** in `ServerScriptService`.
-4. For every `.client.lua`, create a **LocalScript** in the Explorer location shown above.
-5. Copy the complete source from the matching repository file.
+- after every successful action,
+- every 60 seconds,
+- on player leave,
+- during server shutdown.
 
-## DataStore Testing
-
-The game saves after every successful player action, on a 60-second autosave loop, when the player leaves, and during server shutdown.
-
-1. Publish the experience.
-2. In Studio open **Game Settings → Security**.
-3. Enable **Studio Access to API Services** for DataStore testing.
-4. Test once, change the planet, stop, then start again and verify that Energy, tiles, animals, settlements, milestone state, rare-seed charges, and purchase receipts restore.
-
-The data layer uses two DataStores:
+Persistence uses both:
 
 - `GrowATinyPlanet_PlayerData_v1`
 - `GrowATinyPlanet_PlayerData_Backup_v1`
 
-Every state mutation increments a revision. On load, the game checks both stores and uses the newest revision. Saves use `UpdateAsync` with retries so an older asynchronous save cannot overwrite newer state.
+Each mutation increments a revision. Loading compares primary and backup revisions, and saving uses `UpdateAsync` with retry protection so stale asynchronous writes cannot replace newer state.
 
-## Monetization Setup
+If Studio API access is disabled, Studio immediately enters an unsaved test session instead of waiting through repeated DataStore retries. For persistence testing, publish the experience and enable **Game Settings → Security → Studio Access to API Services**.
 
-Roblox asset IDs are experience-specific and cannot be safely invented. All Marketplace code is already implemented; only the IDs created in your Creator Dashboard must be inserted into:
+## Monetization
 
-`src/ReplicatedStorage/Shared/Config.lua`
+Marketplace behavior is fully wired, but Roblox assigns asset IDs only after the assets are created for the target experience. Put those IDs in `src/ReplicatedStorage/Shared/Config.lua`.
 
-Create these **Game Passes** and set their IDs:
+### Game Passes
 
-| Config key | Roblox name | Price | Effect |
-|---|---|---:|---|
-| `FastGrowth` | Fast Growth | 299 R$ | 2× Energy regeneration speed |
-| `CosmicSkin` | Cosmic Skin | 499 R$ | Unique cosmic planet surface pattern |
-| `StarterPlanet` | Starter Planet | 999 R$ | One-time 5 water + 5 plant starting development |
-| `MoonCompanion` | Moon Companion | 799 R$ | Physical moon orbiting the planet |
+| Pass | Price | Effect |
+|---|---:|---|
+| Fast Growth | 299 R$ | 2× Energy regeneration speed |
+| Cosmic Skin | 499 R$ | Cosmic planet surface styling |
+| Starter Planet | 999 R$ | One-time 5 water + 5 plant starting development |
+| Moon Companion | 799 R$ | Physical orbiting moon |
 
-Create these **Developer Products** and set their IDs:
+### Developer Products
 
-| Config key | Roblox name | Price | Effect |
-|---|---|---:|---|
-| `EnergyBoost` | Energy Boost | 49 R$ | +500 Energy |
-| `RareSeedPack` | Rare Seed Pack | 99 R$ | +3 rare glowing plant charges |
-| `CometStrike` | Comet Strike | 199 R$ | Develops up to 3 random land tiles |
+| Product | Price | Effect |
+|---|---:|---|
+| Energy Boost | 49 R$ | +500 Energy |
+| Rare Seed Pack | 99 R$ | +3 glowing rare-plant charges |
+| Comet Strike | 199 R$ | Develops up to 3 random land tiles |
 
-Leave no ID at `0` for production. `0` deliberately prevents invalid Marketplace prompts while developing before the assets exist.
+Developer-product receipts are persisted and only return `PurchaseGranted` after the grant has successfully reached a DataStore.
 
-`MarketplaceService.ProcessReceipt` is assigned in exactly one place: `ServerScriptService/Monetization.server.lua`. Developer-product receipt IDs are persisted to prevent duplicate grants, and Roblox is only told `PurchaseGranted` after the state has successfully reached a DataStore.
+## Security model
 
-## Multiplayer / Security Model
+- The client sends only an action type and optional tile index.
+- The server owns Energy, tile state, costs, unlocks, habitat checks, cluster validation, milestones, and purchases.
+- All tile indices are validated against the 144-tile geometry.
+- The server enforces a global one-second action rate limit.
+- Terraform Burst has an additional 15-second cooldown.
+- Targeted invalid actions are rejected rather than redirected.
+- Every player receives a separate planet slot and independent persistent state.
 
-- The client sends only `{ actionType, tileIndex }`.
-- Energy, tile state, habitat eligibility, settlement clustering, milestones, unlocks, and costs are validated on the server.
-- Global minimum action interval is 1 second.
-- Terraform Burst has a 15-second action-specific cooldown.
-- Invalid/NaN/out-of-range tile indices are rejected.
-- Each player receives a separate planet model in `Workspace/Planets` at a separate world slot.
-- The camera automatically focuses only on the local player's planet.
-- Player characters are parked invisibly away from the planet because gameplay uses the orbit camera rather than an avatar controller.
+## Play-test checklist
 
-## Multiplayer Test Checklist
-
-Use Studio **Test → Start** with at least 2 players and verify:
-
-1. Both clients focus different planets.
-2. Water/plant actions on Player 1 do not change Player 2's planet.
-3. Energy costs and regeneration are server driven.
-4. Clicking a surface tile targets it; dragging rotates instead.
-5. Animals reject until the 10-tile milestone and habitat requirement are met.
-6. Settlements reject until the 25-tile unlock and a 5-tile connected developed cluster exist.
-7. Terraform Burst unlocks at 50 developed tiles.
-8. Repeated remote spam faster than the cooldown is rejected.
-9. Leaving/rejoining restores the planet.
-10. With real Marketplace IDs configured, pass purchases update the current planet without replacing the camera target, and developer products grant exactly once per receipt.
-
-## Main Source Files
-
-- `src/ServerScriptService/PlayerManager.server.lua` — join/leave lifecycle.
-- `src/ServerScriptService/ActionRouter.server.lua` — RemoteEvent validation, anti-exploit checks, cooldowns, action dispatch, action saves.
-- `src/ServerScriptService/PlanetRenderer.lua` — sphere, 144 physical surface tiles, animals, settlements, cosmic styling, moon.
-- `src/ServerScriptService/DataService.lua` — primary/backup `UpdateAsync`, retry logic, sanitation, newest-revision recovery.
-- `src/ServerScriptService/DataStore.server.lua` — autosave and shutdown save.
-- `src/ServerScriptService/MonetizationService.lua` — pass ownership, pass effects, developer-product receipts.
-- `src/ServerScriptService/WorldSetup.server.lua` — removes default Baseplate/SpawnLocation template geometry for the space scene.
-- `src/StarterPlayer/StarterPlayerScripts/CameraControls.client.lua` — smooth orbit/zoom camera.
-- `src/StarterPlayer/StarterPlayerScripts/ClientWorld.client.lua` — procedural starfield and space lighting.
-- `src/StarterGui/MainUI.client.lua` — Energy HUD, action buttons, stats, tile targeting, shop, milestones, notifications.
-
-No free models are required. Animals, settlements, surface tiles, moon, stars, and cosmetic visuals are built procedurally from Roblox instances.
+1. Click anywhere on the sphere and verify the tile inspector opens.
+2. Select Water, then click a land tile; verify that exact tile turns blue and Energy drops by 50.
+3. Select Plants, then click another land tile; verify a physical tree appears.
+4. Verify a targeted invalid action is rejected without changing a different tile.
+5. Drag to orbit and scroll/pinch to zoom.
+6. Verify 10 developed tiles unlock animals and award 150 Energy.
+7. Verify fish require 3 water tiles and land animals require 5 plant tiles.
+8. Verify 25 developed tiles unlock settlements and award 350 Energy.
+9. Verify settlements require a planted tile inside a connected 5-tile developed component.
+10. Verify 50 developed tiles unlock Terraform Burst and award 750 Energy.
+11. Leave and rejoin and verify Energy, tiles, animals, settlements, milestones, rare-seed charges, and processed receipts restore.
+12. In a 2-player Studio test, verify each client sees and controls only its own planet.
+13. With real Marketplace IDs configured, verify passes update the current planet and developer products grant exactly once.
