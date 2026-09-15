@@ -9,6 +9,7 @@ local PlanetStateService = {}
 local states = {}
 local centers = {}
 local passFlags = {}
+local saveEnabled = {}
 local slotsByUserId = {}
 local freeSlots = {}
 local nextSlot = 0
@@ -57,15 +58,22 @@ function PlanetStateService.LoadPlayer(player)
 	if states[player.UserId] then
 		return states[player.UserId]
 	end
-	local state = DataService.Load(player.UserId)
+	local state, source, canSave = DataService.Load(player.UserId)
 	states[player.UserId] = state
+	saveEnabled[player.UserId] = canSave == true
 	passFlags[player.UserId] = {}
 	allocateCenter(player.UserId)
+	player:SetAttribute("PlanetDataSource", source)
+	player:SetAttribute("PlanetDataWritable", canSave == true)
 	return state
 end
 
 function PlanetStateService.IsLoaded(player)
 	return states[player.UserId] ~= nil
+end
+
+function PlanetStateService.CanSave(player)
+	return saveEnabled[player.UserId] == true
 end
 
 function PlanetStateService.GetState(player)
@@ -124,6 +132,7 @@ function PlanetStateService.GetPublicState(player)
 		Counts = countTiles(state),
 		Unlocks = getUnlocks(state),
 		Passes = DataService.DeepCopy(passFlags[player.UserId] or {}),
+		DataWritable = saveEnabled[player.UserId] == true,
 	}
 end
 
@@ -140,12 +149,13 @@ function PlanetStateService.GetSummary(player)
 		AnimalCount = #state.Animals,
 		SettlementCount = #state.Settlements,
 		Unlocks = getUnlocks(state),
+		DataWritable = saveEnabled[player.UserId] == true,
 	}
 end
 
 function PlanetStateService.SavePlayer(player)
 	local state = states[player.UserId]
-	if not state then
+	if not state or not PlanetStateService.CanSave(player) then
 		return false
 	end
 	return DataService.Save(player.UserId, state)
@@ -153,7 +163,7 @@ end
 
 function PlanetStateService.QueueSave(player)
 	local state = states[player.UserId]
-	if not state then
+	if not state or not PlanetStateService.CanSave(player) then
 		return
 	end
 	local snapshot = DataService.DeepCopy(state)
@@ -165,6 +175,7 @@ end
 function PlanetStateService.UnloadPlayer(player)
 	states[player.UserId] = nil
 	passFlags[player.UserId] = nil
+	saveEnabled[player.UserId] = nil
 	centers[player.UserId] = nil
 	local slot = slotsByUserId[player.UserId]
 	if slot ~= nil then
