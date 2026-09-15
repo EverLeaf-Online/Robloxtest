@@ -106,7 +106,7 @@ function MonetizationService.HandlePassPurchaseFinished(player, passId, purchase
 		MilestoneSystem.Check(player)
 	end
 	if key == "CosmicSkin" or key == "MoonCompanion" or key == "StarterPlanet" then
-		PlanetRenderer.CreatePlanet(player)
+		PlanetRenderer.RefreshAppearance(player)
 	end
 	PlanetStateService.QueueSave(player)
 	purchaseConfirmed:FireClient(player, passId)
