@@ -17,16 +17,7 @@ local function tileOccupied(state, tileIndex)
 	return false
 end
 
-local function chooseHabitat(state, requestedIndex, canFish, canLand)
-	if TileGeometry.IsValidIndex(requestedIndex) and not tileOccupied(state, requestedIndex) then
-		local tileType = state.Tiles[requestedIndex]
-		if tileType == "Water" and canFish then
-			return requestedIndex, "Fish"
-		elseif (tileType == "Plant" or tileType == "RarePlant") and canLand then
-			return requestedIndex, "Land"
-		end
-	end
-
+local function chooseRandomHabitat(state, canFish, canLand)
 	local fishTiles = {}
 	local landTiles = {}
 	for index, tileType in ipairs(state.Tiles) do
@@ -61,10 +52,39 @@ function AnimalSystem.Apply(player, requestedIndex)
 	local canFish = counts.Water >= 3
 	local canLand = (counts.Plant + counts.RarePlant) >= 5
 	if not canFish and not canLand then
-		return false, "Animals need either 3 water tiles for fish or 5 plant tiles for land animals."
+		return false, "Animals need 3 water tiles for fish or 5 plant tiles for land animals."
 	end
 
-	local tileIndex, kind = chooseHabitat(state, requestedIndex, canFish, canLand)
+	local tileIndex
+	local kind
+	if requestedIndex ~= nil then
+		if not TileGeometry.IsValidIndex(requestedIndex) then
+			return false, "That surface tile is invalid."
+		end
+		if tileOccupied(state, requestedIndex) then
+			return false, "That tile already has an animal."
+		end
+
+		local tileType = state.Tiles[requestedIndex]
+		if tileType == "Water" then
+			if not canFish then
+				return false, "Create at least 3 water tiles before adding fish."
+			end
+			tileIndex = requestedIndex
+			kind = "Fish"
+		elseif tileType == "Plant" or tileType == "RarePlant" then
+			if not canLand then
+				return false, "Create at least 5 plant tiles before adding land animals."
+			end
+			tileIndex = requestedIndex
+			kind = "Land"
+		else
+			return false, "Animals need water or planted habitat; bare land cannot support them."
+		end
+	else
+		tileIndex, kind = chooseRandomHabitat(state, canFish, canLand)
+	end
+
 	if not tileIndex then
 		return false, "No free habitat tile is available for another animal."
 	end
@@ -83,7 +103,11 @@ function AnimalSystem.Apply(player, requestedIndex)
 	table.insert(state.Animals, animal)
 	PlanetStateService.MarkChanged(player)
 	PlanetRenderer.SpawnAnimal(player, animal)
-	return true, kind == "Fish" and "Fish added to the ocean." or "A land animal joined your ecosystem.", {}
+
+	if kind == "Fish" then
+		return true, string.format("Fish added to tile #%d.", tileIndex), {}
+	end
+	return true, string.format("A land animal settled on tile #%d.", tileIndex), {}
 end
 
 return AnimalSystem
