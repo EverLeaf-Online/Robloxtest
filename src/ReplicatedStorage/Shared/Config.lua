@@ -42,6 +42,22 @@ Config.MILESTONE_UNLOCK_NAMES = {
 	[25] = "Build Settlement",
 	[50] = "Terraform Burst",
 }
+Config.MILESTONE_ENERGY_REWARDS = {
+	[10] = 150,
+	[25] = 350,
+	[50] = 750,
+}
+
+-- Client-facing evolution labels. They are derived from developed-tile count and
+-- do not need extra persistent fields in player saves.
+Config.PLANET_STAGES = {
+	{ MinDeveloped = 0, Name = "Barren World", Description = "A quiet world waiting for its first ecosystem." },
+	{ MinDeveloped = 5, Name = "Young World", Description = "Water and vegetation are beginning to take hold." },
+	{ MinDeveloped = 10, Name = "Living World", Description = "The biosphere is stable enough to support animals." },
+	{ MinDeveloped = 25, Name = "Settled World", Description = "Life has grown dense enough for civilization." },
+	{ MinDeveloped = 50, Name = "Thriving World", Description = "A mature planet with powerful terraforming unlocked." },
+	{ MinDeveloped = 100, Name = "Garden World", Description = "Most of the surface has become a living world." },
+}
 
 Config.DATASTORE_PRIMARY = "GrowATinyPlanet_PlayerData_v1"
 Config.DATASTORE_BACKUP = "GrowATinyPlanet_PlayerData_Backup_v1"
