@@ -13,4 +13,5 @@ for _, child in ipairs(Workspace:GetChildren()) do
 	end
 end
 
-Workspace.FallenPartsDestroyHeight = -1000
+-- FallenPartsDestroyHeight is configured as a place property in Studio rather than
+-- written at runtime. Roblox capability checks can reject server-script writes to it.
