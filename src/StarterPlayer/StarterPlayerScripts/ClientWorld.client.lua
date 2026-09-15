@@ -13,33 +13,67 @@ local planet = waitForPlanet()
 local core = planet:WaitForChild("Core")
 local center = core.Position
 
-Lighting.Brightness = 1.2
+-- Keep the scene visually in deep space while providing enough ambient fill for
+-- the earthy starting planet to remain readable from every orbit angle. Using a
+-- daytime ClockTime would light the planet but would also turn the default sky
+-- bright blue, which breaks the space presentation.
+Lighting.Brightness = 2
 Lighting.ClockTime = 0
-Lighting.Ambient = Color3.fromRGB(32, 37, 61)
-Lighting.OutdoorAmbient = Color3.fromRGB(18, 23, 42)
-Lighting.EnvironmentDiffuseScale = 0.35
-Lighting.EnvironmentSpecularScale = 0.75
+Lighting.Ambient = Color3.fromRGB(128, 138, 166)
+Lighting.OutdoorAmbient = Color3.fromRGB(94, 105, 137)
+Lighting.EnvironmentDiffuseScale = 0.75
+Lighting.EnvironmentSpecularScale = 0.9
+Lighting.GlobalShadows = true
 
 local existingBloom = Lighting:FindFirstChild("GrowPlanetBloom")
-if not existingBloom then
-	local bloom = Instance.new("BloomEffect")
-	bloom.Name = "GrowPlanetBloom"
-	bloom.Intensity = 0.7
-	bloom.Size = 24
-	bloom.Threshold = 1.2
-	bloom.Parent = Lighting
+if existingBloom then
+	existingBloom:Destroy()
 end
+local bloom = Instance.new("BloomEffect")
+bloom.Name = "GrowPlanetBloom"
+bloom.Intensity = 0.45
+bloom.Size = 22
+bloom.Threshold = 1.35
+bloom.Parent = Lighting
 
 local existingColor = Lighting:FindFirstChild("GrowPlanetColor")
-if not existingColor then
-	local color = Instance.new("ColorCorrectionEffect")
-	color.Name = "GrowPlanetColor"
-	color.Brightness = -0.04
-	color.Contrast = 0.12
-	color.Saturation = 0.08
-	color.TintColor = Color3.fromRGB(210, 220, 255)
-	color.Parent = Lighting
+if existingColor then
+	existingColor:Destroy()
 end
+local color = Instance.new("ColorCorrectionEffect")
+color.Name = "GrowPlanetColor"
+color.Brightness = 0.035
+color.Contrast = 0.08
+color.Saturation = 0.12
+color.TintColor = Color3.fromRGB(224, 230, 255)
+color.Parent = Lighting
+
+-- A local key light gives the sphere shape and depth without changing the sky.
+-- It follows the planet model rather than the camera, so orbiting still reveals
+-- a natural light-to-shadow transition instead of a flat fully-lit ball.
+local oldKeyLight = Workspace:FindFirstChild("_ClientPlanetKeyLight")
+if oldKeyLight then
+	oldKeyLight:Destroy()
+end
+local keyLightPart = Instance.new("Part")
+keyLightPart.Name = "_ClientPlanetKeyLight"
+keyLightPart.Anchored = true
+keyLightPart.CanCollide = false
+keyLightPart.CanTouch = false
+keyLightPart.CanQuery = false
+keyLightPart.CastShadow = false
+keyLightPart.Transparency = 1
+keyLightPart.Size = Vector3.new(1, 1, 1)
+keyLightPart.Position = center + Vector3.new(-70, 55, 95)
+keyLightPart.Parent = Workspace
+
+local keyLight = Instance.new("PointLight")
+keyLight.Name = "PlanetKeyLight"
+keyLight.Brightness = 4.5
+keyLight.Range = 220
+keyLight.Shadows = true
+keyLight.Color = Color3.fromRGB(225, 235, 255)
+keyLight.Parent = keyLightPart
 
 local oldStars = Workspace:FindFirstChild("_ClientStars")
 if oldStars then
