@@ -8,12 +8,8 @@ local EnergySystem = require(script.Parent.EnergySystem)
 
 local PlantSystem = {}
 
-local function chooseLandTile(state, requestedIndex)
-	if TileGeometry.IsValidIndex(requestedIndex) and state.Tiles[requestedIndex] == "Land" then
-		return requestedIndex
-	end
-
-	-- Prefer land touching existing vegetation so repeated actions form visible biomes.
+local function chooseRandomLandTile(state)
+	-- Prefer land touching existing vegetation so random growth forms visible biomes.
 	local frontier = {}
 	local seen = {}
 	for index, tileType in ipairs(state.Tiles) do
@@ -30,7 +26,7 @@ local function chooseLandTile(state, requestedIndex)
 		return frontier[math.random(1, #frontier)]
 	end
 
-	-- If this is the first vegetation, favor coastlines before fully random land.
+	-- First vegetation prefers coastline tiles before fully random land.
 	for index, tileType in ipairs(state.Tiles) do
 		if tileType == "Water" then
 			for _, neighbor in ipairs(TileGeometry.GetNeighbors(index)) do
@@ -62,13 +58,27 @@ function PlantSystem.Apply(player, requestedIndex)
 	if not state then
 		return false, "Planet data is not ready."
 	end
+
 	local cost = Config.ACTION_COSTS.AddPlants
 	if not EnergySystem.CanAfford(player, cost) then
 		return false, string.format("Add Plants needs %d Energy.", cost)
 	end
-	local tileIndex = chooseLandTile(state, requestedIndex)
+
+	local tileIndex
+	if requestedIndex ~= nil then
+		if not TileGeometry.IsValidIndex(requestedIndex) then
+			return false, "That surface tile is invalid."
+		end
+		if state.Tiles[requestedIndex] ~= "Land" then
+			return false, "Plants can only be added to undeveloped land."
+		end
+		tileIndex = requestedIndex
+	else
+		tileIndex = chooseRandomLandTile(state)
+	end
+
 	if not tileIndex then
-		return false, "Plants can only be added to undeveloped land tiles."
+		return false, "There are no undeveloped land tiles left for plants."
 	end
 	if not EnergySystem.TrySpend(player, cost) then
 		return false, "Not enough Energy."
@@ -82,7 +92,13 @@ function PlantSystem.Apply(player, requestedIndex)
 	state.Tiles[tileIndex] = tileType
 	PlanetStateService.MarkChanged(player)
 	PlanetRenderer.UpdateTile(player, tileIndex)
-	local message = tileType == "RarePlant" and "A rare glowing plant has taken root!" or "Plants added."
+
+	local message
+	if tileType == "RarePlant" then
+		message = string.format("A rare glowing plant took root on tile #%d!", tileIndex)
+	else
+		message = string.format("Plants added to tile #%d.", tileIndex)
+	end
 	return true, message, { { TileIndex = tileIndex, TileType = tileType } }
 end
 
