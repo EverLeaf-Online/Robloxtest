@@ -1,5 +1,6 @@
 local DataStoreService = game:GetService("DataStoreService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 
@@ -127,6 +128,15 @@ local function keyForUserId(userId)
 	return string.format("player_%d", userId)
 end
 
+local function isStudioApiAccessDisabled(errorValue)
+	if not RunService:IsStudio() then
+		return false
+	end
+	local message = tostring(errorValue)
+	return string.find(message, "StudioAccessToApisNotAllowed", 1, true) ~= nil
+		or string.find(message, "Studio access to APIs is not allowed", 1, true) ~= nil
+end
+
 local function getWithRetries(store, key)
 	local lastError
 	for attempt = 1, Config.DATASTORE_RETRIES do
@@ -134,12 +144,17 @@ local function getWithRetries(store, key)
 			return store:GetAsync(key)
 		end)
 		if success then
-			return true, result
+			return true, result, false
 		end
 		lastError = result
-		task.wait(2 ^ (attempt - 1))
+		if isStudioApiAccessDisabled(result) then
+			return false, result, true
+		end
+		if attempt < Config.DATASTORE_RETRIES then
+			task.wait(2 ^ (attempt - 1))
+		end
 	end
-	return false, lastError
+	return false, lastError, false
 end
 
 local function updateWithRetries(store, key, snapshot)
@@ -161,7 +176,12 @@ local function updateWithRetries(store, key, snapshot)
 			return true, result
 		end
 		lastError = result
-		task.wait(2 ^ (attempt - 1))
+		if isStudioApiAccessDisabled(result) then
+			return false, result
+		end
+		if attempt < Config.DATASTORE_RETRIES then
+			task.wait(2 ^ (attempt - 1))
+		end
 	end
 	return false, lastError
 end
@@ -171,8 +191,18 @@ end
 -- overwriting an older persistent planet when Roblox DataStores recover.
 function DataService.Load(userId)
 	local key = keyForUserId(userId)
-	local primaryOk, primaryResult = getWithRetries(primaryStore, key)
-	local backupOk, backupResult = getWithRetries(backupStore, key)
+	local primaryOk, primaryResult, studioApiDisabled = getWithRetries(primaryStore, key)
+	if studioApiDisabled then
+		warn("[DataService] Studio API access is disabled; using an unsaved local planet for this test session.")
+		return makeDefaultState(), "studio_api_disabled", false
+	end
+
+	local backupOk, backupResult, backupStudioApiDisabled = getWithRetries(backupStore, key)
+	if backupStudioApiDisabled then
+		warn("[DataService] Studio API access is disabled; using an unsaved local planet for this test session.")
+		return makeDefaultState(), "studio_api_disabled", false
+	end
+
 	local primaryData = primaryOk and primaryResult or nil
 	local backupData = backupOk and backupResult or nil
 
