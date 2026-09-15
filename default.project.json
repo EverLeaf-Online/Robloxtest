@@ -3,6 +3,7 @@
   "tree": {
     "$className": "DataModel",
     "ReplicatedFirst": {
+      "$className": "ReplicatedFirst",
       "Remotes": {
         "$className": "Folder",
         "ApplyAction": { "$className": "RemoteEvent" },
@@ -16,12 +17,23 @@
       }
     },
     "ReplicatedStorage": {
+      "$className": "ReplicatedStorage",
       "Shared": { "$path": "src/ReplicatedStorage/Shared" }
     },
-    "ServerScriptService": { "$path": "src/ServerScriptService" },
-    "StarterPlayer": {
-      "StarterPlayerScripts": { "$path": "src/StarterPlayer/StarterPlayerScripts" }
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "$path": "src/ServerScriptService"
     },
-    "StarterGui": { "$path": "src/StarterGui" }
+    "StarterPlayer": {
+      "$className": "StarterPlayer",
+      "StarterPlayerScripts": {
+        "$className": "StarterPlayerScripts",
+        "$path": "src/StarterPlayer/StarterPlayerScripts"
+      }
+    },
+    "StarterGui": {
+      "$className": "StarterGui",
+      "$path": "src/StarterGui"
+    }
   }
 }
