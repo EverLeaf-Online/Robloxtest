@@ -12,6 +12,39 @@ local function chooseLandTile(state, requestedIndex)
 	if TileGeometry.IsValidIndex(requestedIndex) and state.Tiles[requestedIndex] == "Land" then
 		return requestedIndex
 	end
+
+	-- Prefer land touching existing vegetation so repeated actions form visible biomes.
+	local frontier = {}
+	local seen = {}
+	for index, tileType in ipairs(state.Tiles) do
+		if tileType == "Plant" or tileType == "RarePlant" then
+			for _, neighbor in ipairs(TileGeometry.GetNeighbors(index)) do
+				if state.Tiles[neighbor] == "Land" and not seen[neighbor] then
+					seen[neighbor] = true
+					table.insert(frontier, neighbor)
+				end
+			end
+		end
+	end
+	if #frontier > 0 then
+		return frontier[math.random(1, #frontier)]
+	end
+
+	-- If this is the first vegetation, favor coastlines before fully random land.
+	for index, tileType in ipairs(state.Tiles) do
+		if tileType == "Water" then
+			for _, neighbor in ipairs(TileGeometry.GetNeighbors(index)) do
+				if state.Tiles[neighbor] == "Land" and not seen[neighbor] then
+					seen[neighbor] = true
+					table.insert(frontier, neighbor)
+				end
+			end
+		end
+	end
+	if #frontier > 0 then
+		return frontier[math.random(1, #frontier)]
+	end
+
 	local candidates = {}
 	for index, tileType in ipairs(state.Tiles) do
 		if tileType == "Land" then
