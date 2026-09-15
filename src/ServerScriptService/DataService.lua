@@ -168,8 +168,10 @@ end
 
 function DataService.Load(userId)
 	local key = keyForUserId(userId)
-	local primaryOk, primaryData = getWithRetries(primaryStore, key)
-	local backupOk, backupData = getWithRetries(backupStore, key)
+	local primaryOk, primaryResult = getWithRetries(primaryStore, key)
+	local backupOk, backupResult = getWithRetries(backupStore, key)
+	local primaryData = primaryOk and primaryResult or nil
+	local backupData = backupOk and backupResult or nil
 
 	if primaryData ~= nil or backupData ~= nil then
 		local primaryRevision = type(primaryData) == "table" and (tonumber(primaryData.Revision) or 0) or -1
@@ -185,7 +187,7 @@ function DataService.Load(userId)
 	end
 
 	if not primaryOk or not backupOk then
-		warn(string.format("[DataService] Data stores unavailable for user %d; using defaults", userId))
+		warn(string.format("[DataService] Data stores unavailable for user %d; using defaults for this session", userId))
 	end
 	return makeDefaultState(), "default"
 end
