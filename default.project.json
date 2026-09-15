@@ -1,0 +1,27 @@
+{
+  "name": "GrowATinyPlanet",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedFirst": {
+      "Remotes": {
+        "$className": "Folder",
+        "ApplyAction": { "$className": "RemoteEvent" },
+        "UpdateEnergy": { "$className": "RemoteEvent" },
+        "UpdateTile": { "$className": "RemoteEvent" },
+        "MilestoneReached": { "$className": "RemoteEvent" },
+        "PurchaseConfirmed": { "$className": "RemoteEvent" },
+        "StateUpdated": { "$className": "RemoteEvent" },
+        "Notify": { "$className": "RemoteEvent" },
+        "GetPlanetState": { "$className": "RemoteFunction" }
+      }
+    },
+    "ReplicatedStorage": {
+      "Shared": { "$path": "src/ReplicatedStorage/Shared" }
+    },
+    "ServerScriptService": { "$path": "src/ServerScriptService" },
+    "StarterPlayer": {
+      "StarterPlayerScripts": { "$path": "src/StarterPlayer/StarterPlayerScripts" }
+    },
+    "StarterGui": { "$path": "src/StarterGui" }
+  }
+}
