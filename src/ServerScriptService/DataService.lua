@@ -169,13 +169,18 @@ end
 function DataService.Load(userId)
 	local key = keyForUserId(userId)
 	local primaryOk, primaryData = getWithRetries(primaryStore, key)
-	if primaryOk and primaryData ~= nil then
-		return sanitizeState(primaryData), "primary"
-	end
-
 	local backupOk, backupData = getWithRetries(backupStore, key)
-	if backupOk and backupData ~= nil then
-		warn(string.format("[DataService] Loaded backup data for user %d", userId))
+
+	if primaryData ~= nil or backupData ~= nil then
+		local primaryRevision = type(primaryData) == "table" and (tonumber(primaryData.Revision) or 0) or -1
+		local backupRevision = type(backupData) == "table" and (tonumber(backupData.Revision) or 0) or -1
+		if backupRevision > primaryRevision then
+			warn(string.format("[DataService] Backup is newer for user %d; loading backup revision %d", userId, backupRevision))
+			return sanitizeState(backupData), "backup"
+		end
+		if primaryData ~= nil then
+			return sanitizeState(primaryData), "primary"
+		end
 		return sanitizeState(backupData), "backup"
 	end
 
