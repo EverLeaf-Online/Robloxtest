@@ -57,7 +57,8 @@ ServerScriptService
 ├── PlayerManager                Script
 ├── SettlementSystem             ModuleScript
 ├── TerraformSystem              ModuleScript
-└── WaterSystem                  ModuleScript
+├── WaterSystem                  ModuleScript
+└── WorldSetup                   Script
 
 StarterPlayer
 └── StarterPlayerScripts
@@ -172,6 +173,7 @@ Use Studio **Test → Start** with at least 2 players and verify:
 - `src/ServerScriptService/DataService.lua` — primary/backup `UpdateAsync`, retry logic, sanitation, newest-revision recovery.
 - `src/ServerScriptService/DataStore.server.lua` — autosave and shutdown save.
 - `src/ServerScriptService/MonetizationService.lua` — pass ownership, pass effects, developer-product receipts.
+- `src/ServerScriptService/WorldSetup.server.lua` — removes default Baseplate/SpawnLocation template geometry for the space scene.
 - `src/StarterPlayer/StarterPlayerScripts/CameraControls.client.lua` — smooth orbit/zoom camera.
 - `src/StarterPlayer/StarterPlayerScripts/ClientWorld.client.lua` — procedural starfield and space lighting.
 - `src/StarterGui/MainUI.client.lua` — Energy HUD, action buttons, stats, tile targeting, shop, milestones, notifications.
