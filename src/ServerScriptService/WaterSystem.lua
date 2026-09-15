@@ -8,12 +8,8 @@ local EnergySystem = require(script.Parent.EnergySystem)
 
 local WaterSystem = {}
 
-local function chooseLandTile(state, requestedIndex)
-	if TileGeometry.IsValidIndex(requestedIndex) and state.Tiles[requestedIndex] == "Land" then
-		return requestedIndex
-	end
-
-	-- Prefer land touching existing water so repeated actions grow visible oceans/rivers.
+local function chooseRandomLandTile(state)
+	-- Prefer land touching existing water so random growth expands oceans/rivers.
 	local frontier = {}
 	local seen = {}
 	for index, tileType in ipairs(state.Tiles) do
@@ -47,21 +43,36 @@ function WaterSystem.Apply(player, requestedIndex)
 	if not state then
 		return false, "Planet data is not ready."
 	end
+
 	local cost = Config.ACTION_COSTS.AddWater
 	if not EnergySystem.CanAfford(player, cost) then
 		return false, string.format("Add Water needs %d Energy.", cost)
 	end
-	local tileIndex = chooseLandTile(state, requestedIndex)
+
+	local tileIndex
+	if requestedIndex ~= nil then
+		if not TileGeometry.IsValidIndex(requestedIndex) then
+			return false, "That surface tile is invalid."
+		end
+		if state.Tiles[requestedIndex] ~= "Land" then
+			return false, "Water can only be added to undeveloped land."
+		end
+		tileIndex = requestedIndex
+	else
+		tileIndex = chooseRandomLandTile(state)
+	end
+
 	if not tileIndex then
 		return false, "There are no undeveloped land tiles left."
 	end
 	if not EnergySystem.TrySpend(player, cost) then
 		return false, "Not enough Energy."
 	end
+
 	state.Tiles[tileIndex] = "Water"
 	PlanetStateService.MarkChanged(player)
 	PlanetRenderer.UpdateTile(player, tileIndex)
-	return true, "Water added.", { { TileIndex = tileIndex, TileType = "Water" } }
+	return true, string.format("Water added to tile #%d.", tileIndex), { { TileIndex = tileIndex, TileType = "Water" } }
 end
 
 return WaterSystem
