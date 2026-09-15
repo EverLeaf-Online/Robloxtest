@@ -139,6 +139,13 @@ function MonetizationService.ProcessReceipt(receiptInfo)
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 
+	-- Persistent developer-product grants must never be acknowledged until the
+	-- player's data can be written. Roblox will redeliver an unresolved receipt.
+	if not PlanetStateService.CanSave(player) then
+		warn(string.format("[Monetization] Deferring receipt %s because player %d has no writable DataStore session", tostring(receiptInfo.PurchaseId), player.UserId))
+		return Enum.ProductPurchaseDecision.NotProcessedYet
+	end
+
 	local productKey = productKeyForId(receiptInfo.ProductId)
 	if not productKey then
 		warn(string.format("[Monetization] Unknown developer product ID %s", tostring(receiptInfo.ProductId)))
