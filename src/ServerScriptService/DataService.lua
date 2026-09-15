@@ -109,7 +109,6 @@ local function sanitizeState(raw)
 				copied += 1
 			end
 		end
-	end
 
 	if type(raw.NextEntityId) == "number" then
 		state.NextEntityId = math.max(1, math.floor(raw.NextEntityId))
@@ -166,6 +165,9 @@ local function updateWithRetries(store, key, snapshot)
 	return false, lastError
 end
 
+-- Returns state, source, canSave. If every read fails, gameplay may continue using
+-- an in-memory default state, but canSave=false prevents that temporary state from
+-- overwriting an older persistent planet when Roblox DataStores recover.
 function DataService.Load(userId)
 	local key = keyForUserId(userId)
 	local primaryOk, primaryResult = getWithRetries(primaryStore, key)
@@ -178,18 +180,23 @@ function DataService.Load(userId)
 		local backupRevision = type(backupData) == "table" and (tonumber(backupData.Revision) or 0) or -1
 		if backupRevision > primaryRevision then
 			warn(string.format("[DataService] Backup is newer for user %d; loading backup revision %d", userId, backupRevision))
-			return sanitizeState(backupData), "backup"
+			return sanitizeState(backupData), "backup", true
 		end
 		if primaryData ~= nil then
-			return sanitizeState(primaryData), "primary"
+			return sanitizeState(primaryData), "primary", true
 		end
-		return sanitizeState(backupData), "backup"
+		return sanitizeState(backupData), "backup", true
 	end
 
-	if not primaryOk or not backupOk then
-		warn(string.format("[DataService] Data stores unavailable for user %d; using defaults for this session", userId))
+	if primaryOk or backupOk then
+		return makeDefaultState(), "default", true
 	end
-	return makeDefaultState(), "default"
+
+	warn(string.format(
+		"[DataService] Both DataStores are unavailable for user %d; starting an unsaved session to avoid overwriting existing data",
+		userId
+	))
+	return makeDefaultState(), "unavailable", false
 end
 
 function DataService.Save(userId, state)
