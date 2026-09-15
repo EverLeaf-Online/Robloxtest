@@ -109,6 +109,7 @@ local function sanitizeState(raw)
 				copied += 1
 			end
 		end
+	end
 
 	if type(raw.NextEntityId) == "number" then
 		state.NextEntityId = math.max(1, math.floor(raw.NextEntityId))
