@@ -97,16 +97,18 @@ Config.PRODUCTS = {
 	},
 }
 
+-- Starting land needs enough contrast to remain readable against a black space
+-- background. Water/plants intentionally become progressively more saturated.
 Config.COLORS = {
-	Base = Color3.fromRGB(92, 72, 55),
-	Land = Color3.fromRGB(121, 91, 63),
-	LandAlt = Color3.fromRGB(105, 79, 58),
-	Water = Color3.fromRGB(34, 132, 222),
-	Plant = Color3.fromRGB(66, 184, 92),
+	Base = Color3.fromRGB(125, 91, 64),
+	Land = Color3.fromRGB(166, 125, 83),
+	LandAlt = Color3.fromRGB(143, 103, 72),
+	Water = Color3.fromRGB(42, 151, 232),
+	Plant = Color3.fromRGB(73, 199, 104),
 	RarePlant = Color3.fromRGB(88, 255, 213),
-	CosmicA = Color3.fromRGB(100, 70, 220),
-	CosmicB = Color3.fromRGB(34, 206, 230),
-	Moon = Color3.fromRGB(188, 198, 220),
+	CosmicA = Color3.fromRGB(118, 82, 240),
+	CosmicB = Color3.fromRGB(39, 220, 236),
+	Moon = Color3.fromRGB(198, 207, 226),
 }
 
 Config.VALID_TILE_TYPES = {
