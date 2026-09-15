@@ -49,6 +49,26 @@ local function createPart(className, name, size, color, material, cframe, parent
 	return part
 end
 
+local function ensureMoon(player, model, center)
+	local moon = model:FindFirstChild("Moon")
+	if moon then
+		return moon
+	end
+	moon = createPart(
+		"Part",
+		"Moon",
+		Vector3.new(10, 10, 10),
+		Config.COLORS.Moon,
+		Enum.Material.Slate,
+		CFrame.new(center + Vector3.new(70, 0, 0)),
+		model
+	)
+	moon.Shape = Enum.PartType.Ball
+	moon.CanQuery = false
+	moon:SetAttribute("OrbitPhase", (player.UserId % 360) * math.pi / 180)
+	return moon
+end
+
 function PlanetRenderer.CreatePlanet(player)
 	local state = PlanetStateService.GetState(player)
 	local center = PlanetStateService.GetCenter(player)
@@ -112,18 +132,7 @@ function PlanetRenderer.CreatePlanet(player)
 	end
 
 	if flags.MoonCompanion then
-		local moon = createPart(
-			"Part",
-			"Moon",
-			Vector3.new(10, 10, 10),
-			Config.COLORS.Moon,
-			Enum.Material.Slate,
-			CFrame.new(center + Vector3.new(70, 0, 0)),
-			model
-		)
-		moon.Shape = Enum.PartType.Ball
-		moon.CanQuery = false
-		moon:SetAttribute("OrbitPhase", (player.UserId % 360) * math.pi / 180)
+		ensureMoon(player, model, center)
 	end
 
 	return model
@@ -135,7 +144,8 @@ function PlanetRenderer.UpdateTile(player, tileIndex)
 	if not state or not model then
 		return
 	end
-	local tile = model:FindFirstChild("Tiles") and model.Tiles:FindFirstChild("Tile_" .. tileIndex)
+	local tiles = model:FindFirstChild("Tiles")
+	local tile = tiles and tiles:FindFirstChild("Tile_" .. tileIndex)
 	if not tile then
 		return
 	end
@@ -145,6 +155,28 @@ function PlanetRenderer.UpdateTile(player, tileIndex)
 	tile.Material = material
 	tile.Transparency = transparency
 	tile:SetAttribute("TileType", state.Tiles[tileIndex])
+end
+
+function PlanetRenderer.RefreshAppearance(player)
+	local model = getPlanetModel(player)
+	local state = PlanetStateService.GetState(player)
+	local center = PlanetStateService.GetCenter(player)
+	if not model or not state or not center or not model.PrimaryPart then
+		return
+	end
+	local flags = PlanetStateService.GetPassFlags(player)
+	model.PrimaryPart.Color = flags.CosmicSkin and Color3.fromRGB(45, 28, 90) or Config.COLORS.Base
+	for index = 1, Config.TILE_COUNT do
+		PlanetRenderer.UpdateTile(player, index)
+	end
+	if flags.MoonCompanion then
+		ensureMoon(player, model, center)
+	else
+		local moon = model:FindFirstChild("Moon")
+		if moon then
+			moon:Destroy()
+		end
+	end
 end
 
 function PlanetRenderer.SpawnAnimal(player, animal)
