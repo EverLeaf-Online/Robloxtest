@@ -7,6 +7,7 @@ local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local TileGeometry = require(ReplicatedStorage.Shared.TileGeometry)
 
 local player = Players.LocalPlayer
 local remotes = ReplicatedFirst:WaitForChild("Remotes")
@@ -20,6 +21,7 @@ local notifyRemote = remotes:WaitForChild("Notify")
 local getPlanetState = remotes:WaitForChild("GetPlanetState")
 
 local planet = Workspace:WaitForChild("Planets"):WaitForChild("Planet_" .. player.UserId)
+local core = planet:WaitForChild("Core")
 local tilesFolder = planet:WaitForChild("Tiles")
 
 local state
@@ -94,8 +96,7 @@ local function makeButton(parent, text, size, position)
 	button.Position = position
 	button.Parent = parent
 	addCorner(button, 9)
-	local stroke = addStroke(button, Color3.fromRGB(78, 213, 255), 0.5, 1)
-	button:SetAttribute("DefaultStrokeTransparency", stroke.Transparency)
+	addStroke(button, Color3.fromRGB(78, 213, 255), 0.5, 1)
 	return button
 end
 
@@ -120,12 +121,11 @@ energyLabel.TextColor3 = Color3.fromRGB(111, 229, 255)
 local stageLabel = makeLabel(topBar, "Preparing your world...", UDim2.new(1, -36, 0, 24), UDim2.fromOffset(18, 39), 12)
 stageLabel.TextColor3 = Color3.fromRGB(157, 178, 209)
 
-local actionPanel = makePanel("Actions", UDim2.fromOffset(280, 430), UDim2.new(0, 18, 0.5, -215))
+local actionPanel = makePanel("Actions", UDim2.fromOffset(280, 450), UDim2.new(0, 18, 0.5, -225))
 local actionHeader = makeLabel(actionPanel, "GROWTH TOOLS", UDim2.new(1, -32, 0, 26), UDim2.fromOffset(16, 13), 17)
 actionHeader.Font = Enum.Font.GothamBold
 local actionSub = makeLabel(actionPanel, "Choose a tool, then click the planet.", UDim2.new(1, -32, 0, 34), UDim2.fromOffset(16, 37), 12)
 actionSub.TextColor3 = Color3.fromRGB(149, 169, 199)
-
 actionSub.TextYAlignment = Enum.TextYAlignment.Top
 
 local buttons = {}
@@ -141,7 +141,7 @@ end
 
 local randomButton = makeButton(actionPanel, "🎲 Use selected tool on random valid tile [R]", UDim2.new(1, -32, 0, 40), UDim2.fromOffset(16, 356))
 randomButton.Visible = false
-local actionHint = makeLabel(actionPanel, "Click a tile first for exact placement. Drag the planet to rotate it.", UDim2.new(1, -32, 0, 42), UDim2.fromOffset(16, 397), 11)
+local actionHint = makeLabel(actionPanel, "Click a tile first for exact placement. Drag the planet to rotate it.", UDim2.new(1, -32, 0, 42), UDim2.fromOffset(16, 402), 11)
 actionHint.TextColor3 = Color3.fromRGB(133, 153, 183)
 actionHint.TextYAlignment = Enum.TextYAlignment.Top
 
@@ -150,7 +150,6 @@ local statsHeader = makeLabel(statsPanel, "PLANET STATUS", UDim2.new(1, -28, 0, 
 statsHeader.Font = Enum.Font.GothamBold
 local statsLabel = makeLabel(statsPanel, "Loading planet data...", UDim2.new(1, -28, 0, 152), UDim2.fromOffset(14, 45), 13)
 statsLabel.TextYAlignment = Enum.TextYAlignment.Top
-
 local objectiveHeader = makeLabel(statsPanel, "NEXT OBJECTIVE", UDim2.new(1, -28, 0, 22), UDim2.fromOffset(14, 198), 12)
 objectiveHeader.Font = Enum.Font.GothamBold
 objectiveHeader.TextColor3 = Color3.fromRGB(111, 229, 255)
@@ -159,7 +158,7 @@ objectiveLabel.TextColor3 = Color3.fromRGB(175, 191, 216)
 objectiveLabel.TextYAlignment = Enum.TextYAlignment.Top
 local shopButton = makeButton(statsPanel, "🛒 Cosmic Shop  [B]", UDim2.new(1, -28, 0, 38), UDim2.new(0, 14, 1, -49))
 
-local inspector = makePanel("TileInspector", UDim2.fromOffset(520, 184), UDim2.new(0.5, -260, 1, -204))
+local inspector = makePanel("TileInspector", UDim2.fromOffset(520, 184), UDim2.new(0.5, -260, 1, -250))
 inspector.Visible = false
 local inspectorTitle = makeLabel(inspector, "SURFACE TILE", UDim2.fromOffset(220, 26), UDim2.fromOffset(16, 12), 16)
 inspectorTitle.Font = Enum.Font.GothamBold
@@ -292,8 +291,7 @@ local function refreshActionVisuals()
 		local button = buttons[definition.Key]
 		local unlocked = unlocks[definition.Key] ~= false
 		local affordable = (state.Energy or 0) >= definition.Cost
-		local enabled = unlocked and affordable
-		setButtonEnabled(button, enabled)
+		setButtonEnabled(button, unlocked and affordable)
 		if not unlocked then
 			button.Text = string.format("🔒 [%s] %s  •  %d tiles", definition.Shortcut, definition.Label, Config.ACTION_UNLOCKS[definition.Key])
 		elseif pendingAction == definition.Key then
@@ -371,7 +369,6 @@ local function refreshUI()
 
 	energyLabel.Text = string.format("⚡ Energy: %d", energy)
 	stageLabel.Text = string.format("%s  •  %d/%d surface tiles developed", stage.Name, developed, Config.TILE_COUNT)
-
 	statsLabel.Text = string.format(
 		"Stage: %s\nDeveloped: %d / %d\n💧 Water: %d\n🌱 Plants: %d\n🐾 Animals: %d\n🏠 Settlements: %d\n✨ Rare seed charges: %d",
 		stage.Name,
@@ -474,15 +471,13 @@ local function selectOrUseAction(actionKey)
 		sendAction(actionKey, nil)
 		return
 	end
-
 	if selectedTileIndex then
 		sendAction(actionKey, selectedTileIndex)
 		return
 	end
-
 	pendingAction = actionKey
 	refreshActionVisuals()
-	showToast(string.format("%s selected — click a surface tile.", definition.Label), "success")
+	showToast(string.format("%s selected — click anywhere on the planet.", definition.Label), "success")
 end
 
 for _, definition in ipairs(ACTIONS) do
@@ -509,9 +504,7 @@ randomButton.Activated:Connect(function()
 	end
 end)
 
-clearTargetButton.Activated:Connect(function()
-	clearSelection()
-end)
+clearTargetButton.Activated:Connect(clearSelection)
 
 local function makeShopSection(text)
 	local label = makeLabel(scrolling, text, UDim2.new(1, -8, 0, 30), UDim2.new(), 16)
@@ -589,11 +582,68 @@ local keyToAction = {
 	[Enum.KeyCode.Five] = "TerraformBurst",
 }
 
+local function getNearestTileFromDirection(direction)
+	local bestIndex = 1
+	local bestDot = -math.huge
+	for index = 1, Config.TILE_COUNT do
+		local dot = direction:Dot(TileGeometry.GetDirection(index))
+		if dot > bestDot then
+			bestDot = dot
+			bestIndex = index
+		end
+	end
+	return bestIndex
+end
+
+local function findClickedTile(ray)
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Include
+	params.FilterDescendantsInstances = { tilesFolder }
+	params.IgnoreWater = true
+	local result = Workspace:Raycast(ray.Origin, ray.Direction * 1000, params)
+	if result and result.Instance then
+		local tileIndex = result.Instance:GetAttribute("TileIndex")
+		if type(tileIndex) == "number" then
+			return tileIndex, result.Instance
+		end
+	end
+
+	-- The visible discs intentionally leave tiny gaps on a sphere. Fall back to
+	-- analytic ray/sphere intersection so every click on the planet maps to the
+	-- nearest logical surface tile instead of becoming a dead click.
+	local direction = ray.Direction.Unit
+	local relativeOrigin = ray.Origin - core.Position
+	local radius = Config.PLANET_RADIUS + Config.TILE_SURFACE_OFFSET
+	local b = 2 * relativeOrigin:Dot(direction)
+	local c = relativeOrigin:Dot(relativeOrigin) - radius * radius
+	local discriminant = b * b - 4 * c
+	if discriminant < 0 then
+		return nil, nil
+	end
+
+	local root = math.sqrt(discriminant)
+	local distance = (-b - root) * 0.5
+	if distance < 0 then
+		distance = (-b + root) * 0.5
+	end
+	if distance < 0 then
+		return nil, nil
+	end
+
+	local hitPosition = ray.Origin + direction * distance
+	local surfaceDirection = (hitPosition - core.Position).Unit
+	local tileIndex = getNearestTileFromDirection(surfaceDirection)
+	local tilePart = tilesFolder:FindFirstChild("Tile_" .. tileIndex)
+	if tilePart then
+		return tileIndex, tilePart
+	end
+	return nil, nil
+end
+
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if gameProcessed then
 		return
 	end
-
 	if input.KeyCode == Enum.KeyCode.B then
 		toggleShop()
 		return
@@ -613,7 +663,6 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		selectOrUseAction(shortcutAction)
 		return
 	end
-
 	if input.UserInputType == Enum.UserInputType.MouseButton1 then
 		mouseDownPosition = UserInputService:GetMouseLocation()
 	end
@@ -623,7 +672,6 @@ UserInputService.InputEnded:Connect(function(input, gameProcessed)
 	if input.UserInputType ~= Enum.UserInputType.MouseButton1 or gameProcessed or not mouseDownPosition then
 		return
 	end
-
 	local mouseUp = UserInputService:GetMouseLocation()
 	if (mouseUp - mouseDownPosition).Magnitude > 7 then
 		mouseDownPosition = nil
@@ -633,28 +681,18 @@ UserInputService.InputEnded:Connect(function(input, gameProcessed)
 
 	local camera = Workspace.CurrentCamera
 	local ray = camera:ViewportPointToRay(mouseUp.X, mouseUp.Y)
-	local params = RaycastParams.new()
-	params.FilterType = Enum.RaycastFilterType.Include
-	params.FilterDescendantsInstances = { tilesFolder }
-	params.IgnoreWater = true
-	local result = Workspace:Raycast(ray.Origin, ray.Direction * 1000, params)
-
-	if not result or not result.Instance then
+	local tileIndex, tilePart = findClickedTile(ray)
+	if not tileIndex or not tilePart then
 		return
 	end
 
-	local tileIndex = result.Instance:GetAttribute("TileIndex")
-	if type(tileIndex) ~= "number" then
-		return
-	end
-
-	setSelectedTile(tileIndex, result.Instance)
+	setSelectedTile(tileIndex, tilePart)
 	if pendingAction then
 		local actionKey = pendingAction
 		clearPendingAction()
 		sendAction(actionKey, tileIndex)
 	else
-		local tileType = result.Instance:GetAttribute("TileType") or "Land"
+		local tileType = state and state.Tiles and state.Tiles[tileIndex] or tilePart:GetAttribute("TileType") or "Land"
 		showToast(string.format("Tile #%d selected: %s. Choose a growth action.", tileIndex, tileType), "success")
 	end
 end)
