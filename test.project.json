@@ -6,6 +6,11 @@
       "Shared": {
         "$path": "src/shared"
       },
+      "Packages": {
+        "$path": {
+          "optional": "Packages"
+        }
+      },
       "DevPackages": {
         "$path": {
           "optional": "DevPackages"
