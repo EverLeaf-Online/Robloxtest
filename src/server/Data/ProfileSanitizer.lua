@@ -40,7 +40,8 @@ function ProfileSanitizer.Sanitize(data: any)
 
 	local materials = ensureTable(data, "Materials")
 	for _, materialId in { "ScrapMetal", "Wiring", "PowerCoreFragments" } do
-		materials[materialId] = clampInteger(materials[materialId], 0, GameConfig.Economy.MaxMaterialCount, 0)
+		materials[materialId] =
+			clampInteger(materials[materialId], 0, GameConfig.Economy.MaxMaterialCount, 0)
 	end
 
 	local robots = ensureTable(data, "Robots")
@@ -65,7 +66,11 @@ function ProfileSanitizer.Sanitize(data: any)
 	local assignments = ensureTable(data, "Assignments")
 	local workPads = ensureTable(assignments, "WorkPads")
 	for padId, robotUid in workPads do
-		if typeof(padId) ~= "string" or typeof(robotUid) ~= "string" or ownedByUid[robotUid] == nil then
+		if
+			typeof(padId) ~= "string"
+			or typeof(robotUid) ~= "string"
+			or ownedByUid[robotUid] == nil
+		then
 			workPads[padId] = nil
 		end
 	end
