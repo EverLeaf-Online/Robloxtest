@@ -19,6 +19,7 @@ local SalvageService = {}
 local initialized = false
 local random = Random.new()
 local nodeActive: { [string]: boolean } = {}
+local nodeClaimed: { [string]: boolean } = {}
 
 local function result(success: boolean, code: string, payload: any?): any
 	return {
@@ -56,12 +57,21 @@ local function setNodeActive(nodeId: string, active: boolean)
 end
 
 local function claimNode(nodeId: string): boolean
-	if nodeActive[nodeId] ~= true then
+	if nodeActive[nodeId] ~= true or nodeClaimed[nodeId] == true then
 		return false
 	end
 
-	setNodeActive(nodeId, false)
+	nodeClaimed[nodeId] = true
 	return true
+end
+
+local function releaseNodeClaim(nodeId: string)
+	nodeClaimed[nodeId] = false
+end
+
+local function consumeNodeClaim(nodeId: string)
+	nodeClaimed[nodeId] = false
+	setNodeActive(nodeId, false)
 end
 
 local function makeRewards(zoneId: number, firstCollect: boolean): { [string]: number }
@@ -137,8 +147,8 @@ function SalvageService.Collect(player: Player, nodeId: any)
 		return
 	end
 
-	-- Claim synchronously before any profile work so two players cannot both collect
-	-- the same node while their separate profile transactions are running.
+	-- Reserve the shared node synchronously, but keep it visibly active until the
+	-- profile transaction commits. Failed collectors cannot flicker/grief the prompt.
 	if not claimNode(nodeId) then
 		StateService.ActionResult(player, RemoteNames.RequestCollect, false, "NODE_RESPAWNING", nil)
 		return
@@ -164,7 +174,7 @@ function SalvageService.Collect(player: Player, nodeId: any)
 	end)
 
 	if not executed then
-		setNodeActive(nodeId, true)
+		releaseNodeClaim(nodeId)
 		StateService.ActionResult(
 			player,
 			RemoteNames.RequestCollect,
@@ -175,7 +185,7 @@ function SalvageService.Collect(player: Player, nodeId: any)
 		return
 	end
 	if typeof(transactionResult) ~= "table" then
-		setNodeActive(nodeId, true)
+		releaseNodeClaim(nodeId)
 		StateService.ActionResult(
 			player,
 			RemoteNames.RequestCollect,
@@ -194,10 +204,11 @@ function SalvageService.Collect(player: Player, nodeId: any)
 		transactionResult.Payload
 	)
 	if transactionResult.Success ~= true then
-		setNodeActive(nodeId, true)
+		releaseNodeClaim(nodeId)
 		return
 	end
 
+	consumeNodeClaim(nodeId)
 	StateService.PushSnapshot(player)
 	task.delay(GameConfig.World.NodeRespawnSeconds, function()
 		setNodeActive(nodeId, true)
@@ -212,6 +223,7 @@ function SalvageService.Init()
 
 	for nodeId, node in WorldService.GetSalvageNodes() do
 		nodeActive[nodeId] = true
+		nodeClaimed[nodeId] = false
 		local prompt = node:FindFirstChildOfClass("ProximityPrompt")
 		if prompt then
 			prompt.Triggered:Connect(function(player)
