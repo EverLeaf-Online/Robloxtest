@@ -5,6 +5,7 @@ ServerPackages/
 
 # Rojo build output
 build/
+.build/
 *.rbxl
 *.rbxlx
 *.rbxm
