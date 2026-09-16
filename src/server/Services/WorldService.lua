@@ -86,18 +86,22 @@ local function buildWorld(): Folder
 	factoryFolder.Name = "Factory"
 	factoryFolder.Parent = folder
 
-	local processor = makePart(factoryFolder, "Processor", Vector3.new(14, 8, 10), Vector3.new(-18, 4.5, 24))
+	local processor =
+		makePart(factoryFolder, "Processor", Vector3.new(14, 8, 10), Vector3.new(-18, 4.5, 24))
 	processor.Material = Enum.Material.Metal
 
-	local wiringControl = makePart(factoryFolder, "MakeWiring", Vector3.new(5, 2, 4), Vector3.new(-22, 2, 17))
+	local wiringControl =
+		makePart(factoryFolder, "MakeWiring", Vector3.new(5, 2, 4), Vector3.new(-22, 2, 17))
 	registerProcessorControl(wiringControl, "MakeWiring")
 	addPrompt(wiringControl, "Process", "Make Wiring")
 
-	local coreControl = makePart(factoryFolder, "RecoverCore", Vector3.new(5, 2, 4), Vector3.new(-14, 2, 17))
+	local coreControl =
+		makePart(factoryFolder, "RecoverCore", Vector3.new(5, 2, 4), Vector3.new(-14, 2, 17))
 	registerProcessorControl(coreControl, "RecoverCore")
 	addPrompt(coreControl, "Process", "Recover Core")
 
-	local assembler = makePart(factoryFolder, "Assembler", Vector3.new(14, 8, 10), Vector3.new(3, 4.5, 24))
+	local assembler =
+		makePart(factoryFolder, "Assembler", Vector3.new(14, 8, 10), Vector3.new(3, 4.5, 24))
 	assembler.Material = Enum.Material.Metal
 	addPrompt(assembler, "Assemble", "Build Robot")
 	assemblerPart = assembler
