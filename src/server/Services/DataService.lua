@@ -38,8 +38,11 @@ local function releaseProfile(player: Player)
 		return
 	end
 
-	profiles[player] = nil
 	profile:EndSession()
+	if profiles[player] == profile then
+		profiles[player] = nil
+		profileReleasedEvent:Fire(player)
+	end
 end
 
 function DataService.LoadPlayer(player: Player): boolean
