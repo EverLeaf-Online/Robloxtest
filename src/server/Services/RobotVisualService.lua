@@ -315,7 +315,9 @@ local function syncPlayer(player: Player)
 		local padId = ("Pad%d"):format(index)
 		local pad = WorldService.GetPlotWorkPad(plotId, padId)
 		if pad ~= nil then
-			local assignedUid = if index <= unlockedSlots then data.Assignments.WorkPads[padId] else nil
+			local assignedUid = if index <= unlockedSlots
+				then data.Assignments.WorkPads[padId]
+				else nil
 			syncPad(folder, pad, assignedUid, data)
 		end
 	end
