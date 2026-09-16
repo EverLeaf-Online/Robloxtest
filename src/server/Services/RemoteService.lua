@@ -15,6 +15,7 @@ local requestNames = {
 	RemoteNames.RequestProcess,
 	RemoteNames.RequestAssemble,
 	RemoteNames.RequestAssignRobot,
+	RemoteNames.RequestUnassignRobot,
 	RemoteNames.RequestSellRobot,
 	RemoteNames.RequestUpgrade,
 	RemoteNames.RequestUnlockZone,
