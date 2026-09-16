@@ -20,7 +20,9 @@ GameConfig.PLANET_RADIUS = 40
 GameConfig.TILE_RADIUS = 40.8
 GameConfig.TILE_ROWS = 12
 GameConfig.TILE_COLS = 16
-GameConfig.TILE_SIZE = Vector3.new(9, 1.2, 9)
+-- 9x9 left large black gaps between the 192 tangent surface plates.
+-- 13x13 gives the starting world a continuous readable surface.
+GameConfig.TILE_SIZE = Vector3.new(13, 1.2, 13)
 
 GameConfig.START_ENERGY = 100
 GameConfig.MAX_ENERGY = 1_000_000
