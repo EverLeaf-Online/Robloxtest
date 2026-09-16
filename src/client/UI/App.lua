@@ -301,8 +301,21 @@ local function buildRobotRows(snapshot: any): any
 		if definition ~= nil then
 			local assignedPad = getAssignedPad(snapshot, uid)
 			local freePad = firstFreePad(snapshot)
-			local canAssign = assignedPad == nil and freePad ~= nil
 			local canRecycle = assignedPad == nil
+			local assignmentText = "No Slot"
+			local assignmentCallback: (() -> ())? = nil
+			if assignedPad ~= nil then
+				assignmentText = "Unassign"
+				assignmentCallback = function()
+					getRemote(RemoteNames.RequestUnassignRobot):FireServer(uid)
+				end
+			elseif freePad ~= nil then
+				assignmentText = "Assign"
+				assignmentCallback = function()
+					getRemote(RemoteNames.RequestAssignRobot):FireServer(uid, freePad)
+				end
+			end
+
 			local rowChildren: { [string]: any } = {
 				Corner = corner(8),
 				Name = React.createElement("TextLabel", {
@@ -335,13 +348,9 @@ local function buildRobotRows(snapshot: any): any
 					Size = UDim2.fromOffset(92, 32),
 				}, {
 					Button = button(
-						assignedPad or (freePad and "Assign" or "No Slot"),
-						canAssign,
-						if canAssign
-							then function()
-								getRemote(RemoteNames.RequestAssignRobot):FireServer(uid, freePad)
-							end
-							else nil
+						assignmentText,
+						assignmentCallback ~= nil,
+						assignmentCallback
 					),
 				}),
 				Recycle = React.createElement("Frame", {
@@ -528,7 +537,7 @@ end
 
 local function panelHint(activeTab: string): string
 	if activeTab == "Bots" then
-		return "Assign idle bots to unlocked pads. Assigned bots generate credits."
+		return "Assign or unassign bots on unlocked pads. Assigned bots generate credits."
 	elseif activeTab == "Upgrades" then
 		return "Upgrade prices and levels are validated by the server."
 	end
