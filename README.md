@@ -23,10 +23,22 @@ We are optimizing for:
 
 ## Research documents
 
+- `docs/ROBLOX_CREATOR_HUB_BASELINE.md` — **primary implementation authority**, converting current official Roblox Creator Hub guidance into project rules for design, analytics, monetization, security, persistence, mobile UX, and performance.
 - `docs/MARKET_RESEARCH_2026-09-16.md` — current Roblox market, discovery, retention, and competitor findings.
 - `docs/PRODUCT_STRATEGY.md` — product requirements, concept shortlist, and current recommended direction.
 - `docs/MONETIZATION_AND_SECURITY.md` — revenue architecture, compliance, persistence, receipts, and exploit threat model.
 - `docs/VALIDATION_PLAN.md` — prototype and KPI validation gates before scaling development or advertising.
+
+## Source hierarchy
+
+When implementation guidance conflicts, use sources in this order:
+
+1. Roblox Creator Hub / current official API and policy documentation (`https://create.roblox.com/docs`);
+2. Roblox staff platform announcements;
+3. our own live analytics and experiments;
+4. competitor/market research;
+5. community discussion;
+6. old scripts/tutorials only as historical or exploit references.
 
 ## Historical code
 
