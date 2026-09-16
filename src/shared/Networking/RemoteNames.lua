@@ -1,6 +1,7 @@
 --!strict
 
 local RemoteNames = table.freeze({
+	RequestState = "RequestState",
 	RequestCollect = "RequestCollect",
 	RequestProcess = "RequestProcess",
 	RequestAssemble = "RequestAssemble",
