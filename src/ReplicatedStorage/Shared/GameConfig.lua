@@ -1,17 +1,14 @@
--- ReplicatedStorage/Shared/GameConfig.module.lua
--- Central configuration for the whole game.
-
 local GAME_PASS_IDS = {
-	FastGrowth = 0,      -- Set to your real Game Pass ID
-	CosmicSkin = 0,      -- Set to your real Game Pass ID
-	StarterPlanet = 0,   -- Set to your real Game Pass ID
-	MoonCompanion = 0,   -- Set to your real Game Pass ID
+	FastGrowth = 0,
+	CosmicSkin = 0,
+	StarterPlanet = 0,
+	MoonCompanion = 0,
 }
 
 local DEVELOPER_PRODUCT_IDS = {
-	EnergyBoost = 0,     -- Set to your real Developer Product ID
-	RareSeedPack = 0,    -- Set to your real Developer Product ID
-	CometStrike = 0,     -- Set to your real Developer Product ID
+	EnergyBoost = 0,
+	RareSeedPack = 0,
+	CometStrike = 0,
 }
 
 local GameConfig = {}
@@ -20,15 +17,15 @@ GameConfig.PLANET_RADIUS = 40
 GameConfig.TILE_RADIUS = 40.8
 GameConfig.TILE_ROWS = 12
 GameConfig.TILE_COLS = 16
--- 9x9 left large black gaps between the 192 tangent surface plates.
--- 13x13 gives the starting world a continuous readable surface.
 GameConfig.TILE_SIZE = Vector3.new(13, 1.2, 13)
 
-GameConfig.START_ENERGY = 100
+-- The old 100 Energy / +1 every 5 seconds curve made the first milestone take
+-- far too long. This keeps Energy meaningful while making the core loop testable.
+GameConfig.START_ENERGY = 300
 GameConfig.MAX_ENERGY = 1_000_000
-GameConfig.ENERGY_REGEN_AMOUNT = 1
-GameConfig.ENERGY_REGEN_INTERVAL = 5
-GameConfig.ACTION_COOLDOWN = 1
+GameConfig.ENERGY_REGEN_AMOUNT = 5
+GameConfig.ENERGY_REGEN_INTERVAL = 2
+GameConfig.ACTION_COOLDOWN = 0.6
 
 GameConfig.TILE = {
 	Land = 0,
@@ -55,20 +52,23 @@ GameConfig.MILESTONES = {
 	{
 		Tiles = 10,
 		Title = "Milestone: 10 Developed Tiles",
-		Message = "Animals are now unlocked!",
+		Message = "Animals unlocked! +200 Energy",
 		Unlock = "Animal",
+		EnergyReward = 200,
 	},
 	{
 		Tiles = 25,
 		Title = "Milestone: 25 Developed Tiles",
-		Message = "Settlements are now unlocked!",
+		Message = "Settlements unlocked! +450 Energy",
 		Unlock = "Settlement",
+		EnergyReward = 450,
 	},
 	{
 		Tiles = 50,
 		Title = "Milestone: 50 Developed Tiles",
-		Message = "Your planet now has a chance to grow glowing plants!",
+		Message = "Glowing plants unlocked! +900 Energy",
 		Unlock = "GoldenPlant",
+		EnergyReward = 900,
 	},
 }
 
@@ -132,17 +132,14 @@ GameConfig.SHOP = {
 }
 
 GameConfig.COLORS = {
-	Base = Color3.fromRGB(92, 74, 58),
+	Base = Color3.fromRGB(116, 86, 62),
 	CosmicBase = Color3.fromRGB(58, 36, 96),
-
-	Land = Color3.fromRGB(112, 88, 62),
+	Land = Color3.fromRGB(149, 111, 74),
 	CosmicLandA = Color3.fromRGB(90, 58, 132),
 	CosmicLandB = Color3.fromRGB(62, 42, 102),
-
-	Water = Color3.fromRGB(36, 122, 218),
-	Plant = Color3.fromRGB(52, 182, 92),
+	Water = Color3.fromRGB(38, 143, 232),
+	Plant = Color3.fromRGB(58, 190, 92),
 	GlowPlant = Color3.fromRGB(120, 255, 165),
-
 	UI = {
 		Background = Color3.fromRGB(11, 13, 26),
 		Button = Color3.fromRGB(30, 35, 68),
