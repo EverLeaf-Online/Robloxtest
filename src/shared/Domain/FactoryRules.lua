@@ -17,6 +17,23 @@ local function getUpgradeLevel(upgradeId: string, level: number): any?
 	return definition.Levels[level]
 end
 
+function FactoryRules.NormalizeUpgradeLevel(upgradeId: string, value: any): number
+	local definition = Upgrades[upgradeId]
+	if definition == nil or #definition.Levels == 0 then
+		return 1
+	end
+	if
+		typeof(value) ~= "number"
+		or value ~= value
+		or value == math.huge
+		or value == -math.huge
+		or value % 1 ~= 0
+	then
+		return 1
+	end
+	return math.clamp(value, 1, #definition.Levels)
+end
+
 function FactoryRules.GetProcessorSeconds(level: number): number
 	local upgradeLevel = getUpgradeLevel("ProcessorSpeed", level)
 	return if upgradeLevel then upgradeLevel.Value else Upgrades.ProcessorSpeed.Levels[1].Value
