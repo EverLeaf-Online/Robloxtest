@@ -32,6 +32,17 @@ local ProfileTemplate = {
 		AssemblerLevel = 1,
 		StorageLevel = 1,
 		WorkSlotsLevel = 1,
+		ProcessorJob = {
+			Active = false,
+			RecipeId = "",
+			StartedAt = 0,
+			CompletesAt = 0,
+		},
+		AssemblerJob = {
+			Active = false,
+			StartedAt = 0,
+			CompletesAt = 0,
+		},
 	},
 
 	Progression = {
