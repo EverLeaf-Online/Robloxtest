@@ -4,6 +4,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local AssignmentRules = require(ReplicatedStorage.Shared.Domain.AssignmentRules)
 local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
+local RobotInventoryRules = require(ReplicatedStorage.Shared.Domain.RobotInventoryRules)
 local Recipes = require(ReplicatedStorage.Shared.Config.Recipes)
 local Robots = require(ReplicatedStorage.Shared.Config.Robots)
 local Validation = require(ReplicatedStorage.Shared.Util.Validation)
@@ -94,7 +95,7 @@ function ProfileSanitizer.Sanitize(data: any)
 
 	local robots = ensureTable(data, "Robots")
 	local ownedByUid = ensureTable(robots, "OwnedByUid")
-	robots.NextUid = clampInteger(robots.NextUid, 1, 2_147_483_647, 1)
+	local requestedNextUid = clampInteger(robots.NextUid, 1, 2_147_483_647, 1)
 
 	local ownedCount = 0
 	for uid, robot in ownedByUid do
@@ -110,6 +111,12 @@ function ProfileSanitizer.Sanitize(data: any)
 			robot.AcquiredAt = clampInteger(robot.AcquiredAt, 0, 4_102_444_800, 0)
 		end
 	end
+
+	robots.NextUid = RobotInventoryRules.FindAvailableUidNumber(
+		ownedByUid,
+		requestedNextUid,
+		GameConfig.Economy.MaxOwnedRobots
+	) or 1
 
 	local assignments = ensureTable(data, "Assignments")
 	local workPads = ensureTable(assignments, "WorkPads")
