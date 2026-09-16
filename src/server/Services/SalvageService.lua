@@ -92,7 +92,10 @@ function SalvageService.Collect(player: Player, nodeId: any)
 	end
 
 	local position = playerPosition(player)
-	if position == nil or (position - node.Position).Magnitude > GameConfig.World.SalvageCollectDistance then
+	if
+		position == nil
+		or (position - node.Position).Magnitude > GameConfig.World.SalvageCollectDistance
+	then
 		StateService.ActionResult(player, RemoteNames.RequestCollect, false, "TOO_FAR_AWAY", nil)
 		return
 	end
@@ -109,18 +112,31 @@ function SalvageService.Collect(player: Player, nodeId: any)
 			return false, result(false, "STORAGE_FULL", nil)
 		end
 		profileData.Tutorial.Milestones.FirstScrap = true
-		return true, result(true, "SALVAGE_COLLECTED", {
-			NodeId = nodeId,
-			Rewards = rewards,
-		})
+		return true,
+			result(true, "SALVAGE_COLLECTED", {
+				NodeId = nodeId,
+				Rewards = rewards,
+			})
 	end)
 
 	if not executed then
-		StateService.ActionResult(player, RemoteNames.RequestCollect, false, tostring(transactionResult), nil)
+		StateService.ActionResult(
+			player,
+			RemoteNames.RequestCollect,
+			false,
+			tostring(transactionResult),
+			nil
+		)
 		return
 	end
 	if typeof(transactionResult) ~= "table" then
-		StateService.ActionResult(player, RemoteNames.RequestCollect, false, "INVALID_TRANSACTION_RESULT", nil)
+		StateService.ActionResult(
+			player,
+			RemoteNames.RequestCollect,
+			false,
+			"INVALID_TRANSACTION_RESULT",
+			nil
+		)
 		return
 	end
 
