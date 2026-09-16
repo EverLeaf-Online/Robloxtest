@@ -4,6 +4,7 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ServerScriptService = game:GetService("ServerScriptService")
 
+local ProfileMigrations = require(script.Parent.Parent.Data.ProfileMigrations)
 local ProfileTemplate = require(script.Parent.Parent.Data.ProfileTemplate)
 local ProfileSanitizer = require(script.Parent.Parent.Data.ProfileSanitizer)
 
@@ -60,6 +61,7 @@ function DataService.LoadPlayer(player: Player): boolean
 	end
 
 	profile:AddUserId(player.UserId)
+	ProfileMigrations.Apply(profile.Data)
 	profile:Reconcile()
 	ProfileSanitizer.Sanitize(profile.Data)
 
@@ -102,22 +104,21 @@ function DataService.GetData(player: Player): any?
 	return profile.Data
 end
 
-function DataService.Mutate(player: Player, mutator: (any) -> ...any): (boolean, ...any)
+function DataService.Mutate(player: Player, mutator: (any) -> any?): (boolean, any?)
 	local profile = profiles[player]
 	if profile == nil then
 		return false, "PROFILE_NOT_READY"
 	end
 
-	local results = table.pack(pcall(mutator, profile.Data))
-	local ok = results[1]
+	local ok, result = pcall(mutator, profile.Data)
 	if not ok then
-		warn(("[DataService] Mutation failed for %d: %s"):format(player.UserId, tostring(results[2])))
+		warn(("[DataService] Mutation failed for %d: %s"):format(player.UserId, tostring(result)))
 		return false, "MUTATION_FAILED"
 	end
 
 	profile.Data.Revision += 1
 	ProfileSanitizer.Sanitize(profile.Data)
-	return true, table.unpack(results, 2, results.n)
+	return true, result
 end
 
 function DataService.ReleasePlayer(player: Player)
