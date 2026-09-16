@@ -21,7 +21,10 @@ jobs:
       - name: Install Rokit
         shell: bash
         run: |
-          curl -sSf https://raw.githubusercontent.com/rojo-rbx/rokit/main/scripts/install.sh | bash
+          ROKIT_INSTALLER_URL="https://raw.githubusercontent.com/rojo-rbx/rokit/2f2618428ef31279e2fc80b0b1d73485bc929ddd/scripts/install.sh"
+          curl --fail --silent --show-error --location \
+            --retry 4 --retry-delay 2 --retry-all-errors \
+            "$ROKIT_INSTALLER_URL" | bash
           echo "$HOME/.rokit/bin" >> "$GITHUB_PATH"
 
       - name: Install pinned toolchain
