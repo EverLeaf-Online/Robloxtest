@@ -8,5 +8,6 @@ realm = "shared"
 [dependencies]
 
 [server-dependencies]
+ProfileStore = "lm-loleris/profilestore@1.0.3"
 
 [dev-dependencies]
