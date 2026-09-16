@@ -14,10 +14,14 @@ local DEVELOPER_PRODUCT_IDS = {
 local GameConfig = {}
 
 GameConfig.PLANET_RADIUS = 40
-GameConfig.TILE_RADIUS = 40.8
+-- Tiles are visual/action patches that sit just above a smooth sphere. They are
+-- deliberately thin and smaller than the logical cell spacing so the planet
+-- reads as one world instead of a shell of overlapping blocks.
+GameConfig.TILE_RADIUS = 40.18
 GameConfig.TILE_ROWS = 12
 GameConfig.TILE_COLS = 16
-GameConfig.TILE_SIZE = Vector3.new(13, 1.2, 13)
+GameConfig.TILE_SIZE = Vector3.new(7.6, 0.18, 7.6)
+GameConfig.SELECTION_SIZE = Vector3.new(8.6, 0.10, 8.6)
 
 -- Fast enough for an actual play session while still making Energy matter.
 GameConfig.START_ENERGY = 300
@@ -128,13 +132,13 @@ GameConfig.SHOP = {
 }
 
 GameConfig.COLORS = {
-	Base = Color3.fromRGB(116, 86, 62),
+	Base = Color3.fromRGB(112, 82, 58),
 	CosmicBase = Color3.fromRGB(58, 36, 96),
 	Land = Color3.fromRGB(149, 111, 74),
 	CosmicLandA = Color3.fromRGB(90, 58, 132),
 	CosmicLandB = Color3.fromRGB(62, 42, 102),
-	Water = Color3.fromRGB(38, 143, 232),
-	Plant = Color3.fromRGB(58, 190, 92),
+	Water = Color3.fromRGB(35, 148, 235),
+	Plant = Color3.fromRGB(55, 190, 90),
 	GlowPlant = Color3.fromRGB(120, 255, 165),
 	UI = {
 		Background = Color3.fromRGB(11, 13, 26),
