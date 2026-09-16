@@ -50,8 +50,9 @@ local function addBillboard(part: BasePart, text: string, labelName: string?): T
 	local billboard = Instance.new("BillboardGui")
 	billboard.Name = "WorldLabel"
 	billboard.AlwaysOnTop = true
-	billboard.Size = UDim2.fromOffset(300, 84)
-	billboard.StudsOffset = Vector3.new(0, 7, 0)
+	billboard.Size = UDim2.fromOffset(210, 58)
+	billboard.StudsOffset = Vector3.new(0, 5.5, 0)
+	billboard.MaxDistance = 70
 	billboard.Parent = part
 
 	local label = Instance.new("TextLabel")
