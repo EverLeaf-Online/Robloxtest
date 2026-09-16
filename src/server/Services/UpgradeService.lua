@@ -8,6 +8,7 @@ local RemoteNames = require(ReplicatedStorage.Shared.Networking.RemoteNames)
 local Upgrades = require(ReplicatedStorage.Shared.Config.Upgrades)
 local Validation = require(ReplicatedStorage.Shared.Util.Validation)
 
+local AnalyticsService = require(script.Parent.AnalyticsService)
 local DataService = require(script.Parent.DataService)
 local EconomyService = require(script.Parent.EconomyService)
 local RemoteService = require(script.Parent.RemoteService)
@@ -103,6 +104,20 @@ function UpgradeService.Purchase(player: Player, upgradeId: any)
 		transactionResult.Payload
 	)
 	if transactionResult.Success == true then
+		local payload = transactionResult.Payload
+		local updatedData = DataService.GetData(player)
+		if
+			typeof(payload) == "table"
+			and typeof(payload.CostCredits) == "number"
+			and updatedData ~= nil
+		then
+			AnalyticsService.RecordCreditSink(
+				player,
+				("Upgrade:%s"):format(upgradeId),
+				payload.CostCredits,
+				updatedData.Currencies.Credits
+			)
+		end
 		StateService.PushSnapshot(player)
 	end
 end
