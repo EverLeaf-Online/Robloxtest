@@ -1,78 +1,56 @@
+-- ServerScriptService/PlayerManager.server.lua
+-- Handles player join/leave, remote connections, autosave, and shutdown saving.
+
 local Players = game:GetService("Players")
+local ReplicatedFirst = game:GetService("ReplicatedFirst")
 
-local PlanetStateService = require(script.Parent.PlanetStateService)
-local PlanetRenderer = require(script.Parent.PlanetRenderer)
-local EnergySystem = require(script.Parent.EnergySystem)
-local MonetizationService = require(script.Parent.MonetizationService)
-local MilestoneSystem = require(script.Parent.MilestoneSystem)
+local DataManager = require(script.Parent:WaitForChild("DataManager"))
+local GameService = require(script.Parent:WaitForChild("GameService"))
 
-local initialized = {}
+local remotes = ReplicatedFirst:WaitForChild("Remotes", 30)
+assert(remotes, "Remotes folder was not created.")
 
-local function parkCharacter(player, character)
-	local center = PlanetStateService.GetCenter(player)
-	if not center then
-		return
-	end
-	local root = character:WaitForChild("HumanoidRootPart", 10)
-	local humanoid = character:FindFirstChildOfClass("Humanoid")
-	if root then
-		root.CFrame = CFrame.new(center + Vector3.new(0, -250, 0))
-		root.Anchored = true
-	end
-	if humanoid then
-		humanoid.WalkSpeed = 0
-		humanoid.JumpPower = 0
-		humanoid.AutoRotate = false
-	end
-	for _, descendant in ipairs(character:GetDescendants()) do
-		if descendant:IsA("BasePart") then
-			descendant.Transparency = 1
-			descendant.CanCollide = false
-			descendant.CanTouch = false
-			descendant.CanQuery = false
-		elseif descendant:IsA("Decal") then
-			descendant.Transparency = 1
-		end
-	end
-end
+local applyAction = remotes:WaitForChild("ApplyAction")
+local getPlanetState = remotes:WaitForChild("GetPlanetState")
 
 local function onPlayerAdded(player)
-	if initialized[player.UserId] then
-		return
-	end
-	initialized[player.UserId] = true
+	task.spawn(function()
+		local data = DataManager.loadPlayer(player)
+		local ownership = GameService.getGamePassOwnership(player)
 
-	PlanetStateService.LoadPlayer(player)
-	MonetizationService.RefreshPasses(player)
-	local starterApplied = MonetizationService.ApplyStarterBenefit(player)
-	PlanetRenderer.CreatePlanet(player)
-	MilestoneSystem.Check(player)
-	if starterApplied then
-		PlanetStateService.QueueSave(player)
-	end
-	EnergySystem.Start(player)
-
-	player.CharacterAdded:Connect(function(character)
-		task.defer(parkCharacter, player, character)
+		GameService.initPlayer(player, data, ownership)
 	end)
-	if player.Character then
-		task.defer(parkCharacter, player, player.Character)
-	end
-end
-
-local function onPlayerRemoving(player)
-	initialized[player.UserId] = nil
-	EnergySystem.Stop(player)
-	if PlanetStateService.IsLoaded(player) then
-		PlanetStateService.SavePlayer(player)
-	end
-	PlanetRenderer.DestroyPlanet(player)
-	PlanetStateService.UnloadPlayer(player)
 end
 
 Players.PlayerAdded:Connect(onPlayerAdded)
-Players.PlayerRemoving:Connect(onPlayerRemoving)
 
 for _, player in ipairs(Players:GetPlayers()) do
-	task.spawn(onPlayerAdded, player)
+	onPlayerAdded(player)
 end
+
+Players.PlayerRemoving:Connect(function(player)
+	DataManager.savePlayer(player)
+	GameService.cleanup(player)
+	DataManager.unloadPlayer(player)
+end)
+
+applyAction.OnServerEvent:Connect(function(player, actionType, tileIndex)
+	GameService.tryAction(player, actionType, tileIndex)
+end)
+
+getPlanetState.OnServerInvoke = function(player)
+	return GameService.getPlanetStateForClient(player)
+end
+
+-- Autosave every 60 seconds.
+task.spawn(function()
+	while true do
+		task.wait(60)
+		DataManager.saveAll()
+	end
+end)
+
+game:BindToClose(function()
+	DataManager.saveAll()
+	task.wait(3)
+end)

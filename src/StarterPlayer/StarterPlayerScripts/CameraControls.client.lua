@@ -1,3 +1,6 @@
+-- StarterPlayer/StarterPlayerScripts/CameraControls.client.lua
+-- Orbit camera: left-click drag to rotate, mouse wheel to zoom, smooth lerp.
+
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -5,126 +8,87 @@ local Workspace = game:GetService("Workspace")
 
 local player = Players.LocalPlayer
 local camera = Workspace.CurrentCamera
-local planet = Workspace:WaitForChild("Planets"):WaitForChild("Planet_" .. player.UserId)
-local core = planet:WaitForChild("Core")
 
-local MIN_DISTANCE = 78
-local MAX_DISTANCE = 205
-local ROTATE_SPEED = 0.0055
-local TOUCH_ROTATE_SPEED = 0.0065
-local ZOOM_STEP = 10
+local MIN_DISTANCE = 70
+local MAX_DISTANCE = 500
 
-local targetYaw = math.rad(30)
-local targetPitch = math.rad(-10)
-local targetDistance = 116
-local yaw = targetYaw
-local pitch = targetPitch
-local distance = targetDistance
-local mouseDragging = false
-local activeTouches = {}
-local lastPinchDistance
+local targetDistance = 190
+local currentDistance = 190
 
-camera.CameraType = Enum.CameraType.Scriptable
-camera.FieldOfView = 62
+local targetYaw = 0.6
+local targetPitch = 0.35
 
-local function clampPitch(value)
-	return math.clamp(value, math.rad(-72), math.rad(72))
+local currentYaw = targetYaw
+local currentPitch = targetPitch
+
+local dragging = false
+local lastMousePos = nil
+
+local planetsFolder = Workspace:WaitForChild("Planets", 60)
+if not planetsFolder then
+	warn("[CameraControls] Planets folder not found.")
+	return
 end
 
-local function getTwoTouches()
-	local first
-	local second
-	for touch in pairs(activeTouches) do
-		if not first then
-			first = touch
-		elseif not second then
-			second = touch
-			break
-		end
-	end
-	return first, second
-end
-
-local function refreshPinchBaseline()
-	local first, second = getTwoTouches()
-	if first and second then
-		local firstPosition = Vector2.new(first.Position.X, first.Position.Y)
-		local secondPosition = Vector2.new(second.Position.X, second.Position.Y)
-		lastPinchDistance = (firstPosition - secondPosition).Magnitude
-	else
-		lastPinchDistance = nil
-	end
+local planet = planetsFolder:WaitForChild("Planet_" .. player.UserId, 120)
+if not planet then
+	warn("[CameraControls] Player planet not found.")
+	return
 end
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if gameProcessed then
 		return
 	end
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then
-		mouseDragging = true
-	elseif input.UserInputType == Enum.UserInputType.Touch then
-		activeTouches[input] = true
-		refreshPinchBaseline()
-	end
-end)
 
-UserInputService.InputEnded:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then
-		mouseDragging = false
-	elseif input.UserInputType == Enum.UserInputType.Touch then
-		activeTouches[input] = nil
-		refreshPinchBaseline()
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		lastMousePos = input.Position
 	end
 end)
 
 UserInputService.InputChanged:Connect(function(input, gameProcessed)
-	if gameProcessed then
-		return
-	end
+	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+		if dragging and lastMousePos then
+			local delta = input.Position - lastMousePos
+			lastMousePos = input.Position
 
-	if mouseDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-		targetYaw -= input.Delta.X * ROTATE_SPEED
-		targetPitch = clampPitch(targetPitch - input.Delta.Y * ROTATE_SPEED)
-		return
+			targetYaw -= delta.X * 0.005
+			targetPitch -= delta.Y * 0.005
+
+			local maxPitch = 1.45
+			targetPitch = math.clamp(targetPitch, -maxPitch, maxPitch)
+		end
 	end
 
 	if input.UserInputType == Enum.UserInputType.MouseWheel then
-		targetDistance = math.clamp(targetDistance - input.Position.Z * ZOOM_STEP, MIN_DISTANCE, MAX_DISTANCE)
-		return
-	end
-
-	if input.UserInputType == Enum.UserInputType.Touch and activeTouches[input] then
-		local first, second = getTwoTouches()
-		if first and second then
-			local firstPosition = Vector2.new(first.Position.X, first.Position.Y)
-			local secondPosition = Vector2.new(second.Position.X, second.Position.Y)
-			local pinchDistance = (firstPosition - secondPosition).Magnitude
-			if lastPinchDistance then
-				local delta = pinchDistance - lastPinchDistance
-				targetDistance = math.clamp(targetDistance - delta * 0.28, MIN_DISTANCE, MAX_DISTANCE)
-			end
-			lastPinchDistance = pinchDistance
-		else
-			targetYaw -= input.Delta.X * TOUCH_ROTATE_SPEED
-			targetPitch = clampPitch(targetPitch - input.Delta.Y * TOUCH_ROTATE_SPEED)
-		end
+		targetDistance -= input.Position.Z * 18
+		targetDistance = math.clamp(targetDistance, MIN_DISTANCE, MAX_DISTANCE)
 	end
 end)
 
-RunService:BindToRenderStep("GrowPlanetCamera", Enum.RenderPriority.Camera.Value + 1, function(deltaTime)
-	if not core.Parent then
+UserInputService.InputEnded:Connect(function(input, _gameProcessed)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = false
+		lastMousePos = nil
+	end
+end)
+
+RunService.RenderStepped:Connect(function(dt)
+	if not planet or not planet.PrimaryPart then
 		return
 	end
 
-	local alpha = 1 - math.exp(-10 * deltaTime)
-	yaw += (targetYaw - yaw) * alpha
-	pitch += (targetPitch - pitch) * alpha
-	distance += (targetDistance - distance) * alpha
+	camera.CameraType = Enum.CameraType.Scriptable
 
-	local center = core.Position
-	local orbit = CFrame.fromOrientation(pitch, yaw, 0)
-	local lookDirection = orbit.LookVector
-	local cameraPosition = center - lookDirection * distance
-	camera.CFrame = CFrame.lookAt(cameraPosition, center, Vector3.yAxis)
-	camera.Focus = CFrame.new(center)
+	local smooth = math.min(1, dt * 8)
+
+	currentYaw += (targetYaw - currentYaw) * smooth
+	currentPitch += (targetPitch - currentPitch) * smooth
+	currentDistance += (targetDistance - currentDistance) * smooth
+
+	local center = planet.PrimaryPart.Position
+	local offset = CFrame.fromEulerAnglesYXZ(currentPitch, currentYaw, 0) * Vector3.new(0, 0, 1) * currentDistance
+
+	camera.CFrame = CFrame.lookAt(center + offset, center)
 end)
