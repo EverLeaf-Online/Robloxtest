@@ -53,32 +53,50 @@ jobs:
         shell: bash
         run: "$HOME/.rokit/bin/rokit install --no-trust-check"
 
-      - name: Install pinned OCALE CLI
+      - name: Prepare pinned Lute manifest
+        if: steps.config.outputs.ready == 'true'
+        shell: bash
+        run: |
+          cat > foreman.toml <<'EOF'
+          [tools]
+          lute = { source = "luau-lang/lute", version = "=0.1.0-nightly.20260303" }
+          EOF
+
+      - name: Install pinned Lute
+        if: steps.config.outputs.ready == 'true'
+        uses: Roblox/setup-foreman@v3
+        with:
+          version: "^1.0.0"
+          token: ${{ github.token }}
+          allow-external-github-orgs: true
+
+      - name: Build pinned OCALE CLI from source
         if: steps.config.outputs.ready == 'true'
         shell: bash
         run: |
           set -euo pipefail
-          ROCALE_VERSION="0.1.3"
-          ROCALE_SHA256="93b71143ecda25ab67c075843f4d82d283d600a25ea1ae27a7d70183bda1f1f2"
-          ROCALE_URL="https://github.com/Roblox/rocale-cli/releases/download/v${ROCALE_VERSION}/rocale-cli-linux-x86_64.zip"
-          ARCHIVE="$RUNNER_TEMP/rocale-cli.zip"
-          EXTRACT_DIR="$RUNNER_TEMP/rocale-cli"
+          ROCALE_TAG="v0.1.3"
+          ROCALE_COMMIT="d154b3cc9a834adf7408d5cf78f079a4ea33efe6"
+          SOURCE_DIR="$RUNNER_TEMP/rocale-cli-src"
           INSTALL_DIR="$HOME/.local/bin"
 
-          curl --fail --silent --show-error --location \
-            --retry 4 --retry-delay 2 --retry-all-errors \
-            "$ROCALE_URL" --output "$ARCHIVE"
-          echo "${ROCALE_SHA256}  ${ARCHIVE}" | sha256sum --check --strict
+          rm -rf "$SOURCE_DIR"
+          git clone --quiet --depth 1 --branch "$ROCALE_TAG" https://github.com/Roblox/rocale-cli.git "$SOURCE_DIR"
 
-          rm -rf "$EXTRACT_DIR"
-          mkdir -p "$EXTRACT_DIR" "$INSTALL_DIR"
-          unzip -q "$ARCHIVE" -d "$EXTRACT_DIR"
-          ROCALE_BIN="$(find "$EXTRACT_DIR" -type f -name 'rocale-cli' -print -quit)"
-          if [[ -z "$ROCALE_BIN" ]]; then
-            echo "::error::rocale-cli binary was not found in the pinned release archive."
+          pushd "$SOURCE_DIR" >/dev/null
+          ACTUAL_COMMIT="$(git rev-parse HEAD)"
+          if [[ "$ACTUAL_COMMIT" != "$ROCALE_COMMIT" ]]; then
+            echo "::error::Unexpected rocale-cli source commit: $ACTUAL_COMMIT"
             exit 1
           fi
-          install -m 0755 "$ROCALE_BIN" "$INSTALL_DIR/rocale-cli"
+
+          lute setup
+          lute scripts/build "$ROCALE_TAG" "$ROCALE_COMMIT"
+          mkdir -p "$INSTALL_DIR"
+          install -m 0755 build/rocale-cli "$INSTALL_DIR/rocale-cli"
+          popd >/dev/null
+
+          rm -f foreman.toml
           echo "$INSTALL_DIR" >> "$GITHUB_PATH"
 
       - name: Install Wally packages
@@ -87,7 +105,10 @@ jobs:
 
       - name: Verify OCALE CLI
         if: steps.config.outputs.ready == 'true'
-        run: rocale-cli --help >/dev/null
+        shell: bash
+        run: |
+          rocale-cli help | grep -q "Build, upload, and run a Roblox project in Open Cloud"
+          rocale-cli run --help | grep -q -- "--universeId"
 
       - name: Execute Jest in Roblox Open Cloud
         if: steps.config.outputs.ready == 'true'
