@@ -14,6 +14,7 @@ local GameConfig = {
 		SalvageCollectDistance = 20,
 		InteractionDistance = 24,
 		NodeRespawnSeconds = 8,
+		PlotCount = 8,
 	},
 
 	Factory = {
