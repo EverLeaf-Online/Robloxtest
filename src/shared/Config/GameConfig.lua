@@ -26,6 +26,7 @@ local GameConfig = {
 	Networking = {
 		MaxStringLength = 64,
 		RateLimits = {
+			RequestState = { Capacity = 4, RefillPerSecond = 1 },
 			RequestCollect = { Capacity = 8, RefillPerSecond = 4 },
 			RequestProcess = { Capacity = 5, RefillPerSecond = 2 },
 			RequestAssemble = { Capacity = 4, RefillPerSecond = 1 },
