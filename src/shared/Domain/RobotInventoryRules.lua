@@ -38,12 +38,7 @@ function RobotInventoryRules.ParseUid(uid: any): number?
 	end
 
 	local uidNumber = tonumber(digits)
-	if
-		uidNumber == nil
-		or uidNumber % 1 ~= 0
-		or uidNumber < 1
-		or uidNumber > MAX_UID_NUMBER
-	then
+	if uidNumber == nil or uidNumber % 1 ~= 0 or uidNumber < 1 or uidNumber > MAX_UID_NUMBER then
 		return nil
 	end
 	if RobotInventoryRules.FormatUid(uidNumber) ~= uid then
