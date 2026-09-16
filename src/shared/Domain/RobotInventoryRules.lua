@@ -27,6 +27,35 @@ function RobotInventoryRules.FormatUid(uidNumber: number): string
 	return ("R%d"):format(uidNumber)
 end
 
+function RobotInventoryRules.ParseUid(uid: any): number?
+	if typeof(uid) ~= "string" then
+		return nil
+	end
+
+	local digits = string.match(uid, "^R(%d+)$")
+	if digits == nil then
+		return nil
+	end
+
+	local uidNumber = tonumber(digits)
+	if
+		uidNumber == nil
+		or uidNumber % 1 ~= 0
+		or uidNumber < 1
+		or uidNumber > MAX_UID_NUMBER
+	then
+		return nil
+	end
+	if RobotInventoryRules.FormatUid(uidNumber) ~= uid then
+		return nil
+	end
+	return uidNumber
+end
+
+function RobotInventoryRules.IsValidUid(uid: any): boolean
+	return RobotInventoryRules.ParseUid(uid) ~= nil
+end
+
 function RobotInventoryRules.AdvanceUidNumber(uidNumber: number): number
 	if uidNumber >= MAX_UID_NUMBER then
 		return 1
