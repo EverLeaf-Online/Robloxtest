@@ -1,54 +1,51 @@
 # OCALE Runtime Test Setup
 
-This project uses a dedicated Roblox test experience/place for automated Luau/Jest execution. Do not reuse IDs or credentials from another EverLeaf Roblox project.
+This project uses a dedicated private Roblox test experience/place for automated Luau/Jest execution. Do not reuse IDs or credentials from another EverLeaf Roblox project.
 
 ## Roblox test environment
 
-Create a separate private Roblox experience for automation, for example:
+Dedicated test environment:
 
 - Experience: `Scrap-to-Bot Factory - Tests`
-- Place: `OCALE Test Place`
+- Universe ID: `10766713640`
+- Start place: `Scrap-to-Bot Factory - Tests`
+- Place ID: `75490500628229`
+- Audience: Private
 
-The experience/place can remain private. Record:
+The Universe ID and Place ID are not secrets and are intentionally bound directly into the OCALE GitHub workflow.
 
-- Universe ID
-- Place ID
-
-Create an Open Cloud API key scoped only to this test experience/place with these permissions required by Roblox's current `rocale-cli` flow:
+Create a dedicated Open Cloud API key scoped only to this test experience with the two permissions required by Roblox's current `rocale-cli` flow:
 
 - `universe-places:write`
 - `luau-execution-sessions:write`
 
-Use a dedicated test key. Do not commit the key, paste it into source files, or reuse a production key.
+Do not add an IP restriction for the GitHub Actions key because GitHub-hosted runner egress addresses are not stable. Keep the blast radius small by restricting the key to only the dedicated test experience and only the two scopes above.
+
+Do not commit, paste, or reuse the API key.
 
 ## GitHub configuration
 
-In `EverLeaf-Online/Robloxtest`, configure:
-
-Repository secret:
+In `EverLeaf-Online/Robloxtest`, configure one repository Actions secret:
 
 - `ROBLOX_API_KEY` = the dedicated OCALE test API key
 
-Repository variables:
+No GitHub Universe/Place variables are required; the dedicated non-secret IDs are committed in `.github/workflows/ocale-runtime-tests.yml`.
 
-- `ROBLOX_TEST_UNIVERSE_ID` = the test experience Universe ID
-- `ROBLOX_TEST_PLACE_ID` = the OCALE test Place ID
+The workflow exposes the expected local environment names internally:
 
-The workflow maps those values to the environment names used by the local runner scripts:
-
-- `ROBLOX_UNIVERSE_ID`
-- `ROBLOX_PLACE_ID`
+- `ROBLOX_UNIVERSE_ID=10766713640`
+- `ROBLOX_PLACE_ID=75490500628229`
 
 ## Running in GitHub Actions
 
-Use the workflow:
+Workflow: `OCALE Runtime Tests`
 
-`OCALE Runtime Tests`
+The workflow runs for same-repository pull requests and also supports `workflow_dispatch` once present on the default branch. Before `ROBLOX_API_KEY` exists, the OCALE execution steps safely skip instead of failing the PR.
 
-It is manual (`workflow_dispatch`) until the runtime environment is proven stable. The workflow:
+When configured, the workflow:
 
-1. validates the secret/variables are configured;
-2. installs pinned Rokit 1.2.0;
+1. checks that the API key secret exists;
+2. installs pinned Rokit 1.2.0 from the pinned installer source;
 3. installs the project-pinned toolchain, including `rocale-cli` 0.1.3;
 4. installs Wally packages;
 5. verifies `rocale-cli` is available;
@@ -56,7 +53,7 @@ It is manual (`workflow_dispatch`) until the runtime environment is proven stabl
 7. runs `spec.lua` and the Jest suite;
 8. fails the Actions job if Jest/OCALE fails.
 
-OCALE jobs use a concurrency group so multiple runtime-test runs for the same test universe do not overlap.
+OCALE jobs use a universe-specific concurrency group so runtime-test runs do not overlap.
 
 ## Running locally on Windows
 
@@ -64,31 +61,31 @@ From the repository root in PowerShell, set the values only for the current shel
 
 ```powershell
 $env:ROBLOX_API_KEY = "<test-api-key>"
-$env:ROBLOX_UNIVERSE_ID = "<test-universe-id>"
-$env:ROBLOX_PLACE_ID = "<test-place-id>"
+$env:ROBLOX_UNIVERSE_ID = "10766713640"
+$env:ROBLOX_PLACE_ID = "75490500628229"
 rokit install
 wally install
 ./scripts/run-ocale-tests.ps1
 ```
 
-Do not put the API key in PowerShell profile files, `.env` files committed to Git, or shell history scripts.
+Do not put the API key in committed files, a PowerShell profile, or any script that may enter source control. Local `.env*` files are ignored as an additional safeguard, but GitHub Actions secrets remain the preferred CI storage mechanism.
 
 ## Security boundaries
 
-- Test and production Roblox places must use different API keys where practical.
-- The test key should have only the two permissions above and only the test resource scope.
-- Never expose `ROBLOX_API_KEY` as a workflow-dispatch input, repository variable, Actions output, or committed file.
-- Universe and Place IDs are identifiers, not secrets; store them as repository variables.
-- Rotate the key if it is ever pasted into a public issue, PR, log, chat screenshot, or committed file.
+- Test and production Roblox places must not share API keys.
+- The test key must have only the two required permissions and only the test resource scope.
+- Do not expose `ROBLOX_API_KEY` as a workflow-dispatch input, repository variable, Actions output, committed file, chat message, or screenshot.
+- Universe and Place IDs are identifiers, not credentials.
+- Rotate the key immediately if it is ever exposed.
 
-## Gate before gameplay testing
+## Gate before interactive gameplay testing
 
-The setup is considered complete when:
+Setup is complete when:
 
-- the dedicated Roblox test experience/place exists;
-- `ROBLOX_API_KEY` is configured as a GitHub Actions secret;
-- both test IDs are configured as GitHub Actions variables;
-- the `OCALE Runtime Tests` workflow completes successfully;
-- the Jest output reports success.
+- the dedicated private Roblox test experience/place exists;
+- the OCALE key is restricted to this test experience with `universe-places:write` and `luau-execution-sessions:write`;
+- `ROBLOX_API_KEY` is configured as a GitHub Actions repository secret;
+- `OCALE Runtime Tests` executes rather than skips;
+- the Jest/OCALE run succeeds.
 
-Only after this gate should the interactive Studio smoke-test checklist begin.
+Only after that gate should the interactive Studio smoke-test checklist begin.
