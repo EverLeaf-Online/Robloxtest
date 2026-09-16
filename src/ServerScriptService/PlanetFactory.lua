@@ -41,26 +41,27 @@ local function setPartDefaults(part)
 	part.BottomSurface = Enum.SurfaceType.Smooth
 end
 
+local function modelCenter(model)
+	return Vector3.new(
+		model:GetAttribute("CenterX") or 0,
+		model:GetAttribute("CenterY") or 0,
+		model:GetAttribute("CenterZ") or 0
+	)
+end
+
 local function createTilePart(model, index)
 	local tilesFolder = model:FindFirstChild("Tiles")
 	if not tilesFolder then
 		return nil
 	end
-
 	local part = Instance.new("Part")
 	part.Name = "Tile_" .. tostring(index)
 	part.Size = config.TILE_SIZE
 	setPartDefaults(part)
 	part.CanQuery = true
 	part:SetAttribute("TileIndex", index)
-
-	local center = Vector3.new(
-		model:GetAttribute("CenterX") or 0,
-		model:GetAttribute("CenterY") or 0,
-		model:GetAttribute("CenterZ") or 0
-	)
 	local normal = PlanetMath.getDirection(index)
-	local pos = center + normal * config.TILE_RADIUS
+	local pos = modelCenter(model) + normal * config.TILE_RADIUS
 	part.CFrame = PlanetMath.getCFrameFromNormal(pos, normal)
 	part.Parent = tilesFolder
 	return part
@@ -79,6 +80,83 @@ local function createAtmosphere(model, position)
 	atmosphere.Color = Color3.fromRGB(84, 178, 255)
 	atmosphere.Transparency = 0.91
 	atmosphere.Parent = model
+end
+
+function PlanetFactory.getTileCFrame(model, index)
+	local normal = PlanetMath.getDirection(index)
+	local pos = modelCenter(model) + normal * config.TILE_RADIUS
+	return PlanetMath.getCFrameFromNormal(pos, normal)
+end
+
+local function clearTileDetail(model, index)
+	local details = model:FindFirstChild("Details")
+	local existing = details and details:FindFirstChild("Detail_" .. tostring(index))
+	if existing then
+		existing:Destroy()
+	end
+end
+
+function PlanetFactory.refreshTileDetail(model, index, tileType)
+	clearTileDetail(model, index)
+	if tileType ~= config.TILE.Plant and tileType ~= config.TILE.GlowPlant then
+		return
+	end
+	local details = model:FindFirstChild("Details")
+	if not details then
+		return
+	end
+
+	local detail = Instance.new("Model")
+	detail.Name = "Detail_" .. tostring(index)
+	detail:SetAttribute("TileIndex", index)
+	detail.Parent = details
+	local cf = PlanetFactory.getTileCFrame(model, index)
+
+	if tileType == config.TILE.Plant then
+		local trunk = Instance.new("Part")
+		trunk.Name = "Trunk"
+		trunk.Size = Vector3.new(0.7, 2.8, 0.7)
+		setPartDefaults(trunk)
+		trunk.CanQuery = false
+		trunk.Material = Enum.Material.Wood
+		trunk.Color = Color3.fromRGB(105, 72, 45)
+		trunk.CFrame = cf * CFrame.new(math.sin(index * 1.7) * 1.2, 1.8, math.cos(index * 2.1) * 1.2)
+		trunk.Parent = detail
+
+		local canopy = Instance.new("Part")
+		canopy.Name = "Canopy"
+		canopy.Shape = Enum.PartType.Ball
+		canopy.Size = Vector3.new(2.8, 2.8, 2.8)
+		setPartDefaults(canopy)
+		canopy.CanQuery = false
+		canopy.Material = Enum.Material.Grass
+		canopy.Color = Color3.fromRGB(48, 172, 76)
+		canopy.CFrame = trunk.CFrame * CFrame.new(0, 2.2, 0)
+		canopy.Parent = detail
+	else
+		for crystalIndex = 1, 3 do
+			local height = crystalIndex == 1 and 3.5 or 2.4
+			local angle = (crystalIndex - 1) * math.pi * 2 / 3 + index * 0.21
+			local radius = crystalIndex == 1 and 0 or 1.1
+			local crystal = Instance.new("Part")
+			crystal.Name = "Crystal_" .. crystalIndex
+			crystal.Size = Vector3.new(0.7, height, 0.7)
+			setPartDefaults(crystal)
+			crystal.CanQuery = false
+			crystal.Material = Enum.Material.Neon
+			crystal.Color = config.COLORS.GlowPlant
+			crystal.CFrame = cf * CFrame.new(math.cos(angle) * radius, height * 0.65, math.sin(angle) * radius)
+			crystal.Parent = detail
+			if crystalIndex == 1 then
+				local light = Instance.new("PointLight")
+				light.Color = config.COLORS.GlowPlant
+				light.Brightness = 0.9
+				light.Range = 9
+				light.Shadows = false
+				light.Parent = crystal
+			end
+		end
+	end
 end
 
 function PlanetFactory.applyTileVisual(tilePart, tileType, index, cosmicSkin)
@@ -126,17 +204,17 @@ function PlanetFactory.createPlanetModel(player, position, cosmicSkin)
 	local tilesFolder = Instance.new("Folder")
 	tilesFolder.Name = "Tiles"
 	tilesFolder.Parent = model
-
+	local detailsFolder = Instance.new("Folder")
+	detailsFolder.Name = "Details"
+	detailsFolder.Parent = model
 	local objectsFolder = Instance.new("Folder")
 	objectsFolder.Name = "Objects"
 	objectsFolder.Parent = model
-
 	createAtmosphere(model, position)
 
 	for index = 0, PlanetMath.getTileCount() - 1 do
 		createTilePart(model, index)
 	end
-
 	model:SetAttribute("Ready", true)
 	return model
 end
@@ -152,6 +230,7 @@ function PlanetFactory.setTile(model, index, tileType)
 		return false
 	end
 	PlanetFactory.applyTileVisual(tilePart, tileType, index, model:GetAttribute("CosmicSkin") == true)
+	PlanetFactory.refreshTileDetail(model, index, tileType)
 	return true
 end
 
@@ -164,19 +243,9 @@ function PlanetFactory.createTiles(model, tiles, cosmicSkin)
 		local tilePart = PlanetFactory.getTilePart(model, index) or createTilePart(model, index)
 		if tilePart then
 			PlanetFactory.applyTileVisual(tilePart, tileType, index, cosmicSkin)
+			PlanetFactory.refreshTileDetail(model, index, tileType)
 		end
 	end
-end
-
-function PlanetFactory.getTileCFrame(model, index)
-	local center = Vector3.new(
-		model:GetAttribute("CenterX") or 0,
-		model:GetAttribute("CenterY") or 0,
-		model:GetAttribute("CenterZ") or 0
-	)
-	local normal = PlanetMath.getDirection(index)
-	local pos = center + normal * config.TILE_RADIUS
-	return PlanetMath.getCFrameFromNormal(pos, normal)
 end
 
 function PlanetFactory.spawnAnimal(model, tileIndex, animalType)
@@ -204,14 +273,14 @@ function PlanetFactory.spawnAnimal(model, tileIndex, animalType)
 	billboard.StudsOffset = Vector3.new(0, 3, 0)
 	billboard.AlwaysOnTop = true
 	billboard.Parent = part
-	local label = Instance.new("TextLabel")
-	label.BackgroundTransparency = 1
-	label.Size = UDim2.fromScale(1, 1)
-	label.TextScaled = true
-	label.Font = Enum.Font.GothamBold
-	label.TextColor3 = Color3.new(1, 1, 1)
-	label.Text = animalType == "Fish" and "🐟" or "🐇"
-	label.Parent = billboard
+	local icon = Instance.new("TextLabel")
+	icon.BackgroundTransparency = 1
+	icon.Size = UDim2.fromScale(1, 1)
+	icon.TextScaled = true
+	icon.Font = Enum.Font.GothamBold
+	icon.TextColor3 = Color3.new(1, 1, 1)
+	icon.Text = animalType == "Fish" and "🐟" or "🐇"
+	icon.Parent = billboard
 	return part
 end
 
@@ -255,11 +324,7 @@ function PlanetFactory.spawnSettlement(model, tileIndex)
 end
 
 function PlanetFactory.spawnMoon(model)
-	local center = Vector3.new(
-		model:GetAttribute("CenterX") or 0,
-		model:GetAttribute("CenterY") or 0,
-		model:GetAttribute("CenterZ") or 0
-	)
+	local center = modelCenter(model)
 	local moon = Instance.new("Part")
 	moon.Name = "Moon"
 	moon.Shape = Enum.PartType.Ball
