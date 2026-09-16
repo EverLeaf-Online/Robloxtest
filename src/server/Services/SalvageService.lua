@@ -55,6 +55,15 @@ local function setNodeActive(nodeId: string, active: boolean)
 	end
 end
 
+local function claimNode(nodeId: string): boolean
+	if nodeActive[nodeId] ~= true then
+		return false
+	end
+
+	setNodeActive(nodeId, false)
+	return true
+end
+
 local function makeRewards(zoneId: number, firstCollect: boolean): { [string]: number }
 	local zone = Zones[zoneId]
 	assert(zone ~= nil, "salvage node must reference a configured zone")
@@ -128,6 +137,13 @@ function SalvageService.Collect(player: Player, nodeId: any)
 		return
 	end
 
+	-- Claim synchronously before any profile work so two players cannot both collect
+	-- the same node while their separate profile transactions are running.
+	if not claimNode(nodeId) then
+		StateService.ActionResult(player, RemoteNames.RequestCollect, false, "NODE_RESPAWNING", nil)
+		return
+	end
+
 	local firstCollect = data.Tutorial.Milestones.FirstScrap ~= true
 	local rewards = makeRewards(authoritativeZoneId, firstCollect)
 
@@ -148,6 +164,7 @@ function SalvageService.Collect(player: Player, nodeId: any)
 	end)
 
 	if not executed then
+		setNodeActive(nodeId, true)
 		StateService.ActionResult(
 			player,
 			RemoteNames.RequestCollect,
@@ -158,6 +175,7 @@ function SalvageService.Collect(player: Player, nodeId: any)
 		return
 	end
 	if typeof(transactionResult) ~= "table" then
+		setNodeActive(nodeId, true)
 		StateService.ActionResult(
 			player,
 			RemoteNames.RequestCollect,
@@ -176,10 +194,10 @@ function SalvageService.Collect(player: Player, nodeId: any)
 		transactionResult.Payload
 	)
 	if transactionResult.Success ~= true then
+		setNodeActive(nodeId, true)
 		return
 	end
 
-	setNodeActive(nodeId, false)
 	StateService.PushSnapshot(player)
 	task.delay(GameConfig.World.NodeRespawnSeconds, function()
 		setNodeActive(nodeId, true)
