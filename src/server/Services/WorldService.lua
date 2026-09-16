@@ -127,19 +127,23 @@ local function buildFactoryPlot(parent: Folder, plotId: number, center: Vector3)
 	addBillboard(sign, ("Factory Plot %d\nUnclaimed"):format(plotId), "OwnerLabel")
 	plotSigns[plotId] = sign
 
-	local processor = makePart(plot, "Processor", Vector3.new(11, 8, 9), center + Vector3.new(-15, 4.5, 4))
+	local processor =
+		makePart(plot, "Processor", Vector3.new(11, 8, 9), center + Vector3.new(-15, 4.5, 4))
 	processor.Material = Enum.Material.Metal
 	tagPlotPart(processor, plotId)
 
-	local wiringControl = makePart(plot, "MakeWiring", Vector3.new(5, 2, 4), center + Vector3.new(-18, 2, -5))
+	local wiringControl =
+		makePart(plot, "MakeWiring", Vector3.new(5, 2, 4), center + Vector3.new(-18, 2, -5))
 	registerProcessorControl(plotId, wiringControl, "MakeWiring")
 	addPrompt(wiringControl, "Process", "Make Wiring")
 
-	local coreControl = makePart(plot, "RecoverCore", Vector3.new(5, 2, 4), center + Vector3.new(-12, 2, -5))
+	local coreControl =
+		makePart(plot, "RecoverCore", Vector3.new(5, 2, 4), center + Vector3.new(-12, 2, -5))
 	registerProcessorControl(plotId, coreControl, "RecoverCore")
 	addPrompt(coreControl, "Process", "Recover Core")
 
-	local assembler = makePart(plot, "Assembler", Vector3.new(11, 8, 9), center + Vector3.new(0, 4.5, 4))
+	local assembler =
+		makePart(plot, "Assembler", Vector3.new(11, 8, 9), center + Vector3.new(0, 4.5, 4))
 	assembler.Material = Enum.Material.Metal
 	tagPlotPart(assembler, plotId)
 	addPrompt(assembler, "Assemble", "Build Robot")
@@ -182,7 +186,8 @@ local function buildPlots(folder: Folder)
 end
 
 local function buildStarterZone(folder: Folder)
-	local floor = makePart(folder, "StarterYardFloor", Vector3.new(260, 1, 190), Vector3.new(0, 0, 10))
+	local floor =
+		makePart(folder, "StarterYardFloor", Vector3.new(260, 1, 190), Vector3.new(0, 0, 10))
 	floor.Material = Enum.Material.Concrete
 
 	local spawn = Instance.new("SpawnLocation")
@@ -218,7 +223,8 @@ local function buildStarterZone(folder: Folder)
 	buildPlots(folder)
 
 	local zoneTwo = Zones[2]
-	local gate = makePart(folder, "CircuitYardGate", Vector3.new(8, 10, 3), Vector3.new(118, 5.5, -24))
+	local gate =
+		makePart(folder, "CircuitYardGate", Vector3.new(8, 10, 3), Vector3.new(118, 5.5, -24))
 	gate.Material = Enum.Material.Metal
 	gate:SetAttribute("TargetZone", 2)
 	addPrompt(gate, "Unlock / Travel", zoneTwo.DisplayName)
@@ -246,7 +252,8 @@ local function buildCircuitYard(folder: Folder)
 	arrival.CanCollide = false
 	zoneArrivalById[2] = arrival
 
-	local returnPortal = makePart(zoneFolder, "ReturnPortal", Vector3.new(7, 7, 3), Vector3.new(287, 3.5, 0))
+	local returnPortal =
+		makePart(zoneFolder, "ReturnPortal", Vector3.new(7, 7, 3), Vector3.new(287, 3.5, 0))
 	returnPortal.Material = Enum.Material.Metal
 	addPrompt(returnPortal, "Return", Zones[1].DisplayName)
 	zoneReturnById[2] = returnPortal
