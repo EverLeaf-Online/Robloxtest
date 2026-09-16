@@ -1,6 +1,6 @@
 --!strict
 
-local RemoteService = require(script.Services.RemoteService)
+local RemoteService = require(script.Parent.Services.RemoteService)
 
 local function start()
 	RemoteService.Init()
