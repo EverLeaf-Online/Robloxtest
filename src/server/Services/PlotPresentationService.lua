@@ -1,5 +1,8 @@
 --!strict
 
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
 local WorldService = require(script.Parent.WorldService)
 
 local PlotPresentationService = {}
@@ -32,9 +35,9 @@ local function addLabel(part: BasePart, text: string)
 	local billboard = Instance.new("BillboardGui")
 	billboard.Name = "StationLabel"
 	billboard.Adornee = part
-	billboard.Size = UDim2.fromOffset(160, 34)
-	billboard.StudsOffset = Vector3.new(0, part.Size.Y / 2 + 1.8, 0)
-	billboard.MaxDistance = 70
+	billboard.Size = UDim2.fromOffset(140, 30)
+	billboard.StudsOffset = Vector3.new(0, part.Size.Y / 2 + 1.5, 0)
+	billboard.MaxDistance = 55
 	billboard.Parent = part
 
 	local label = Instance.new("TextLabel")
@@ -51,6 +54,18 @@ local function addLabel(part: BasePart, text: string)
 	local corner = Instance.new("UICorner")
 	corner.CornerRadius = UDim.new(0, 6)
 	corner.Parent = label
+end
+
+local function addUIPrompt(part: BasePart, panelName: string, objectText: string)
+	local prompt = Instance.new("ProximityPrompt")
+	prompt.Name = ("Open%sPrompt"):format(panelName)
+	prompt.ActionText = "Open"
+	prompt.ObjectText = objectText
+	prompt.HoldDuration = 0
+	prompt.MaxActivationDistance = GameConfig.World.PromptActivationDistance
+	prompt.RequiresLineOfSight = false
+	prompt:SetAttribute("LocalUIPanel", panelName)
+	prompt.Parent = part
 end
 
 local function buildStorage(plot: Model, plotId: number, center: Vector3)
@@ -97,6 +112,7 @@ local function buildStations(plot: Model, plotId: number, center: Vector3)
 		Enum.Material.Metal
 	)
 	addLabel(indexTerminal, "ROBOT INDEX")
+	addUIPrompt(indexTerminal, "Index", "Robot Index")
 
 	local upgradeConsole = makePart(
 		plot,
@@ -108,6 +124,7 @@ local function buildStations(plot: Model, plotId: number, center: Vector3)
 		Enum.Material.Metal
 	)
 	addLabel(upgradeConsole, "UPGRADES")
+	addUIPrompt(upgradeConsole, "Upgrades", "Factory Upgrades")
 end
 
 local function buildExpansionSockets(plot: Model, plotId: number, center: Vector3)
