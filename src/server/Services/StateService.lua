@@ -11,11 +11,7 @@ local StateService = {}
 local initialized = false
 
 local function cloneDictionary(source: any): any
-	local result = {}
-	for key, value in source do
-		result[key] = value
-	end
-	return result
+	return table.clone(source)
 end
 
 local function cloneRobots(ownedByUid: any): any
