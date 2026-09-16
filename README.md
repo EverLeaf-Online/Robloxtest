@@ -30,7 +30,7 @@ We are optimizing for:
 - `docs/MARKET_RESEARCH_2026-09-16.md` — current Roblox market, discovery, retention, and competitor findings.
 - `docs/PRODUCT_STRATEGY.md` — product requirements, concept shortlist, and current recommended direction.
 - `docs/MONETIZATION_AND_SECURITY.md` — revenue architecture, compliance, persistence, receipts, and exploit threat model.
-- `docs/EXPLOIT_THREAT_RESEARCH.md` — defensive analysis of historical public exploit repositories, translated into server-authoritative simulator requirements.
+- `docs/EXPLOIT_THREAT_RESEARCH.md` — defensive analysis of historical public exploit and reverse-engineering repositories, including remote spying and runtime introspection, translated into server-authoritative simulator requirements.
 - `docs/VALIDATION_PLAN.md` — prototype and KPI validation gates before scaling development or advertising.
 
 ## Source hierarchy
@@ -55,14 +55,17 @@ When implementation guidance conflicts, use sources in this order:
 
 The previous **Grow a Tiny Planet** source was intentionally removed from `main` on 2026-09-16, but remains recoverable from Git history. Commit `79875d7599e4ddd44d5433e9683ed5c1e07335ff` is a useful pre-deletion reference for persistence, receipt handling, and service organization. We will selectively reuse proven architectural ideas rather than restoring the old game wholesale.
 
-## Reference exploit repositories
+## Reference exploit / reverse-engineering repositories
 
 The following repositories are treated only as historical exploit/threat catalogs:
 
 - `https://github.com/retpirato/Roblox-Scripts`
 - `https://github.com/Stefanuk12/ROBLOX`
+- `https://github.com/Upbolt/Hydroxide`
 
-Their client exploit scripts are **not production dependencies and must never be imported into the game**. They are used to identify threat classes such as remote spoofing, autofarming, teleport collection, anti-cheat bypass, client function hooking, hidden-key extraction, ESP, and progression automation so the simulator can be hardened server-side from the beginning.
+Their exploit/reverse-engineering code is **not a production dependency and must never be imported into the game**. They are used to identify threat classes such as remote spoofing and capture, autofarming, teleport collection, anti-cheat bypass, client function hooking, runtime constant/upvalue inspection, hidden-key extraction, ESP, and progression automation so the simulator can be hardened server-side from the beginning.
+
+The security assumption is simple: if a value or decision exists on the client, a capable attacker may be able to observe or alter it. Durable value must therefore be authorized and calculated server-side.
 
 ## Reference-only game archive
 
