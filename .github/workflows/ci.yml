@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - "feat/**"
   pull_request:
 
 permissions:
@@ -17,7 +16,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install Rokit
         shell: bash
