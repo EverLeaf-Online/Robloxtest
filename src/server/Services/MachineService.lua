@@ -313,12 +313,21 @@ local function completeAssembler(player: Player, now: number): boolean
 end
 
 function MachineService.PollPlayer(player: Player)
-	if not DataService.IsReady(player) then
+	local data = DataService.GetData(player)
+	if data == nil then
 		return
 	end
+
 	local now = os.time()
-	completeProcessor(player, now)
-	completeAssembler(player, now)
+	local processorJob = data.Machines.ProcessorJob
+	if processorJob.Active and processorJob.CompletesAt <= now then
+		completeProcessor(player, now)
+	end
+
+	local assemblerJob = data.Machines.AssemblerJob
+	if assemblerJob.Active and assemblerJob.CompletesAt <= now then
+		completeAssembler(player, now)
+	end
 end
 
 local function rejectForeignPlot(player: Player, actionName: string)
