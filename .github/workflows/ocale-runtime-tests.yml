@@ -48,10 +48,38 @@ jobs:
             "$ROKIT_INSTALLER_URL" | bash -s -- 1.2.0
           echo "$HOME/.rokit/bin" >> "$GITHUB_PATH"
 
-      - name: Install pinned toolchain
+      - name: Install pinned project toolchain
         if: steps.config.outputs.ready == 'true'
         shell: bash
         run: "$HOME/.rokit/bin/rokit install --no-trust-check"
+
+      - name: Install pinned OCALE CLI
+        if: steps.config.outputs.ready == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROCALE_VERSION="0.1.3"
+          ROCALE_SHA256="93b71143ecda25ab67c075843f4d82d283d600a25ea1ae27a7d70183bda1f1f2"
+          ROCALE_URL="https://github.com/Roblox/rocale-cli/releases/download/v${ROCALE_VERSION}/rocale-cli-linux-x86_64.zip"
+          ARCHIVE="$RUNNER_TEMP/rocale-cli.zip"
+          EXTRACT_DIR="$RUNNER_TEMP/rocale-cli"
+          INSTALL_DIR="$HOME/.local/bin"
+
+          curl --fail --silent --show-error --location \
+            --retry 4 --retry-delay 2 --retry-all-errors \
+            "$ROCALE_URL" --output "$ARCHIVE"
+          echo "${ROCALE_SHA256}  ${ARCHIVE}" | sha256sum --check --strict
+
+          rm -rf "$EXTRACT_DIR"
+          mkdir -p "$EXTRACT_DIR" "$INSTALL_DIR"
+          unzip -q "$ARCHIVE" -d "$EXTRACT_DIR"
+          ROCALE_BIN="$(find "$EXTRACT_DIR" -type f -name 'rocale-cli' -print -quit)"
+          if [[ -z "$ROCALE_BIN" ]]; then
+            echo "::error::rocale-cli binary was not found in the pinned release archive."
+            exit 1
+          fi
+          install -m 0755 "$ROCALE_BIN" "$INSTALL_DIR/rocale-cli"
+          echo "$INSTALL_DIR" >> "$GITHUB_PATH"
 
       - name: Install Wally packages
         if: steps.config.outputs.ready == 'true'
