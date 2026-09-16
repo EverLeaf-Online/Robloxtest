@@ -44,7 +44,7 @@ end
 
 Players.PlayerRemoving:Connect(function(player)
 	initializing[player] = nil
-	DataManager.savePlayer(player)
+	DataManager.savePlayer(player, true)
 	GameService.cleanup(player)
 	DataManager.unloadPlayer(player)
 end)
@@ -63,14 +63,15 @@ getPlanetState.OnServerInvoke = function(player)
 	return GameService.getPlanetStateForClient(player)
 end
 
+-- Periodic safety flush. DataManager writes only players that are actually dirty.
 task.spawn(function()
 	while true do
 		task.wait(60)
-		DataManager.saveAll()
+		DataManager.saveAll(false)
 	end
 end)
 
 game:BindToClose(function()
-	DataManager.saveAll()
+	DataManager.saveAll(true)
 	task.wait(2)
 end)
