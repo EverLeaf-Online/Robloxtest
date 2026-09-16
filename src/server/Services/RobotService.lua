@@ -152,10 +152,11 @@ function RobotService.Unassign(player: Player, robotUid: any)
 		end
 
 		data.Assignments.WorkPads[padId] = nil
-		return true, result(true, "ROBOT_UNASSIGNED", {
-			RobotUid = robotUid,
-			PadId = padId,
-		})
+		return true,
+			result(true, "ROBOT_UNASSIGNED", {
+				RobotUid = robotUid,
+				PadId = padId,
+			})
 	end)
 
 	sendResult(player, RemoteNames.RequestUnassignRobot, executed, transactionResult)
