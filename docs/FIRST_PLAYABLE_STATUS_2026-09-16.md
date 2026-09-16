@@ -7,7 +7,7 @@ This is the execution status for the first playable graybox. It separates implem
 
 ## Implemented; static/build checks green
 
-The complete accumulated first-playable code head immediately before this documentation refresh passed the repository formatting, lint, dependency-lock, shipping-build, OCALE-runner-syntax, and test-project-build gates in **CI #159**. Runtime behavior still belongs to the Studio/OCALE section below.
+The complete accumulated first-playable code head passed the repository formatting, lint, dependency-lock, shipping-build, OCALE-runner-syntax, and test-project-build gates in **CI #159**. The first documentation refresh then passed the same branch gate in **CI #160**. Runtime behavior still belongs to the Studio/OCALE section below.
 
 ### World / multiplayer plots
 
@@ -162,7 +162,10 @@ Jest spec files currently exist for:
 - transaction rollback, thrown callbacks, prepare-commit failure, successful draft commit, and snapshot/restore isolation;
 - receipt-history normalization, duplicate handling, sparse/arbitrary keys, malformed IDs, and bounded history.
 
-The complete accumulated code hardening head passed **CI #159** on 2026-09-16. This documentation refresh creates a newer branch head and still requires its own CI pass before that documentation head is called green.
+Latest verification:
+
+- complete accumulated gameplay/security/runtime-cost code head: **CI #159 green**;
+- first refreshed status-document head: **CI #160 green**.
 
 **Important:** GitHub CI does not currently execute the Jest suite. It proves the test project and spec source build/lint cleanly, not that the specs passed in a Roblox runtime. Actual Jest execution is a Studio/OCALE runtime gate.
 
