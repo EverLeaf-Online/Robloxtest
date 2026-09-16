@@ -113,11 +113,8 @@ function ProfileSanitizer.Sanitize(data: any)
 
 	local assignments = ensureTable(data, "Assignments")
 	local workPads = ensureTable(assignments, "WorkPads")
-	local normalizedWorkPads = AssignmentRules.NormalizeWorkPads(
-		workPads,
-		ownedByUid,
-		GameConfig.Factory.MaxWorkSlots
-	)
+	local normalizedWorkPads =
+		AssignmentRules.NormalizeWorkPads(workPads, ownedByUid, GameConfig.Factory.MaxWorkSlots)
 	table.clear(workPads)
 	for padId, robotUid in normalizedWorkPads do
 		workPads[padId] = robotUid
