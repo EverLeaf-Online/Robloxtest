@@ -92,4 +92,4 @@ jobs:
       - name: Execute Jest in Roblox Open Cloud
         if: steps.config.outputs.ready == 'true'
         shell: bash
-        run: ./scripts/run-ocale-tests.sh
+        run: bash scripts/run-ocale-tests.sh
