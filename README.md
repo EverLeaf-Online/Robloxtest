@@ -1,15 +1,17 @@
 # Robloxtest — Profit-First Roblox Simulation Project
 
-Status: **Research / product design**  
+Status: **Production planning locked / implementation not yet started**  
 Research baseline: **2026-09-16**
 
 This repository is being rebuilt from a clean `main` branch for a new Roblox simulation game whose primary business objective is sustainable Robux revenue and eventual DevEx profit.
 
 ## Current rule
 
-**Do not begin production gameplay implementation until the research and product brief are locked.**
+**Implementation follows `docs/MASTER_PRODUCTION_PLAN.md`. Research findings, playtest data, or platform changes may justify deliberate revisions, but gameplay should not drift ad hoc.**
 
 For this project, "research" does **not** mean only identifying a trending genre. It means understanding the full production system required to design, build, secure, test, publish, monetize, measure, operate, update, and grow the game. The master research gate is documented in `docs/ROBLOX_GAME_PRODUCTION_RESEARCH_MASTER_2026-09-16.md`.
+
+The first production candidate is **Scrap-to-Bot Factory**: collect salvage, process it through a visibly growing personal factory, assemble collectible robots, assign those robots to automate production, expand into better zones, and eventually progress into higher factory tiers.
 
 We are optimizing for:
 
@@ -23,8 +25,9 @@ We are optimizing for:
 - server-authoritative economy and purchase handling;
 - monetization that accelerates or customizes play without making free progression non-viable.
 
-## Research documents
+## Planning and research documents
 
+- `docs/MASTER_PRODUCTION_PLAN.md` — **implementation blueprint**: locked v1 scope, first-session/30-minute progression, economy rules, profile model, service architecture, networking contract, security gates, UI/art plan, analytics, monetization, testing, production phases, exit criteria, and implementation order.
 - `docs/ROBLOX_GAME_PRODUCTION_RESEARCH_MASTER_2026-09-16.md` — **master research gate** covering product design, architecture, networking, exploit resistance, persistence, economy, monetization, analytics, UI/input, performance, testing, assets, publishing/operations, safety, discovery, and the remaining unanswered research questions before production starts.
 - `docs/ROBLOX_CREATOR_HUB_BASELINE.md` — **primary implementation authority**, converting current official Roblox Creator Hub guidance into project rules for design, analytics, monetization, security, persistence, mobile UX, and performance.
 - `docs/ROBLOX_OFFICIAL_GITHUB_RESEARCH_2026-09-16.md` — audit of the official `Roblox` GitHub organization, including current UI/testing/Open Cloud/data-operations/asset tooling and stale/archived projects to avoid as new foundations.
