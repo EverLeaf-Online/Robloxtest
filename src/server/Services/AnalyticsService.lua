@@ -22,6 +22,8 @@ local milestoneSteps = table.freeze({
 	{ Key = "FirstBotAssigned", Step = 6, Name = "FirstBotAssigned" },
 	{ Key = "FirstIncomeEarned", Step = 7, Name = "FirstIncomeEarned" },
 	{ Key = "FirstUpgrade", Step = 8, Name = "FirstUpgrade" },
+	{ Key = "FirstZoneGoalSeen", Step = 9, Name = "FirstZoneGoalSeen" },
+	{ Key = "FirstZoneUnlock", Step = 10, Name = "FirstZoneUnlock" },
 })
 
 type SessionState = {
