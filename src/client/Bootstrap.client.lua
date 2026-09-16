@@ -3,6 +3,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local RemoteNames = require(ReplicatedStorage.Shared.Networking.RemoteNames)
+local PlotController = require(script.Parent.Controllers.PlotController)
 local UIController = require(script.Parent.Controllers.UIController)
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 
@@ -19,6 +20,7 @@ do
 	)
 end
 
+PlotController.Init()
 UIController.Init()
 
 print("[ScrapToBotFactory] Client foundation initialized")
