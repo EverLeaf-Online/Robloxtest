@@ -7,7 +7,7 @@ This is the execution status for the first playable graybox. It separates implem
 
 ## Implemented; static/build checks green
 
-The systems below are implemented in source and pass the current repository formatting, lint, dependency-lock, shipping-build, OCALE-runner-syntax, and test-project-build gates. Runtime behavior still belongs to the Studio/OCALE section below.
+The systems below are implemented in source. The complete code head immediately before this documentation refresh passed the current repository formatting, lint, dependency-lock, shipping-build, OCALE-runner-syntax, and test-project-build gates in **CI #113**. This documentation-only commit still requires its own CI run before the branch head is called green. Runtime behavior still belongs to the Studio/OCALE section below.
 
 ### World / multiplayer plots
 
@@ -127,7 +127,7 @@ Jest spec files currently exist for:
 - assignment normalization, including duplicate/invalid/locked-pad cleanup;
 - collision-safe robot UID allocation, wraparound, malformed counters, and bounded exhaustion behavior.
 
-The full accumulated hardening head passed **CI #113** on 2026-09-16.
+The full accumulated code hardening head passed **CI #113** on 2026-09-16. The current documentation-only head is pending its own CI run.
 
 **Important:** GitHub CI does not currently execute the Jest suite. It proves the test project and spec source build/lint cleanly, not that the specs passed in a Roblox runtime. Actual Jest execution is a Studio/OCALE runtime gate.
 
