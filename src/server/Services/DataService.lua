@@ -104,21 +104,30 @@ function DataService.GetData(player: Player): any?
 	return profile.Data
 end
 
-function DataService.Mutate(player: Player, mutator: (any) -> any?): (boolean, any?)
+function DataService.Transaction(player: Player, transaction: (any) -> (boolean, any?)): (boolean, any?)
 	local profile = profiles[player]
 	if profile == nil then
 		return false, "PROFILE_NOT_READY"
 	end
 
-	local ok, result = pcall(mutator, profile.Data)
+	local ok, shouldCommit, result = pcall(transaction, profile.Data)
 	if not ok then
-		warn(("[DataService] Mutation failed for %d: %s"):format(player.UserId, tostring(result)))
-		return false, "MUTATION_FAILED"
+		warn(("[DataService] Transaction failed for %d: %s"):format(player.UserId, tostring(shouldCommit)))
+		return false, "TRANSACTION_FAILED"
 	end
 
-	profile.Data.Revision += 1
-	ProfileSanitizer.Sanitize(profile.Data)
+	if shouldCommit == true then
+		profile.Data.Revision += 1
+		ProfileSanitizer.Sanitize(profile.Data)
+	end
+
 	return true, result
+end
+
+function DataService.Mutate(player: Player, mutator: (any) -> any?): (boolean, any?)
+	return DataService.Transaction(player, function(data)
+		return true, mutator(data)
+	end)
 end
 
 function DataService.ReleasePlayer(player: Player)
