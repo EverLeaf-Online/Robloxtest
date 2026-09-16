@@ -144,7 +144,8 @@ function ProfileSanitizer.Sanitize(data: any)
 	machines.AssemblerLevel =
 		FactoryRules.NormalizeUpgradeLevel("AssemblerSpeed", machines.AssemblerLevel)
 	machines.StorageLevel = FactoryRules.NormalizeUpgradeLevel("Storage", machines.StorageLevel)
-	machines.WorkSlotsLevel = FactoryRules.NormalizeUpgradeLevel("WorkSlots", machines.WorkSlotsLevel)
+	machines.WorkSlotsLevel =
+		FactoryRules.NormalizeUpgradeLevel("WorkSlots", machines.WorkSlotsLevel)
 	sanitizeProcessorJob(machines)
 	sanitizeAssemblerJob(machines)
 
