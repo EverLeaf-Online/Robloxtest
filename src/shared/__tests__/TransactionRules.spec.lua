@@ -10,6 +10,26 @@ local it = JestGlobals.it
 local TransactionRules = require(script.Parent.Parent.Domain.TransactionRules)
 
 describe("TransactionRules", function()
+	it("creates isolated snapshots and restores nested contents", function()
+		local live = {
+			Credits = 100,
+			Nested = { Value = 5 },
+		}
+		local snapshot = TransactionRules.Snapshot(live)
+
+		live.Credits = 1
+		live.Nested.Value = 99
+		expect(snapshot.Credits).toBe(100)
+		expect(snapshot.Nested.Value).toBe(5)
+
+		TransactionRules.Restore(live, snapshot)
+		expect(live.Credits).toBe(100)
+		expect(live.Nested.Value).toBe(5)
+
+		live.Nested.Value = 12
+		expect(snapshot.Nested.Value).toBe(5)
+	end)
+
 	it("does not leak draft mutations when a transaction declines commit", function()
 		local live = {
 			Credits = 100,
