@@ -38,6 +38,10 @@ local upgradeOrder = table.freeze({
 	"WorkSlots",
 })
 
+local function getRemote(name: string): RemoteEvent
+	return Remotes:WaitForChild(name) :: RemoteEvent
+end
+
 local function formatNumber(value: number): string
 	if value >= 1_000_000_000 then
 		return ("%.1fB"):format(value / 1_000_000_000)
@@ -263,8 +267,7 @@ local function buildRobotRows(snapshot: any): any
 						canAssign,
 						if canAssign
 							then function()
-								(Remotes:WaitForChild(RemoteNames.RequestAssignRobot) :: RemoteEvent)
-									:FireServer(uid, freePad)
+								getRemote(RemoteNames.RequestAssignRobot):FireServer(uid, freePad)
 							end
 							else nil
 					),
@@ -279,8 +282,7 @@ local function buildRobotRows(snapshot: any): any
 						canRecycle,
 						if canRecycle
 							then function()
-								(Remotes:WaitForChild(RemoteNames.RequestSellRobot) :: RemoteEvent)
-									:FireServer(uid)
+								getRemote(RemoteNames.RequestSellRobot):FireServer(uid)
 							end
 							else nil
 					),
@@ -357,8 +359,7 @@ local function buildUpgradeRows(snapshot: any): any
 					enabled,
 					if nextLevel
 						then function()
-							(Remotes:WaitForChild(RemoteNames.RequestUpgrade) :: RemoteEvent)
-								:FireServer(upgradeId)
+							getRemote(RemoteNames.RequestUpgrade):FireServer(upgradeId)
 						end
 						else nil
 				),
@@ -378,9 +379,9 @@ local function App()
 	local compact, setCompact = React.useState(false)
 
 	React.useEffect(function()
-		local stateRemote = Remotes:WaitForChild(RemoteNames.StateSnapshot) :: RemoteEvent
-		local actionRemote = Remotes:WaitForChild(RemoteNames.ActionResult) :: RemoteEvent
-		local requestState = Remotes:WaitForChild(RemoteNames.RequestState) :: RemoteEvent
+		local stateRemote = getRemote(RemoteNames.StateSnapshot)
+		local actionRemote = getRemote(RemoteNames.ActionResult)
+		local requestState = getRemote(RemoteNames.RequestState)
 
 		local stateConnection = stateRemote.OnClientEvent:Connect(function(nextSnapshot)
 			setSnapshot(nextSnapshot)
@@ -559,7 +560,9 @@ local function App()
 					TextXAlignment = Enum.TextXAlignment.Left,
 				}),
 				Bots = React.createElement("TextButton", {
-					BackgroundColor3 = if activeTab == "Bots" then COLORS.AccentDark else COLORS.PanelSoft,
+					BackgroundColor3 = if activeTab == "Bots"
+						then COLORS.AccentDark
+						else COLORS.PanelSoft,
 					Font = Enum.Font.GothamBold,
 					Position = UDim2.new(1, -184, 0.5, -16),
 					Size = UDim2.fromOffset(86, 32),
@@ -618,7 +621,9 @@ local function App()
 				AnchorPoint = Vector2.new(0.5, 1),
 				BackgroundColor3 = if actionSuccess then COLORS.AccentDark else COLORS.Danger,
 				BorderSizePixel = 0,
-				Position = if compact then UDim2.new(0.5, 0, 0.53, -8) else UDim2.new(0.5, 0, 1, -16),
+				Position = if compact
+					then UDim2.new(0.5, 0, 0.53, -8)
+					else UDim2.new(0.5, 0, 1, -16),
 				Size = UDim2.fromOffset(300, 38),
 			}, {
 				Corner = corner(9),
