@@ -11,6 +11,9 @@ local initialized = false
 
 local MOVEMENT_DISTANCE = 2
 local POLL_SECONDS = 0.25
+local ECONOMY_FLUSH_SECONDS = 30
+local CREDIT_CURRENCY = "Credits"
+local GAMEPLAY_TRANSACTION = "Gameplay"
 
 local milestoneSteps = table.freeze({
 	{ Key = "FirstScrap", Step = 3, Name = "FirstScrap" },
@@ -26,7 +29,17 @@ type SessionState = {
 	MovementOrigin: Vector3?,
 }
 
+type PendingEconomySource = {
+	Amount: number,
+	EndingBalance: number,
+}
+
 local sessions: { [Player]: SessionState } = {}
+local pendingCreditSources: { [Player]: { [string]: PendingEconomySource } } = {}
+
+local function isFiniteNonNegative(value: number): boolean
+	return value == value and value ~= math.huge and value ~= -math.huge and value >= 0
+end
 
 local function logOnboardingStep(player: Player, step: number, stepName: string)
 	if RunService:IsStudio() then
@@ -43,6 +56,61 @@ local function logOnboardingStep(player: Player, step: number, stepName: string)
 				player.UserId,
 				tostring(err)
 			)
+		)
+	end
+end
+
+local function logCreditEconomyEvent(
+	player: Player,
+	flowType: Enum.AnalyticsEconomyFlowType,
+	amount: number,
+	endingBalance: number,
+	itemSku: string
+)
+	if RunService:IsStudio() or amount <= 0 then
+		return
+	end
+	if not isFiniteNonNegative(amount) or not isFiniteNonNegative(endingBalance) then
+		return
+	end
+
+	local ok, err = pcall(function()
+		EngineAnalyticsService:LogEconomyEvent(
+			player,
+			flowType,
+			CREDIT_CURRENCY,
+			amount,
+			endingBalance,
+			GAMEPLAY_TRANSACTION,
+			itemSku,
+			{}
+		)
+	end)
+	if not ok then
+		warn(
+			("[AnalyticsService] Failed economy event %s for %d: %s"):format(
+				itemSku,
+				player.UserId,
+				tostring(err)
+			)
+		)
+	end
+end
+
+local function flushCreditSources(player: Player)
+	local bySku = pendingCreditSources[player]
+	if bySku == nil then
+		return
+	end
+	pendingCreditSources[player] = nil
+
+	for itemSku, pending in bySku do
+		logCreditEconomyEvent(
+			player,
+			Enum.AnalyticsEconomyFlowType.Source,
+			pending.Amount,
+			pending.EndingBalance,
+			itemSku
 		)
 	end
 end
@@ -123,6 +191,50 @@ local function checkMilestones(player: Player, state: SessionState)
 	end
 end
 
+function AnalyticsService.RecordCreditSource(
+	player: Player,
+	itemSku: string,
+	amount: number,
+	endingBalance: number
+)
+	if amount <= 0 or not isFiniteNonNegative(amount) or not isFiniteNonNegative(endingBalance) then
+		return
+	end
+
+	local bySku = pendingCreditSources[player]
+	if bySku == nil then
+		bySku = {}
+		pendingCreditSources[player] = bySku
+	end
+
+	local pending = bySku[itemSku]
+	if pending == nil then
+		bySku[itemSku] = {
+			Amount = amount,
+			EndingBalance = endingBalance,
+		}
+		return
+	end
+
+	pending.Amount += amount
+	pending.EndingBalance = endingBalance
+end
+
+function AnalyticsService.RecordCreditSink(
+	player: Player,
+	itemSku: string,
+	amount: number,
+	endingBalance: number
+)
+	logCreditEconomyEvent(
+		player,
+		Enum.AnalyticsEconomyFlowType.Sink,
+		amount,
+		endingBalance,
+		itemSku
+	)
+end
+
 function AnalyticsService.Init()
 	if initialized then
 		return
@@ -134,6 +246,7 @@ function AnalyticsService.Init()
 	end)
 
 	Players.PlayerRemoving:Connect(function(player)
+		flushCreditSources(player)
 		sessions[player] = nil
 	end)
 
@@ -153,6 +266,15 @@ function AnalyticsService.Init()
 				else
 					sessions[player] = nil
 				end
+			end
+		end
+	end)
+
+	task.spawn(function()
+		while true do
+			task.wait(ECONOMY_FLUSH_SECONDS)
+			for player in pendingCreditSources do
+				flushCreditSources(player)
 			end
 		end
 	end)
