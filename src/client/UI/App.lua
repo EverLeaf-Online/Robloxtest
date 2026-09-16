@@ -25,6 +25,20 @@ local COLORS = {
 	Warning = Color3.fromRGB(240, 190, 82),
 }
 
+local rarityColors = table.freeze({
+	Common = Color3.fromRGB(182, 188, 199),
+	Uncommon = Color3.fromRGB(91, 199, 121),
+	Rare = Color3.fromRGB(83, 151, 232),
+	Epic = Color3.fromRGB(186, 95, 229),
+})
+
+local rarityOrder = table.freeze({
+	Common = 1,
+	Uncommon = 2,
+	Rare = 3,
+	Epic = 4,
+})
+
 local upgradeFields = table.freeze({
 	ProcessorSpeed = "ProcessorLevel",
 	AssemblerSpeed = "AssemblerLevel",
@@ -137,14 +151,23 @@ local function statCard(title: string, value: string): any
 	})
 end
 
+local function plotId(snapshot: any): number?
+	if typeof(snapshot.Plot) ~= "table" or typeof(snapshot.Plot.Id) ~= "number" then
+		return nil
+	end
+	return snapshot.Plot.Id
+end
+
 local function getObjective(snapshot: any): (string, string)
 	local milestones = snapshot.Tutorial.Milestones
+	local ownedPlotId = plotId(snapshot)
+	local plotText = if ownedPlotId then (" at your highlighted Plot %d"):format(ownedPlotId) else ""
 	if milestones.FirstScrap ~= true then
 		return "Collect scrap", "Walk to a scrap pile and use its Collect prompt."
 	elseif milestones.FirstProcess ~= true then
-		return "Process materials", "Use the processor console to make wiring or recover a core."
+		return "Process materials", ("Use the processor%s to make wiring or recover a core."):format(plotText)
 	elseif milestones.FirstBotReveal ~= true then
-		return "Build your first bot", "Use the assembler once you have enough materials."
+		return "Build your first bot", ("Use the assembler%s once you have enough materials."):format(plotText)
 	elseif milestones.FirstBotAssigned ~= true then
 		return "Put your bot to work", "Open Bots and assign your new bot to Pad 1."
 	elseif milestones.FirstIncomeEarned ~= true then
@@ -192,10 +215,45 @@ local function countOwnedRobots(snapshot: any): number
 	return count
 end
 
+local function countOwnedRobotId(snapshot: any, robotId: string): number
+	local count = 0
+	for _, owned in snapshot.Robots.OwnedByUid do
+		if owned.RobotId == robotId then
+			count += 1
+		end
+	end
+	return count
+end
+
+local function countRobotDefinitions(): number
+	local count = 0
+	for _ in Robots.Definitions do
+		count += 1
+	end
+	return count
+end
+
+local function countDiscovered(snapshot: any): number
+	local count = 0
+	for robotId in Robots.Definitions do
+		if snapshot.Collection.RobotSeen[robotId] == true then
+			count += 1
+		end
+	end
+	return count
+end
+
 local function machineStatus(snapshot: any, now: number): string
 	local processor = snapshot.Machines.ProcessorJob
 	local assembler = snapshot.Machines.AssemblerJob
 	local lines = {}
+	local ownedPlotId = plotId(snapshot)
+
+	if ownedPlotId then
+		table.insert(lines, ("Factory Plot %d"):format(ownedPlotId))
+	else
+		table.insert(lines, "Factory Plot: assigning...")
+	end
 
 	if processor.Active then
 		local remaining = math.max(0, processor.CompletesAt - now)
@@ -380,6 +438,108 @@ local function buildUpgradeRows(snapshot: any): any
 	return rows
 end
 
+local function buildIndexRows(snapshot: any): any
+	local rows: { [string]: any } = {
+		Layout = React.createElement("UIListLayout", {
+			Padding = UDim.new(0, 8),
+			SortOrder = Enum.SortOrder.LayoutOrder,
+		}),
+	}
+	local robotIds = {}
+	for robotId in Robots.Definitions do
+		table.insert(robotIds, robotId)
+	end
+	table.sort(robotIds, function(leftId, rightId)
+		local left = Robots.Definitions[leftId]
+		local right = Robots.Definitions[rightId]
+		local leftRank = rarityOrder[left.Rarity] or 99
+		local rightRank = rarityOrder[right.Rarity] or 99
+		if leftRank ~= rightRank then
+			return leftRank < rightRank
+		end
+		return left.DisplayName < right.DisplayName
+	end)
+
+	for index, robotId in robotIds do
+		local definition = Robots.Definitions[robotId]
+		local seen = snapshot.Collection.RobotSeen[robotId] == true
+		local ownedCount = countOwnedRobotId(snapshot, robotId)
+		local title = if seen then definition.DisplayName else "???"
+		local meta = if seen
+			then ("%s • %s • %.1f credits/s • Owned %d"):format(
+				definition.Rarity,
+				definition.Family,
+				definition.ProductionPerSecond,
+				ownedCount
+			)
+			else ("%s • Undiscovered"):format(definition.Rarity)
+
+		rows[("Index_%s"):format(robotId)] = React.createElement("Frame", {
+			BackgroundColor3 = COLORS.PanelSoft,
+			BorderSizePixel = 0,
+			LayoutOrder = index,
+			Size = UDim2.new(1, 0, 0, 58),
+		}, {
+			Corner = corner(8),
+			Rarity = React.createElement("Frame", {
+				BackgroundColor3 = rarityColors[definition.Rarity] or COLORS.Muted,
+				BorderSizePixel = 0,
+				Position = UDim2.fromOffset(0, 0),
+				Size = UDim2.fromOffset(5, 58),
+			}),
+			Name = React.createElement("TextLabel", {
+				BackgroundTransparency = 1,
+				Font = Enum.Font.GothamBold,
+				Position = UDim2.fromOffset(14, 8),
+				Size = UDim2.new(1, -24, 0, 20),
+				Text = title,
+				TextColor3 = if seen then COLORS.Text else COLORS.Muted,
+				TextSize = 14,
+				TextXAlignment = Enum.TextXAlignment.Left,
+			}),
+			Meta = React.createElement("TextLabel", {
+				BackgroundTransparency = 1,
+				Font = Enum.Font.Gotham,
+				Position = UDim2.fromOffset(14, 31),
+				Size = UDim2.new(1, -24, 0, 17),
+				Text = meta,
+				TextColor3 = COLORS.Muted,
+				TextSize = 11,
+				TextXAlignment = Enum.TextXAlignment.Left,
+			}),
+		})
+	end
+
+	return rows
+end
+
+local function panelTitle(activeTab: string, snapshot: any): string
+	if activeTab == "Bots" then
+		return ("Bots (%d)"):format(countOwnedRobots(snapshot))
+	elseif activeTab == "Upgrades" then
+		return "Factory Upgrades"
+	end
+	return ("Robot Index (%d/%d)"):format(countDiscovered(snapshot), countRobotDefinitions())
+end
+
+local function panelHint(activeTab: string): string
+	if activeTab == "Bots" then
+		return "Assign idle bots to unlocked pads. Assigned bots generate credits."
+	elseif activeTab == "Upgrades" then
+		return "Upgrade prices and levels are validated by the server."
+	end
+	return "Discover robot outcomes by assembling them. Undiscovered names stay hidden."
+end
+
+local function panelContent(activeTab: string, snapshot: any): any
+	if activeTab == "Bots" then
+		return buildRobotRows(snapshot)
+	elseif activeTab == "Upgrades" then
+		return buildUpgradeRows(snapshot)
+	end
+	return buildIndexRows(snapshot)
+end
+
 local function App()
 	local snapshot, setSnapshot = React.useState(nil :: any?)
 	local activeTab, setActiveTab = React.useState("Bots")
@@ -463,13 +623,11 @@ local function App()
 	end
 
 	local objectiveTitle, objectiveBody = getObjective(snapshot)
-	local panelSize = if compact then UDim2.new(1, -24, 0.46, 0) else UDim2.new(0, 410, 1, -96)
+	local panelSize = if compact then UDim2.new(1, -24, 0.46, 0) else UDim2.new(0, 430, 1, -96)
 	local panelPosition = if compact then UDim2.new(0, 12, 1, -12) else UDim2.new(1, -12, 0, 84)
 	local panelAnchor = if compact then Vector2.new(0, 1) else Vector2.new(1, 0)
 	local objectiveWidth = if compact then UDim2.new(1, -24, 0, 76) else UDim2.fromOffset(380, 76)
-	local contentChildren = if activeTab == "Bots"
-		then buildRobotRows(snapshot)
-		else buildUpgradeRows(snapshot)
+	local contentChildren = panelContent(activeTab, snapshot)
 
 	return React.createElement("Frame", {
 		BackgroundTransparency = 1,
@@ -529,7 +687,7 @@ local function App()
 			BackgroundColor3 = COLORS.Panel,
 			BorderSizePixel = 0,
 			Position = UDim2.fromOffset(12, 168),
-			Size = if compact then UDim2.new(1, -24, 0, 60) else UDim2.fromOffset(380, 60),
+			Size = if compact then UDim2.new(1, -24, 0, 76) else UDim2.fromOffset(380, 76),
 		}, {
 			Corner = corner(10),
 			Text = React.createElement("TextLabel", {
@@ -561,10 +719,8 @@ local function App()
 				Title = React.createElement("TextLabel", {
 					BackgroundTransparency = 1,
 					Font = Enum.Font.GothamBold,
-					Size = UDim2.new(1, -190, 1, 0),
-					Text = if activeTab == "Bots"
-						then ("Bots (%d)"):format(countOwnedRobots(snapshot))
-						else "Factory Upgrades",
+					Size = UDim2.new(1, -252, 1, 0),
+					Text = panelTitle(activeTab, snapshot),
 					TextColor3 = COLORS.Text,
 					TextSize = 17,
 					TextXAlignment = Enum.TextXAlignment.Left,
@@ -574,8 +730,8 @@ local function App()
 						then COLORS.AccentDark
 						else COLORS.PanelSoft,
 					Font = Enum.Font.GothamBold,
-					Position = UDim2.new(1, -184, 0.5, -16),
-					Size = UDim2.fromOffset(86, 32),
+					Position = UDim2.new(1, -246, 0.5, -16),
+					Size = UDim2.fromOffset(74, 32),
 					Text = "Bots",
 					TextColor3 = COLORS.Text,
 					TextSize = 12,
@@ -590,13 +746,29 @@ local function App()
 						then COLORS.AccentDark
 						else COLORS.PanelSoft,
 					Font = Enum.Font.GothamBold,
-					Position = UDim2.new(1, -92, 0.5, -16),
-					Size = UDim2.fromOffset(92, 32),
+					Position = UDim2.new(1, -168, 0.5, -16),
+					Size = UDim2.fromOffset(86, 32),
 					Text = "Upgrades",
 					TextColor3 = COLORS.Text,
 					TextSize = 12,
 					[React.Event.Activated] = function()
 						setActiveTab("Upgrades")
+					end,
+				}, {
+					Corner = corner(7),
+				}),
+				Index = React.createElement("TextButton", {
+					BackgroundColor3 = if activeTab == "Index"
+						then COLORS.AccentDark
+						else COLORS.PanelSoft,
+					Font = Enum.Font.GothamBold,
+					Position = UDim2.new(1, -78, 0.5, -16),
+					Size = UDim2.fromOffset(78, 32),
+					Text = "Index",
+					TextColor3 = COLORS.Text,
+					TextSize = 12,
+					[React.Event.Activated] = function()
+						setActiveTab("Index")
 					end,
 				}, {
 					Corner = corner(7),
@@ -607,9 +779,7 @@ local function App()
 				Font = Enum.Font.Gotham,
 				Position = UDim2.fromOffset(12, 52),
 				Size = UDim2.new(1, -24, 0, 30),
-				Text = if activeTab == "Bots"
-					then "Assign idle bots to unlocked pads. Assigned bots generate credits."
-					else "Upgrade prices and levels are validated by the server.",
+				Text = panelHint(activeTab),
 				TextColor3 = COLORS.Muted,
 				TextSize = 11,
 				TextWrapped = true,
