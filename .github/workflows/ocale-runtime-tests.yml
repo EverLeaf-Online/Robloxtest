@@ -22,8 +22,6 @@ jobs:
       ROBLOX_API_KEY: ${{ secrets.ROBLOX_API_KEY }}
       ROBLOX_UNIVERSE_ID: "10766713640"
       ROBLOX_PLACE_ID: "75490500628229"
-      ROCALE_WORKDIR: ${{ runner.temp }}/rocale-cli-src
-      ROCALE_CLI: ./build/rocale-cli
 
     steps:
       - name: Checkout
@@ -79,11 +77,12 @@ jobs:
           set -euo pipefail
           ROCALE_TAG="v0.1.3"
           ROCALE_COMMIT="d154b3cc9a834adf7408d5cf78f079a4ea33efe6"
+          SOURCE_DIR="$RUNNER_TEMP/rocale-cli-src"
 
-          rm -rf "$ROCALE_WORKDIR"
-          git clone --quiet --depth 1 --branch "$ROCALE_TAG" https://github.com/Roblox/rocale-cli.git "$ROCALE_WORKDIR"
+          rm -rf "$SOURCE_DIR"
+          git clone --quiet --depth 1 --branch "$ROCALE_TAG" https://github.com/Roblox/rocale-cli.git "$SOURCE_DIR"
 
-          pushd "$ROCALE_WORKDIR" >/dev/null
+          pushd "$SOURCE_DIR" >/dev/null
           ACTUAL_COMMIT="$(git rev-parse HEAD)"
           if [[ "$ACTUAL_COMMIT" != "$ROCALE_COMMIT" ]]; then
             echo "::error::Unexpected rocale-cli source commit: $ACTUAL_COMMIT"
@@ -95,6 +94,8 @@ jobs:
           popd >/dev/null
 
           rm -f foreman.toml
+          echo "ROCALE_WORKDIR=$SOURCE_DIR" >> "$GITHUB_ENV"
+          echo "ROCALE_CLI=./build/rocale-cli" >> "$GITHUB_ENV"
 
       - name: Install Wally packages
         if: steps.config.outputs.ready == 'true'
