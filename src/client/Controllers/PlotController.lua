@@ -10,6 +10,8 @@ local initialized = false
 local currentPlotId: number? = nil
 local currentHighlight: Highlight? = nil
 local currentMarker: BillboardGui? = nil
+local pendingPlotId: number? = nil
+local retryWorkerRunning = false
 
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 
@@ -91,30 +93,49 @@ local function addMarker(plotId: number)
 	currentMarker = marker
 end
 
+local function startRetryWorker()
+	if retryWorkerRunning then
+		return
+	end
+	retryWorkerRunning = true
+
+	task.spawn(function()
+		for _ = 1, 20 do
+			local requestedPlotId = pendingPlotId
+			if requestedPlotId == nil then
+				break
+			end
+			if findPlot(requestedPlotId) ~= nil then
+				pendingPlotId = nil
+				addMarker(requestedPlotId)
+				break
+			end
+			task.wait(0.25)
+		end
+
+		retryWorkerRunning = false
+	end)
+end
+
 local function handleSnapshot(snapshot: any)
 	if typeof(snapshot) ~= "table" or typeof(snapshot.Plot) ~= "table" then
 		return
 	end
 	local plotId = snapshot.Plot.Id
 	if typeof(plotId) ~= "number" or plotId % 1 ~= 0 or plotId < 1 then
+		pendingPlotId = nil
 		clearMarker()
 		return
 	end
 
 	if findPlot(plotId) ~= nil then
+		pendingPlotId = nil
 		addMarker(plotId)
 		return
 	end
 
-	task.spawn(function()
-		for _ = 1, 20 do
-			task.wait(0.25)
-			if findPlot(plotId) ~= nil then
-				addMarker(plotId)
-				return
-			end
-		end
-	end)
+	pendingPlotId = plotId
+	startRetryWorker()
 end
 
 function PlotController.Init()
