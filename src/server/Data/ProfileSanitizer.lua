@@ -14,6 +14,17 @@ local Validation = require(ReplicatedStorage.Shared.Util.Validation)
 
 local ProfileSanitizer = {}
 
+local knownTutorialMilestones = table.freeze({
+	FirstScrap = true,
+	FirstProcess = true,
+	FirstBotReveal = true,
+	FirstBotAssigned = true,
+	FirstIncomeEarned = true,
+	FirstUpgrade = true,
+	FirstZoneGoalSeen = true,
+	FirstZoneUnlock = true,
+})
+
 local function ensureTable(parent: any, key: string): any
 	if typeof(parent[key]) ~= "table" then
 		parent[key] = {}
@@ -107,7 +118,7 @@ function ProfileSanitizer.Sanitize(data: any)
 
 	local ownedCount = 0
 	for uid, robot in ownedByUid do
-		local valid = typeof(uid) == "string"
+		local valid = RobotInventoryRules.IsValidUid(uid)
 			and typeof(robot) == "table"
 			and Validation.isKnownId(robot.RobotId, Robots.Definitions)
 
@@ -164,7 +175,12 @@ function ProfileSanitizer.Sanitize(data: any)
 	end
 
 	local tutorial = ensureTable(data, "Tutorial")
-	ensureTable(tutorial, "Milestones")
+	local milestones = ensureTable(tutorial, "Milestones")
+	for milestoneId, reached in milestones do
+		if knownTutorialMilestones[milestoneId] ~= true or reached ~= true then
+			milestones[milestoneId] = nil
+		end
+	end
 
 	local entitlements = ensureTable(data, "Entitlements")
 	ensureTable(entitlements, "CachedPassFlags")
