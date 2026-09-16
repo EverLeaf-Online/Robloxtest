@@ -14,6 +14,8 @@ DataManager.cache = {}
 
 local saveQueues = {}
 local saveLocks = {}
+local dirty = {}
+local lastBackupAt = {}
 
 local function deepCopy(value)
 	if typeof(value) ~= "table" then
@@ -41,15 +43,6 @@ local function defaultData()
 		UpdatedAt = os.time(),
 		SaveBlocked = false,
 	}
-end
-
-local function isStudioApiDisabled(errorValue)
-	if not RunService:IsStudio() then
-		return false
-	end
-	local message = tostring(errorValue)
-	return string.find(message, "StudioAccessToApisNotAllowed", 1, true) ~= nil
-		or string.find(message, "Studio access to APIs is not allowed", 1, true) ~= nil
 end
 
 local function sanitizeData(raw)
@@ -133,52 +126,62 @@ local function sanitizeData(raw)
 	return clean
 end
 
-local function getWithRetry(store, key)
-	local lastError
-	for attempt = 1, 3 do
-		local ok, result = pcall(function()
-			return store:GetAsync(key)
-		end)
-		if ok then
-			return true, result, false
+local function callWithTimeout(callback, timeoutSeconds)
+	local finished = false
+	local acceptingResult = true
+	local success = false
+	local value = nil
+
+	task.spawn(function()
+		local ok, result = pcall(callback)
+		if acceptingResult then
+			success = ok
+			value = result
+			finished = true
 		end
-		lastError = result
-		if isStudioApiDisabled(result) then
-			return false, result, true
-		end
-		if attempt < 3 then
-			task.wait(0.5 * attempt)
-		end
+	end)
+
+	local deadline = os.clock() + timeoutSeconds
+	while not finished and os.clock() < deadline do
+		task.wait(0.05)
 	end
-	return false, lastError, false
+
+	if not finished then
+		acceptingResult = false
+		return false, "request timed out", true
+	end
+
+	return success, value, false
 end
 
-local function updateWithRetry(store, key, snapshot)
-	local lastError
-	for attempt = 1, 3 do
-		local ok, result = pcall(function()
-			return store:UpdateAsync(key, function(old)
-				if typeof(old) == "table" then
-					local oldRevision = tonumber(old.Revision) or 0
-					if oldRevision > snapshot.Revision then
-						return old
-					end
+local function readStore(store, key, timeoutSeconds)
+	return callWithTimeout(function()
+		return store:GetAsync(key)
+	end, timeoutSeconds)
+end
+
+local function writeStore(store, key, snapshot, timeoutSeconds)
+	local ok, result, timedOut = callWithTimeout(function()
+		return store:UpdateAsync(key, function(old)
+			if typeof(old) == "table" then
+				local oldRevision = tonumber(old.Revision) or 0
+				if oldRevision > snapshot.Revision then
+					return old
 				end
-				return snapshot
-			end)
+			end
+			return snapshot
 		end)
-		if ok then
-			return true, result
-		end
-		lastError = result
-		if isStudioApiDisabled(result) then
-			return false, result
-		end
-		if attempt < 3 then
-			task.wait(0.5 * attempt)
-		end
+	end, timeoutSeconds)
+
+	if not ok then
+		return false, result, timedOut
 	end
-	return false, lastError
+
+	if typeof(result) == "table" and (tonumber(result.Revision) or 0) > snapshot.Revision then
+		return false, "newer cloud revision exists", false
+	end
+
+	return true, result, false
 end
 
 local function keyForPlayer(player)
@@ -186,43 +189,67 @@ local function keyForPlayer(player)
 end
 
 function DataManager.loadPlayer(player)
+	-- Studio playtests use isolated in-memory data by default. This prevents a
+	-- throttled DataStore queue from blocking the entire game boot and prevents
+	-- accidental writes to production data while building the game.
+	if RunService:IsStudio() and config.STUDIO_DATASTORE_ENABLED ~= true then
+		local data = defaultData()
+		data.SaveBlocked = true
+		DataManager.cache[player] = data
+		dirty[player] = false
+		warn("[Grow a Tiny Planet] Studio persistence bypassed; using an unsaved local test planet")
+		return data
+	end
+
 	local key = keyForPlayer(player)
-	local mainOk, mainResult, studioDisabled = getWithRetry(mainStore, key)
-	if studioDisabled then
-		local data = defaultData()
-		data.SaveBlocked = true
+	local mainOk, mainResult, mainTimedOut = readStore(
+		mainStore,
+		key,
+		config.DATASTORE_LOAD_TIMEOUT or 6
+	)
+
+	if mainOk then
+		local data = sanitizeData(mainResult)
+		data.SaveBlocked = false
 		DataManager.cache[player] = data
-		warn("[Grow a Tiny Planet] Studio DataStore access disabled; using unsaved test data")
+		dirty[player] = false
+		lastBackupAt[player] = os.time()
 		return data
 	end
 
-	local backupOk, backupResult, backupStudioDisabled = getWithRetry(backupStore, key)
-	if backupStudioDisabled then
-		local data = defaultData()
-		data.SaveBlocked = true
-		DataManager.cache[player] = data
-		warn("[Grow a Tiny Planet] Studio DataStore access disabled; using unsaved test data")
-		return data
-	end
+	warn(string.format(
+		"[Grow a Tiny Planet] Main load failed for %s%s: %s",
+		player.Name,
+		mainTimedOut and " (timeout)" or "",
+		tostring(mainResult)
+	))
 
-	local chosen
-	if mainOk and typeof(mainResult) == "table" then
-		chosen = mainResult
-	end
+	-- Backup is recovery-only. We no longer read both stores on every join.
+	local backupOk, backupResult, backupTimedOut = readStore(
+		backupStore,
+		key,
+		config.DATASTORE_BACKUP_TIMEOUT or 3
+	)
+
 	if backupOk and typeof(backupResult) == "table" then
-		local mainRevision = typeof(chosen) == "table" and (tonumber(chosen.Revision) or 0) or -1
-		local backupRevision = tonumber(backupResult.Revision) or 0
-		if backupRevision > mainRevision then
-			chosen = backupResult
-		end
+		local data = sanitizeData(backupResult)
+		data.SaveBlocked = false
+		DataManager.cache[player] = data
+		dirty[player] = true -- restore the primary store on the next successful save
+		lastBackupAt[player] = os.time()
+		warn(string.format("[Grow a Tiny Planet] Recovered %s from backup data", player.Name))
+		return data
 	end
 
-	local data = sanitizeData(chosen)
-	if not mainOk and not backupOk then
-		data.SaveBlocked = true
-		warn(string.format("[Grow a Tiny Planet] DataStores unavailable for %s; session is unsaved", player.Name))
-	end
+	local data = defaultData()
+	data.SaveBlocked = true
 	DataManager.cache[player] = data
+	dirty[player] = false
+	warn(string.format(
+		"[Grow a Tiny Planet] Cloud data unavailable for %s%s; starting a protected unsaved session",
+		player.Name,
+		backupTimedOut and " (backup timeout)" or ""
+	))
 	return data
 end
 
@@ -230,14 +257,14 @@ function DataManager.getData(player)
 	return DataManager.cache[player]
 end
 
-function DataManager.savePlayer(player)
+function DataManager.savePlayer(player, forceBackup)
 	local data = DataManager.cache[player]
 	if not data or data.SaveBlocked then
 		return false
 	end
 
 	if saveLocks[player] then
-		local deadline = os.clock() + 5
+		local deadline = os.clock() + 4
 		while saveLocks[player] and os.clock() < deadline do
 			task.wait(0.05)
 		end
@@ -249,42 +276,75 @@ function DataManager.savePlayer(player)
 	saveLocks[player] = true
 	data.Revision = (tonumber(data.Revision) or 0) + 1
 	data.UpdatedAt = os.time()
+
 	local snapshot = deepCopy(data)
 	snapshot.SaveBlocked = nil
 	local key = keyForPlayer(player)
-
-	local mainOk, mainError = updateWithRetry(mainStore, key, snapshot)
-	local backupOk, backupError = updateWithRetry(backupStore, key, snapshot)
-	saveLocks[player] = nil
+	local mainOk, mainError = writeStore(
+		mainStore,
+		key,
+		snapshot,
+		config.DATASTORE_SAVE_TIMEOUT or 6
+	)
 
 	if not mainOk then
-		warn(string.format("[Grow a Tiny Planet] Main save failed for %s: %s", player.Name, tostring(mainError)))
+		saveLocks[player] = nil
+		dirty[player] = true
+		if tostring(mainError) == "newer cloud revision exists" then
+			data.SaveBlocked = true
+			warn(string.format(
+				"[Grow a Tiny Planet] Save blocked for %s because a newer cloud revision exists",
+				player.Name
+			))
+		else
+			warn(string.format("[Grow a Tiny Planet] Main save failed for %s: %s", player.Name, tostring(mainError)))
+		end
+		return false
 	end
-	if not backupOk then
-		warn(string.format("[Grow a Tiny Planet] Backup save failed for %s: %s", player.Name, tostring(backupError)))
+
+	dirty[player] = false
+
+	local now = os.time()
+	local backupDue = forceBackup == true
+		or now - (lastBackupAt[player] or 0) >= (config.DATASTORE_BACKUP_INTERVAL or 300)
+
+	if backupDue then
+		local backupOk, backupError = writeStore(
+			backupStore,
+			key,
+			snapshot,
+			config.DATASTORE_SAVE_TIMEOUT or 6
+		)
+		if backupOk then
+			lastBackupAt[player] = now
+		else
+			warn(string.format("[Grow a Tiny Planet] Backup save failed for %s: %s", player.Name, tostring(backupError)))
+		end
 	end
-	return mainOk or backupOk
+
+	saveLocks[player] = nil
+	return true
 end
 
 function DataManager.queueSave(player)
+	dirty[player] = true
 	if saveQueues[player] then
 		return
 	end
-	-- Coalesce rapid Energy regeneration and multiple actions into one write.
-	-- Leaving/shutdown still calls savePlayer directly.
+
 	saveQueues[player] = true
-	task.delay(15, function()
+	task.delay(config.DATASTORE_SAVE_DELAY or 30, function()
 		saveQueues[player] = nil
-		if player.Parent then
-			DataManager.savePlayer(player)
+		if player.Parent and dirty[player] then
+			DataManager.savePlayer(player, false)
 		end
 	end)
 end
 
-function DataManager.saveAll()
+function DataManager.saveAll(force)
 	for player in pairs(DataManager.cache) do
-		if player.Parent then
-			DataManager.savePlayer(player)
+		if player.Parent and (force == true or dirty[player]) then
+			DataManager.savePlayer(player, force == true)
 		end
 	end
 end
@@ -292,12 +352,16 @@ end
 function DataManager.unloadPlayer(player)
 	saveQueues[player] = nil
 	saveLocks[player] = nil
+	dirty[player] = nil
+	lastBackupAt[player] = nil
 	DataManager.cache[player] = nil
 end
 
 function DataManager.hasPurchaseId(player, purchaseId)
 	local data = DataManager.cache[player]
-	return data ~= nil and typeof(data.PurchaseHistory) == "table" and data.PurchaseHistory[purchaseId] == true
+	return data ~= nil
+		and typeof(data.PurchaseHistory) == "table"
+		and data.PurchaseHistory[purchaseId] == true
 end
 
 function DataManager.recordPurchaseId(player, purchaseId)
