@@ -32,13 +32,15 @@ local state = {
 	Tiles = nil,
 }
 
-local planet = nil
-local tilesFolder = nil
+local planet
+local tilesFolder
+local objectsFolder
 local planetCenter = Vector3.zero
 local planetRadius = config.PLANET_RADIUS
 local selectedTile = -1
-local pendingAction = nil
-local highlight = nil
+local pendingAction
+local highlight
+local animalBases = {}
 
 local yaw = math.rad(35)
 local pitch = math.rad(-12)
@@ -47,8 +49,8 @@ local targetPitch = pitch
 local distance = 118
 local targetDistance = distance
 local pointerDown = false
-local pointerStart = nil
-local lastPointer = nil
+local pointerStart
+local lastPointer
 local pointerDragged = false
 
 local MIN_DISTANCE = 82
@@ -57,8 +59,8 @@ local DRAG_THRESHOLD = 8
 local ROTATE_SPEED = 0.0055
 
 local ACTIONS = {
-	{ Key = config.ACTIONS.AddWater, Label = "Add Water", Icon = "💧", Cost = config.COSTS.AddWater, Unlock = nil },
-	{ Key = config.ACTIONS.AddPlant, Label = "Add Plants", Icon = "🌱", Cost = config.COSTS.AddPlant, Unlock = nil },
+	{ Key = config.ACTIONS.AddWater, Label = "Add Water", Icon = "💧", Cost = config.COSTS.AddWater },
+	{ Key = config.ACTIONS.AddPlant, Label = "Add Plants", Icon = "🌱", Cost = config.COSTS.AddPlant },
 	{ Key = config.ACTIONS.AddAnimal, Label = "Add Animal", Icon = "🐾", Cost = config.COSTS.AddAnimal, Unlock = "Animal" },
 	{ Key = config.ACTIONS.BuildSettlement, Label = "Build Settlement", Icon = "🏠", Cost = config.COSTS.BuildSettlement, Unlock = "Settlement" },
 }
@@ -68,44 +70,39 @@ for _, action in ipairs(ACTIONS) do
 	actionByKey[action.Key] = action
 end
 
-local function makeCorner(parent, radius)
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, radius or 10)
-	corner.Parent = parent
-	return corner
+local function corner(parent, radius)
+	local value = Instance.new("UICorner")
+	value.CornerRadius = UDim.new(0, radius or 10)
+	value.Parent = parent
 end
 
-local function makeStroke(parent, color, transparency)
-	local stroke = Instance.new("UIStroke")
-	stroke.Color = color or config.COLORS.UI.Accent
-	stroke.Thickness = 1.25
-	stroke.Transparency = transparency or 0.35
-	stroke.Parent = parent
-	return stroke
+local function stroke(parent, color, transparency)
+	local value = Instance.new("UIStroke")
+	value.Color = color or config.COLORS.UI.Accent
+	value.Thickness = 1.25
+	value.Transparency = transparency or 0.35
+	value.Parent = parent
 end
 
 local gui = Instance.new("ScreenGui")
 gui.Name = "GrowTinyPlanetGui"
 gui.ResetOnSpawn = false
-gui.IgnoreGuiInset = true
+gui.IgnoreGuiInset = false
 gui.DisplayOrder = 20
 gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.Parent = playerGui
 
-local rootScale = Instance.new("UIScale")
-rootScale.Parent = gui
+local scale = Instance.new("UIScale")
+scale.Parent = gui
 
-local function updateUIScale()
-	if not camera then
-		return
-	end
+local function refreshScale()
 	local viewport = camera.ViewportSize
-	rootScale.Scale = math.clamp(math.min(viewport.X / 1440, viewport.Y / 900), 0.72, 1)
+	scale.Scale = math.clamp(math.min(viewport.X / 1440, viewport.Y / 900), 0.72, 1)
 end
-updateUIScale()
-camera:GetPropertyChangedSignal("ViewportSize"):Connect(updateUIScale)
+refreshScale()
+camera:GetPropertyChangedSignal("ViewportSize"):Connect(refreshScale)
 
-local function makePanel(name, size, position, anchor)
+local function panel(name, size, position, anchor)
 	local frame = Instance.new("Frame")
 	frame.Name = name
 	frame.Size = size
@@ -115,72 +112,69 @@ local function makePanel(name, size, position, anchor)
 	frame.BackgroundTransparency = 0.04
 	frame.BorderSizePixel = 0
 	frame.Parent = gui
-	makeCorner(frame, 14)
-	makeStroke(frame, config.COLORS.UI.Accent, 0.35)
+	corner(frame, 14)
+	stroke(frame, config.COLORS.UI.Accent, 0.35)
 	return frame
 end
 
-local function makeLabel(parent, text, size, position, textSize, bold, alignment)
-	local label = Instance.new("TextLabel")
-	label.BackgroundTransparency = 1
-	label.Text = text
-	label.Size = size
-	label.Position = position
-	label.Font = bold and Enum.Font.GothamBold or Enum.Font.Gotham
-	label.TextSize = textSize or 14
-	label.TextColor3 = config.COLORS.UI.Text
-	label.TextXAlignment = alignment or Enum.TextXAlignment.Left
-	label.TextYAlignment = Enum.TextYAlignment.Center
-	label.TextWrapped = true
-	label.Parent = parent
-	return label
+local function label(parent, text, size, position, textSize, bold, alignment)
+	local value = Instance.new("TextLabel")
+	value.BackgroundTransparency = 1
+	value.Text = text
+	value.Size = size
+	value.Position = position
+	value.Font = bold and Enum.Font.GothamBold or Enum.Font.Gotham
+	value.TextSize = textSize or 14
+	value.TextColor3 = config.COLORS.UI.Text
+	value.TextXAlignment = alignment or Enum.TextXAlignment.Left
+	value.TextYAlignment = Enum.TextYAlignment.Center
+	value.TextWrapped = true
+	value.Parent = parent
+	return value
 end
 
-local function makeButton(parent, text, size, position)
-	local button = Instance.new("TextButton")
-	button.AutoButtonColor = false
-	button.BackgroundColor3 = config.COLORS.UI.Button
-	button.BorderSizePixel = 0
-	button.Text = text
-	button.TextColor3 = config.COLORS.UI.Text
-	button.Font = Enum.Font.GothamSemibold
-	button.TextSize = 15
-	button.TextWrapped = true
-	button.Size = size
-	button.Position = position
-	button.Parent = parent
-	makeCorner(button, 10)
-	makeStroke(button, config.COLORS.UI.Accent2, 0.45)
-	return button
+local function button(parent, text, size, position)
+	local value = Instance.new("TextButton")
+	value.AutoButtonColor = false
+	value.BackgroundColor3 = config.COLORS.UI.Button
+	value.BorderSizePixel = 0
+	value.Text = text
+	value.TextColor3 = config.COLORS.UI.Text
+	value.Font = Enum.Font.GothamSemibold
+	value.TextSize = 15
+	value.TextWrapped = true
+	value.Size = size
+	value.Position = position
+	value.Parent = parent
+	corner(value, 10)
+	stroke(value, config.COLORS.UI.Accent2, 0.45)
+	return value
 end
 
-local leftPanel = makePanel("MainPanel", UDim2.fromOffset(300, 520), UDim2.fromOffset(16, 16))
-local title = makeLabel(leftPanel, "GROW A TINY PLANET", UDim2.new(1, -24, 0, 32), UDim2.fromOffset(12, 10), 20, true, Enum.TextXAlignment.Center)
-local energyLabel = makeLabel(leftPanel, "⚡ Energy: loading...", UDim2.new(1, -24, 0, 26), UDim2.fromOffset(12, 48), 17, true)
+local main = panel("MainPanel", UDim2.fromOffset(300, 562), UDim2.fromOffset(16, 12))
+label(main, "GROW A TINY PLANET", UDim2.new(1, -24, 0, 32), UDim2.fromOffset(12, 10), 20, true, Enum.TextXAlignment.Center)
+local energyLabel = label(main, "⚡ Energy: loading...", UDim2.new(1, -24, 0, 26), UDim2.fromOffset(12, 48), 17, true)
 energyLabel.TextColor3 = Color3.fromRGB(105, 228, 255)
-local statsLabel = makeLabel(leftPanel, "Loading planet data...", UDim2.new(1, -24, 0, 105), UDim2.fromOffset(12, 82), 13, false)
+local statsLabel = label(main, "Loading planet data...", UDim2.new(1, -24, 0, 105), UDim2.fromOffset(12, 82), 13)
 statsLabel.TextYAlignment = Enum.TextYAlignment.Top
-local selectedLabel = makeLabel(leftPanel, "Selected tile: none", UDim2.new(1, -24, 0, 24), UDim2.fromOffset(12, 188), 13, false)
+local selectedLabel = label(main, "Selected tile: none", UDim2.new(1, -24, 0, 24), UDim2.fromOffset(12, 188), 13)
 selectedLabel.TextColor3 = Color3.fromRGB(175, 197, 226)
 
 local actionButtons = {}
-for i, action in ipairs(ACTIONS) do
-	local button = makeButton(leftPanel, action.Icon .. "  " .. action.Label, UDim2.new(1, -24, 0, 50), UDim2.fromOffset(12, 222 + (i - 1) * 58))
-	actionButtons[action.Key] = button
+for index, action in ipairs(ACTIONS) do
+	local value = button(main, action.Icon .. "  " .. action.Label, UDim2.new(1, -24, 0, 50), UDim2.fromOffset(12, 222 + (index - 1) * 58))
+	actionButtons[action.Key] = value
 end
 
-local randomButton = makeButton(leftPanel, "🎲 Random valid tile", UDim2.new(1, -24, 0, 42), UDim2.fromOffset(12, 454))
-local shopButton = makeButton(leftPanel, "🛒 Shop [B]", UDim2.new(1, -24, 0, 42), UDim2.fromOffset(12, 502))
-shopButton.Position = UDim2.fromOffset(12, 502)
-leftPanel.Size = UDim2.fromOffset(300, 562)
+local randomButton = button(main, "🎲 Random valid tile", UDim2.new(1, -24, 0, 42), UDim2.fromOffset(12, 454))
+local shopButton = button(main, "🛒 Shop [B]", UDim2.new(1, -24, 0, 42), UDim2.fromOffset(12, 502))
 
-local statusPanel = makePanel("Status", UDim2.fromOffset(560, 54), UDim2.new(0.5, 0, 1, -18), Vector2.new(0.5, 1))
-local statusLabel = makeLabel(statusPanel, "Preparing your planet...", UDim2.new(1, -24, 1, 0), UDim2.fromOffset(12, 0), 13, false, Enum.TextXAlignment.Center)
+local status = panel("Status", UDim2.fromOffset(560, 54), UDim2.new(0.5, 0, 1, -16), Vector2.new(0.5, 1))
+local statusLabel = label(status, "Preparing your planet...", UDim2.new(1, -24, 1, 0), UDim2.fromOffset(12, 0), 13, false, Enum.TextXAlignment.Center)
 
 local toast = Instance.new("TextLabel")
-toast.Name = "Toast"
 toast.AnchorPoint = Vector2.new(0.5, 0)
-toast.Position = UDim2.new(0.5, 0, 0, 20)
+toast.Position = UDim2.new(0.5, 0, 0, 12)
 toast.Size = UDim2.fromOffset(520, 52)
 toast.BackgroundColor3 = Color3.fromRGB(20, 55, 70)
 toast.BackgroundTransparency = 1
@@ -191,16 +185,16 @@ toast.TextSize = 14
 toast.TextWrapped = true
 toast.ZIndex = 100
 toast.Parent = gui
-makeCorner(toast, 12)
-makeStroke(toast, config.COLORS.UI.Accent, 0.35)
+corner(toast, 12)
+stroke(toast, config.COLORS.UI.Accent, 0.35)
 local toastGeneration = 0
 
-local shop = makePanel("Shop", UDim2.fromOffset(610, 520), UDim2.new(0.5, 0, 0.5, 0), Vector2.new(0.5, 0.5))
+local shop = panel("Shop", UDim2.fromOffset(610, 520), UDim2.new(0.5, 0, 0.5, 0), Vector2.new(0.5, 0.5))
 shop.Visible = false
 shop.ZIndex = 50
-local shopTitle = makeLabel(shop, "COSMIC SHOP", UDim2.new(1, -90, 0, 36), UDim2.fromOffset(20, 12), 21, true)
+local shopTitle = label(shop, "COSMIC SHOP", UDim2.new(1, -90, 0, 36), UDim2.fromOffset(20, 12), 21, true)
 shopTitle.ZIndex = 52
-local closeShop = makeButton(shop, "✕", UDim2.fromOffset(42, 36), UDim2.new(1, -58, 0, 12))
+local closeShop = button(shop, "✕", UDim2.fromOffset(42, 36), UDim2.new(1, -58, 0, 12))
 closeShop.ZIndex = 52
 local shopList = Instance.new("ScrollingFrame")
 shopList.BackgroundTransparency = 1
@@ -231,24 +225,38 @@ local function showToast(text, kind)
 	end
 	TweenService:Create(toast, TweenInfo.new(0.15), { BackgroundTransparency = 0.05, TextTransparency = 0 }):Play()
 	task.delay(3.4, function()
-		if toastGeneration ~= generation then
-			return
+		if generation == toastGeneration then
+			TweenService:Create(toast, TweenInfo.new(0.2), { BackgroundTransparency = 1, TextTransparency = 1 }):Play()
 		end
-		TweenService:Create(toast, TweenInfo.new(0.2), { BackgroundTransparency = 1, TextTransparency = 1 }):Play()
 	end)
 end
 
-local function setButtonEnabled(button, enabled)
-	button.Active = enabled
-	button.Selectable = enabled
-	button.BackgroundColor3 = enabled and config.COLORS.UI.Button or config.COLORS.UI.ButtonDisabled
-	button.TextTransparency = enabled and 0 or 0.42
+local function setEnabled(control, enabled)
+	control.Active = enabled
+	control.Selectable = enabled
+	control.BackgroundColor3 = enabled and config.COLORS.UI.Button or config.COLORS.UI.ButtonDisabled
+	control.TextTransparency = enabled and 0 or 0.42
+end
+
+local function fallbackStatsFromAttributes()
+	return {
+		Developed = player:GetAttribute("PlanetDeveloped") or 0,
+		Water = player:GetAttribute("PlanetWater") or 0,
+		Plants = player:GetAttribute("PlanetPlants") or 0,
+		Glow = player:GetAttribute("PlanetGlow") or 0,
+		Animals = player:GetAttribute("PlanetAnimals") or 0,
+		Settlements = player:GetAttribute("PlanetSettlements") or 0,
+		Unlocks = {
+			Animal = (player:GetAttribute("PlanetDeveloped") or 0) >= 10,
+			Settlement = (player:GetAttribute("PlanetDeveloped") or 0) >= 25,
+			Golden = (player:GetAttribute("PlanetDeveloped") or 0) >= 50,
+		},
+	}
 end
 
 local function refreshUI()
 	local stats = state.Stats
 	energyLabel.Text = "⚡ Energy: " .. tostring(math.floor(state.Energy or 0))
-
 	if stats then
 		statsLabel.Text = string.format(
 			"Developed: %d / %d\n💧 Water: %d\n🌱 Plants: %d\n✨ Glow: %d\n🐾 Animals: %d\n🏠 Settlements: %d",
@@ -266,21 +274,18 @@ local function refreshUI()
 
 	selectedLabel.Text = selectedTile >= 0 and ("Selected tile: #" .. selectedTile) or "Selected tile: none"
 	local unlocks = stats and stats.Unlocks or {}
-
 	for _, action in ipairs(ACTIONS) do
-		local unlocked = action.Unlock == nil or unlocks[action.Unlock] == true
-		local affordable = (state.Energy or 0) >= action.Cost
-		local enabled = unlocked and affordable
-		local button = actionButtons[action.Key]
-		setButtonEnabled(button, enabled)
-
+		local unlocked = not action.Unlock or unlocks[action.Unlock] == true
+		local enabled = unlocked and (state.Energy or 0) >= action.Cost
+		local control = actionButtons[action.Key]
+		setEnabled(control, enabled)
 		if not unlocked then
 			local requirement = action.Unlock == "Animal" and "10 developed tiles" or "25 developed tiles"
-			button.Text = "🔒 " .. action.Label .. " — " .. requirement
+			control.Text = "🔒 " .. action.Label .. " — " .. requirement
 		elseif pendingAction == action.Key then
-			button.Text = "🎯 " .. action.Label .. " — CLICK PLANET"
+			control.Text = "🎯 " .. action.Label .. " — CLICK PLANET"
 		else
-			button.Text = string.format("%s  %s  •  %d Energy", action.Icon, action.Label, action.Cost)
+			control.Text = string.format("%s  %s  •  %d Energy", action.Icon, action.Label, action.Cost)
 		end
 	end
 end
@@ -293,19 +298,17 @@ local function addShopItem(entry, isPass)
 	card.BorderSizePixel = 0
 	card.ZIndex = 52
 	card.Parent = shopList
-	makeCorner(card, 10)
-
-	local name = makeLabel(card, entry.Name, UDim2.new(1, -150, 0, 24), UDim2.fromOffset(12, 8), 15, true)
-	name.ZIndex = 53
-	local desc = makeLabel(card, entry.Description, UDim2.new(1, -150, 0, 46), UDim2.fromOffset(12, 32), 12, false)
-	desc.TextYAlignment = Enum.TextYAlignment.Top
-	desc.ZIndex = 53
-	local buy = makeButton(card, entry.Price, UDim2.fromOffset(118, 42), UDim2.new(1, -130, 0.5, -21))
+	corner(card, 10)
+	local itemName = label(card, entry.Name, UDim2.new(1, -150, 0, 24), UDim2.fromOffset(12, 8), 15, true)
+	itemName.ZIndex = 53
+	local description = label(card, entry.Description, UDim2.new(1, -150, 0, 46), UDim2.fromOffset(12, 32), 12)
+	description.TextYAlignment = Enum.TextYAlignment.Top
+	description.ZIndex = 53
+	local buy = button(card, entry.Price, UDim2.fromOffset(118, 42), UDim2.new(1, -130, 0.5, -21))
 	buy.ZIndex = 53
-
 	if entry.Id == 0 then
 		buy.Text = "Not configured"
-		setButtonEnabled(buy, false)
+		setEnabled(buy, false)
 	else
 		buy.Activated:Connect(function()
 			if isPass then
@@ -325,24 +328,12 @@ for _, entry in ipairs(config.SHOP.Products) do
 end
 
 local function toggleShop(force)
-	if typeof(force) == "boolean" then
-		shop.Visible = force
-	else
-		shop.Visible = not shop.Visible
-	end
+	shop.Visible = typeof(force) == "boolean" and force or not shop.Visible
 end
 shopButton.Activated:Connect(function() toggleShop() end)
 closeShop.Activated:Connect(function() toggleShop(false) end)
 
-local function readPlanetCenter(model)
-	return Vector3.new(
-		model:GetAttribute("CenterX") or 0,
-		model:GetAttribute("CenterY") or 0,
-		model:GetAttribute("CenterZ") or 0
-	)
-end
-
-local function nearestTileForDirection(direction)
+local function nearestTile(direction)
 	local bestIndex = 0
 	local bestDot = -math.huge
 	for index = 0, PlanetMath.getTileCount() - 1 do
@@ -360,10 +351,10 @@ local function pickTile(screenPosition)
 		return nil
 	end
 	local ray = camera:ScreenPointToRay(screenPosition.X, screenPosition.Y)
-	local rayDirection = ray.Direction.Unit
+	local direction = ray.Direction.Unit
 	local origin = ray.Origin - planetCenter
 	local radius = planetRadius + 2.5
-	local b = 2 * origin:Dot(rayDirection)
+	local b = 2 * origin:Dot(direction)
 	local c = origin:Dot(origin) - radius * radius
 	local discriminant = b * b - 4 * c
 	if discriminant < 0 then
@@ -377,8 +368,8 @@ local function pickTile(screenPosition)
 	if t < 0 then
 		return nil
 	end
-	local hit = ray.Origin + rayDirection * t
-	return nearestTileForDirection((hit - planetCenter).Unit)
+	local hit = ray.Origin + direction * t
+	return nearestTile((hit - planetCenter).Unit)
 end
 
 local function refreshHighlight()
@@ -393,16 +384,16 @@ local function refreshHighlight()
 	if not tile then
 		return
 	end
-	local h = Instance.new("Highlight")
-	h.Name = "SelectedTileHighlight"
-	h.Adornee = tile
-	h.FillColor = config.COLORS.UI.Accent
-	h.OutlineColor = config.COLORS.UI.Accent2
-	h.FillTransparency = 0.62
-	h.OutlineTransparency = 0
-	h.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-	h.Parent = planet
-	highlight = h
+	local value = Instance.new("Highlight")
+	value.Name = "SelectedTileHighlight"
+	value.Adornee = tile
+	value.FillColor = config.COLORS.UI.Accent
+	value.OutlineColor = config.COLORS.UI.Accent2
+	value.FillTransparency = 0.62
+	value.OutlineTransparency = 0
+	value.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+	value.Parent = planet
+	highlight = value
 end
 
 local function sendAction(actionKey, tileIndex)
@@ -451,22 +442,20 @@ randomButton.Activated:Connect(function()
 		pendingAction = nil
 		sendAction(actionKey, -1)
 		refreshUI()
-	elseif selectedTile >= 0 then
-		showToast("Choose a growth action first.", "warning")
 	else
-		showToast("Choose Water, Plants, Animal, or Settlement first.", "warning")
+		showToast("Choose a growth action first.", "warning")
 	end
 end)
 
-local function selectTile(tileIndex)
-	selectedTile = tileIndex
+local function selectTile(index)
+	selectedTile = index
 	refreshHighlight()
 	refreshUI()
-	statusLabel.Text = "Tile #" .. tileIndex .. " selected. Choose an action."
+	statusLabel.Text = "Tile #" .. index .. " selected. Choose an action."
 	if pendingAction then
 		local actionKey = pendingAction
 		pendingAction = nil
-		sendAction(actionKey, tileIndex)
+		sendAction(actionKey, index)
 		refreshUI()
 	end
 end
@@ -512,7 +501,6 @@ UserInputService.InputChanged:Connect(function(input, gameProcessed)
 		targetDistance = math.clamp(targetDistance - input.Position.Z * 9, MIN_DISTANCE, MAX_DISTANCE)
 		return
 	end
-
 	if gameProcessed or not pointerDown then
 		return
 	end
@@ -542,14 +530,20 @@ UserInputService.InputEnded:Connect(function(input)
 	lastPointer = nil
 	pointerDragged = false
 	if shouldClick then
-		local tileIndex = pickTile(endPosition)
-		if tileIndex ~= nil then
-			selectTile(tileIndex)
+		local index = pickTile(endPosition)
+		if index ~= nil then
+			selectTile(index)
 		end
 	end
 end)
 
-RunService:BindToRenderStep("GrowTinyPlanetCamera", Enum.RenderPriority.Camera.Value + 1, function(dt)
+local function registerAnimal(obj)
+	if obj:IsA("BasePart") and obj:GetAttribute("AnimalType") then
+		animalBases[obj] = obj.CFrame
+	end
+end
+
+RunService:BindToRenderStep("GrowTinyPlanetRuntime", Enum.RenderPriority.Camera.Value + 1, function(dt)
 	if not planet then
 		return
 	end
@@ -562,6 +556,24 @@ RunService:BindToRenderStep("GrowTinyPlanetCamera", Enum.RenderPriority.Camera.V
 	local cameraPosition = planetCenter - orbit.LookVector * distance
 	camera.CFrame = CFrame.lookAt(cameraPosition, planetCenter, Vector3.yAxis)
 	camera.Focus = CFrame.new(planetCenter)
+
+	local now = os.clock()
+	for part, baseCFrame in pairs(animalBases) do
+		if part.Parent then
+			local seed = part:GetAttribute("Seed") or 0
+			part.CFrame = baseCFrame * CFrame.new(0, math.sin(now * 2.2 + seed) * 0.65, 0) * CFrame.Angles(0, now * 0.8 + seed, 0)
+		else
+			animalBases[part] = nil
+		end
+	end
+
+	local moon = planet:FindFirstChild("Moon")
+	if moon then
+		local radius = moon:GetAttribute("OrbitRadius") or 80
+		local speed = moon:GetAttribute("OrbitSpeed") or 0.25
+		local angle = now * speed
+		moon.CFrame = CFrame.lookAt(planetCenter + Vector3.new(math.cos(angle) * radius, math.sin(angle * 0.6) * 18, math.sin(angle) * radius), planetCenter)
+	end
 end)
 
 updateEnergy.OnClientEvent:Connect(function(value)
@@ -574,9 +586,7 @@ end)
 updateStats.OnClientEvent:Connect(function(stats)
 	if typeof(stats) == "table" then
 		state.Stats = stats
-		if typeof(stats.Ownership) == "table" then
-			state.Ownership = stats.Ownership
-		end
+		state.Ownership = typeof(stats.Ownership) == "table" and stats.Ownership or state.Ownership
 		refreshUI()
 	end
 end)
@@ -616,46 +626,24 @@ purchaseConfirmed.OnClientEvent:Connect(function()
 	showToast("Purchase confirmed and applied.", "success")
 end)
 
-local function loadInitialState()
-	for _ = 1, 120 do
-		if player:GetAttribute("PlanetReady") == true then
-			local ok, result = pcall(function()
-				return getPlanetState:InvokeServer()
-			end)
-			if ok and typeof(result) == "table" then
-				state.Energy = result.Energy or state.Energy
-				state.Stats = result.Stats
-				state.Ownership = result.Ownership or {}
-				state.Tiles = result.Tiles
-				refreshUI()
-				statusLabel.Text = "Click the planet to select a tile, or choose a growth tool first."
-				return true
-			end
-		end
-		task.wait(0.25)
-	end
-	statusLabel.Text = "Planet state did not initialize. Check Output for server errors."
-	showToast("Planet state failed to initialize.", "error")
-	return false
-end
-
 local function bootstrapPlanet()
-	local planetsFolder = Workspace:WaitForChild("Planets", 30)
-	if not planetsFolder then
-		statusLabel.Text = "Planets folder did not replicate."
+	local planets = Workspace:WaitForChild("Planets", 30)
+	if not planets then
 		showToast("Planets folder missing.", "error")
 		return false
 	end
-
-	planet = planetsFolder:WaitForChild("Planet_" .. player.UserId, 60)
+	planet = planets:WaitForChild("Planet_" .. player.UserId, 60)
 	if not planet then
-		statusLabel.Text = "Your planet model did not replicate."
-		showToast("Planet model missing.", "error")
+		showToast("Your planet model did not replicate.", "error")
 		return false
 	end
 
-	planetCenter = readPlanetCenter(planet)
-	planetRadius = planet:GetAttribute("PlanetRadius") or config.PLANET_RADIUS
+	planetCenter = Vector3.new(
+		planet:GetAttribute("CenterX") or player:GetAttribute("PlanetCenterX") or 0,
+		planet:GetAttribute("CenterY") or player:GetAttribute("PlanetCenterY") or 0,
+		planet:GetAttribute("CenterZ") or player:GetAttribute("PlanetCenterZ") or 0
+	)
+	planetRadius = planet:GetAttribute("PlanetRadius") or player:GetAttribute("PlanetRadius") or config.PLANET_RADIUS
 
 	camera.CameraType = Enum.CameraType.Scriptable
 	camera.FieldOfView = 55
@@ -668,12 +656,8 @@ local function bootstrapPlanet()
 		end)
 	end
 
-	local readyDeadline = os.clock() + 20
-	while planet:GetAttribute("Ready") ~= true and os.clock() < readyDeadline do
-		task.wait(0.05)
-	end
-
 	tilesFolder = planet:FindFirstChild("Tiles") or planet:WaitForChild("Tiles", 20)
+	objectsFolder = planet:FindFirstChild("Objects") or planet:WaitForChild("Objects", 20)
 	if tilesFolder then
 		tilesFolder.ChildAdded:Connect(function(child)
 			if selectedTile >= 0 and child.Name == "Tile_" .. selectedTile then
@@ -681,9 +665,62 @@ local function bootstrapPlanet()
 			end
 		end)
 	end
+	if objectsFolder then
+		for _, obj in ipairs(objectsFolder:GetChildren()) do
+			registerAnimal(obj)
+		end
+		objectsFolder.ChildAdded:Connect(function(obj)
+			task.defer(registerAnimal, obj)
+		end)
+	end
 
-	print(string.format("[Grow a Tiny Planet] Client attached to %s at %s", planet.Name, tostring(planetCenter)))
+	print(string.format("[Grow a Tiny Planet] Unified client attached to %s at %s", planet.Name, tostring(planetCenter)))
 	return true
+end
+
+local function loadInitialState()
+	for _ = 1, 120 do
+		local initError = player:GetAttribute("PlanetInitError")
+		if typeof(initError) == "string" and initError ~= "" then
+			statusLabel.Text = "Server initialization failed. See Output."
+			showToast("Server init error: " .. initError, "error")
+			return false
+		end
+
+		if player:GetAttribute("PlanetReady") == true then
+			state.Energy = player:GetAttribute("PlanetEnergy") or state.Energy
+			state.Stats = fallbackStatsFromAttributes()
+			refreshUI()
+			statusLabel.Text = "Planet ready. Loading full state..."
+
+			local ok, result = pcall(function()
+				return getPlanetState:InvokeServer()
+			end)
+			if ok and typeof(result) == "table" then
+				state.Energy = result.Energy or state.Energy
+				state.Stats = result.Stats or state.Stats
+				state.Ownership = result.Ownership or {}
+				state.Tiles = result.Tiles
+				refreshUI()
+			end
+			statusLabel.Text = "Click the planet to select a tile, or choose a growth tool first."
+			return true
+		end
+		task.wait(0.25)
+	end
+	statusLabel.Text = "Planet initialization timed out. Check Output."
+	showToast("Planet initialization timed out.", "error")
+	return false
+end
+
+for _, attribute in ipairs({ "PlanetEnergy", "PlanetDeveloped", "PlanetWater", "PlanetPlants", "PlanetGlow", "PlanetAnimals", "PlanetSettlements" }) do
+	player:GetAttributeChangedSignal(attribute):Connect(function()
+		if player:GetAttribute("PlanetReady") == true then
+			state.Energy = player:GetAttribute("PlanetEnergy") or state.Energy
+			state.Stats = fallbackStatsFromAttributes()
+			refreshUI()
+		end
+	end)
 end
 
 refreshUI()
