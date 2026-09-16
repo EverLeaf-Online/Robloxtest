@@ -5,6 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local AssignmentRules = require(ReplicatedStorage.Shared.Domain.AssignmentRules)
 local FactoryRules = require(ReplicatedStorage.Shared.Domain.FactoryRules)
 local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
+local Materials = require(ReplicatedStorage.Shared.Config.Materials)
 local ProgressionRules = require(ReplicatedStorage.Shared.Domain.ProgressionRules)
 local RobotInventoryRules = require(ReplicatedStorage.Shared.Domain.RobotInventoryRules)
 local Recipes = require(ReplicatedStorage.Shared.Config.Recipes)
@@ -90,7 +91,12 @@ function ProfileSanitizer.Sanitize(data: any)
 	currencies.Credits = clampInteger(currencies.Credits, 0, GameConfig.Economy.MaxCredits, 0)
 
 	local materials = ensureTable(data, "Materials")
-	for _, materialId in { "ScrapMetal", "Wiring", "PowerCoreFragments" } do
+	for materialId in materials do
+		if Materials[materialId] == nil then
+			materials[materialId] = nil
+		end
+	end
+	for materialId in Materials do
 		materials[materialId] =
 			clampInteger(materials[materialId], 0, GameConfig.Economy.MaxMaterialCount, 0)
 	end
