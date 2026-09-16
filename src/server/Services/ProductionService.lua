@@ -63,6 +63,9 @@ function ProductionService.TickPlayer(player: Player)
 	if data == nil then
 		return
 	end
+	if data.Currencies.Credits >= GameConfig.Economy.MaxCredits then
+		return
+	end
 
 	local rate = productionRate(data)
 	if rate <= 0 then
