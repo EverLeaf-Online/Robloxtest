@@ -3,9 +3,11 @@
 Status date: **2026-09-16**  
 Branch: `feat/scrap-to-bot-graybox-loop`
 
-This is the execution status for the first playable graybox. It separates code/CI-verified work from Roblox Studio runtime work so we do not claim behavior that has not been visually or interactively tested yet.
+This is the execution status for the first playable graybox. It separates implemented code plus static/build validation from Roblox runtime verification so we do not claim behavior that has not been executed, visually inspected, or interactively tested yet.
 
-## Implemented and CI-verified
+## Implemented; static/build checks green
+
+The systems below are implemented in source and pass the current repository formatting, lint, dependency-lock, shipping-build, and test-project-build gates. Runtime behavior still belongs to the Studio/OCALE section below.
 
 ### World / multiplayer plots
 
@@ -37,18 +39,18 @@ This is the execution status for the first playable graybox. It separates code/C
 
 ### Physical progression / presentation
 
-- assigned robots appear physically on their owner's work pads;
+- assigned robots are generated for their owner's work pads;
 - robot graybox visuals use configured body, head, tool, locomotion, accent, rarity, and production metadata;
-- player factories are socially visible in one shared yard;
+- player factories are placed together in one shared yard;
 - visible Circuit Yard gate;
 - isolated Circuit Yard salvage area;
 - return portal to the starter yard;
 - higher-yield Zone 2 salvage configuration;
-- physical plot props reserve the later art/asset replacement points without changing economy code.
+- physical plot props reserve later art/asset replacement points without changing economy code.
 
 ### UI / collection
 
-- responsive React HUD;
+- responsive React HUD implementation;
 - Credits and three launch materials;
 - first-session objective guidance;
 - machine job countdown/status;
@@ -65,8 +67,8 @@ This is the execution status for the first playable graybox. It separates code/C
 
 - Circuit Yard initial graybox requirement: **2,500 Credits + 3 lifetime robots built**;
 - zone requirements are data-driven;
-- zone unlock is an atomic server transaction;
-- locked-zone salvage rejects rewards even if the client teleports into the area;
+- zone unlock is implemented as an atomic server transaction;
+- locked-zone salvage performs server-side progression checks, including inside the transaction;
 - current zone is persisted and sanitized.
 
 ### Persistence / security
@@ -88,34 +90,40 @@ This is the execution status for the first playable graybox. It separates code/C
 
 ### Analytics
 
-- onboarding funnel steps 1-10;
-- first movement observed by the server;
-- milestone events emitted only from server-confirmed profile state;
+- onboarding funnel steps 1-10 implemented;
+- first movement observed by server code;
+- milestone events read only from server-confirmed profile state;
 - batched passive-production Credit-source events;
 - batched robot-recycle Credit-source events;
 - immediate upgrade Credit sinks;
 - immediate zone-unlock Credit sink;
 - Studio analytics calls suppressed.
 
-### Automated validation
+## Current GitHub CI gate
 
-Current CI validates:
+GitHub CI currently validates:
 
 - Wally lockfile freshness;
 - StyLua formatting;
 - Selene lint;
-- shipping Rojo build;
-- test Rojo build;
-- factory rule specs;
-- progression rule specs;
-- validation helper specs;
-- deterministic plot-allocation specs.
+- shipping Rojo project build;
+- Jest/OCALE test Rojo project build.
+
+Jest spec files currently exist for:
+
+- factory/economy rules;
+- progression/zone rules;
+- validation helpers;
+- deterministic plot allocation.
+
+**Important:** GitHub CI does not currently execute the Jest suite. It proves the test project and spec source build/lint cleanly, not that the specs passed in a Roblox runtime. Actual Jest execution is a Studio/OCALE runtime gate.
 
 ## Must be verified in Roblox Studio / OCALE
 
 These are **not** considered complete until tested in an actual Roblox runtime:
 
-- clean boot with no runtime errors;
+- execute `spec.lua` and confirm the Jest suite is green;
+- clean game boot with no runtime errors;
 - fresh-player end-to-end loop: collect -> process -> assemble -> reveal -> assign -> earn -> upgrade;
 - first robot appears correctly on Pad 1;
 - robot model pieces are aligned/oriented correctly for all locomotion/body variants;
@@ -134,6 +142,18 @@ These are **not** considered complete until tested in an actual Roblox runtime:
 - profile save/load behavior is correct across a real reconnect;
 - two-player server performance is stable with visible robot models;
 - low/mid mobile frame rate is acceptable.
+
+## OCALE readiness
+
+The repository has a real Jest entrypoint in `spec.lua` and a `test.project.json`. An OCALE runner can execute them once this simulator has its own dedicated Roblox test universe/place and API key.
+
+Required runtime environment values:
+
+- `ROBLOX_API_KEY`;
+- `ROBLOX_UNIVERSE_ID`;
+- `ROBLOX_PLACE_ID`.
+
+The API key must be scoped to the dedicated test place with the permissions required by Roblox Open Cloud Luau Execution. Do not commit the key or reuse universe/place IDs from another EverLeaf project.
 
 ## Intentionally blocked until the core-loop smoke test passes
 
@@ -154,11 +174,12 @@ Existing monetization architecture/config hooks may remain in the codebase, but 
 
 ## Immediate next execution order
 
-1. Get the current branch fully green in CI.
-2. Sync/open the branch through the user's local Rojo/Roblox Studio workflow.
-3. Run a fresh-player desktop smoke test.
-4. Run a two-player ownership/plot smoke test.
-5. Run a small-screen/mobile UI pass.
-6. Fix every runtime/layout issue found.
-7. Re-run CI after fixes.
-8. Only then begin the first monetization UI/receipt slice.
+1. Keep the branch green in GitHub CI.
+2. Configure a dedicated simulator test universe/place and scoped OCALE API key when available.
+3. Execute the Jest suite in OCALE or Studio.
+4. Sync/open the branch through the user's local Rojo/Roblox Studio workflow.
+5. Run a fresh-player desktop smoke test.
+6. Run a two-player ownership/plot smoke test.
+7. Run a small-screen/mobile UI pass.
+8. Fix every runtime/layout issue found and re-run CI/runtime tests.
+9. Only then begin the first monetization UI/receipt slice.
