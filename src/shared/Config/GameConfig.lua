@@ -1,7 +1,7 @@
 --!strict
 
 local GameConfig = {
-	ProfileSchemaVersion = 1,
+	ProfileSchemaVersion = 2,
 
 	Economy = {
 		MaxCredits = 1_000_000_000_000,
@@ -20,6 +20,7 @@ local GameConfig = {
 		BaseWorkSlots = 1,
 		MaxWorkSlots = 4,
 		ProductionTickSeconds = 1,
+		MachinePollSeconds = 0.25,
 	},
 
 	Networking = {
