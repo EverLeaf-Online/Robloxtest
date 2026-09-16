@@ -53,16 +53,17 @@ jobs:
         shell: bash
         run: "$HOME/.rokit/bin/rokit install --no-trust-check"
 
-      - name: Prepare pinned Lute manifest
+      - name: Prepare pinned OCALE build manifest
         if: steps.config.outputs.ready == 'true'
         shell: bash
         run: |
           cat > foreman.toml <<'EOF'
           [tools]
           lute = { source = "luau-lang/lute", version = "=0.1.0-nightly.20260303" }
+          rojo = { source = "rojo-rbx/rojo", version = "7.3.0" }
           EOF
 
-      - name: Install pinned Lute
+      - name: Install pinned OCALE build tools
         if: steps.config.outputs.ready == 'true'
         uses: Roblox/setup-foreman@v3
         with:
@@ -105,6 +106,7 @@ jobs:
         if: steps.config.outputs.ready == 'true'
         shell: bash
         run: |
+          rojo --version
           pushd "$ROCALE_WORKDIR" >/dev/null
           "$ROCALE_CLI" help | grep -q "Build, upload, and run a Roblox project in Open Cloud"
           "$ROCALE_CLI" run --help | grep -q -- "--universeId"
