@@ -25,7 +25,10 @@ function ProfileMigrations.Apply(data: any)
 	local version = readVersion(data)
 	assert(
 		version <= GameConfig.ProfileSchemaVersion,
-		("Profile version %d is newer than server schema %d"):format(version, GameConfig.ProfileSchemaVersion)
+		("Profile version %d is newer than server schema %d"):format(
+			version,
+			GameConfig.ProfileSchemaVersion
+		)
 	)
 
 	while version < GameConfig.ProfileSchemaVersion do
