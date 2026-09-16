@@ -105,10 +105,8 @@ function EconomyService.GrantCredits(data: any, amount: number): number
 	local room = GameConfig.Economy.MaxCredits - data.Currencies.Credits
 	local granted = math.max(0, math.min(room, amount))
 	data.Currencies.Credits += granted
-	data.Stats.LifetimeCredits = math.min(
-		GameConfig.Economy.MaxCredits,
-		data.Stats.LifetimeCredits + granted
-	)
+	data.Stats.LifetimeCredits =
+		math.min(GameConfig.Economy.MaxCredits, data.Stats.LifetimeCredits + granted)
 	return granted
 end
 
