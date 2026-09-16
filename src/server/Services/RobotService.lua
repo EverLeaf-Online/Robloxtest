@@ -171,7 +171,11 @@ function RobotService.Sell(player: Player, robotUid: any)
 	if executed and typeof(transactionResult) == "table" and transactionResult.Success == true then
 		local payload = transactionResult.Payload
 		local updatedData = DataService.GetData(player)
-		if typeof(payload) == "table" and typeof(payload.Credits) == "number" and updatedData ~= nil then
+		if
+			typeof(payload) == "table"
+			and typeof(payload.Credits) == "number"
+			and updatedData ~= nil
+		then
 			AnalyticsService.RecordCreditSource(
 				player,
 				"RobotRecycle",
