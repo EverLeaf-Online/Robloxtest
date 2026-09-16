@@ -18,6 +18,9 @@ ROCALE_CLI="${ROCALE_CLI:-rocale-cli}"
 ROCALE_WORKDIR="${ROCALE_WORKDIR:-$REPO_ROOT}"
 PROJECT_FILE="$REPO_ROOT/test.project.json"
 SPEC_FILE="$REPO_ROOT/spec.lua"
+BUILD_DIR="$REPO_ROOT/.build"
+PLACE_FILE="$BUILD_DIR/ocale-tests.rbxl"
+PUBLISH_RESPONSE="$BUILD_DIR/place-publish-response.json"
 
 if [[ "$ROCALE_CLI" == */* ]]; then
   if [[ ! -x "$ROCALE_WORKDIR/$ROCALE_CLI" ]]; then
@@ -30,53 +33,91 @@ elif ! command -v "$ROCALE_CLI" >/dev/null 2>&1; then
   exit 3
 fi
 
+if ! command -v rojo >/dev/null 2>&1; then
+  echo "rojo was not found in PATH." >&2
+  exit 3
+fi
+
 if [[ ! -f "$PROJECT_FILE" || ! -f "$SPEC_FILE" ]]; then
   echo "Run this script from the repository root; test.project.json/spec.lua were not found." >&2
   exit 4
 fi
 
-echo "Running Scrap-to-Bot Jest suite through Roblox Open Cloud Luau Execution..."
+mkdir -p "$BUILD_DIR"
 
-run_ocale() {
-  pushd "$ROCALE_WORKDIR" >/dev/null
+echo "Building dedicated OCALE test place..."
+rojo build "$PROJECT_FILE" --output "$PLACE_FILE"
+
+publish_url="https://apis.roblox.com/universes/v1/${ROBLOX_UNIVERSE_ID}/places/${ROBLOX_PLACE_ID}/versions?versionType=Published"
+version_number=""
+max_publish_attempts=4
+
+for attempt in $(seq 1 "$max_publish_attempts"); do
+  rm -f "$PUBLISH_RESPONSE"
+
   set +e
-  local output
-  output="$("$ROCALE_CLI" run \
-    --universeId "$ROBLOX_UNIVERSE_ID" \
-    --placeId "$ROBLOX_PLACE_ID" \
-    --load.project "$PROJECT_FILE" \
-    --script "$SPEC_FILE" \
-    --timeout 300 \
-    --verbose 2>&1)"
-  local status=$?
-  set -e
-  popd >/dev/null
-
-  printf '%s\n' "$output"
-  return "$status"
-}
-
-max_attempts=4
-for attempt in $(seq 1 "$max_attempts"); do
-  set +e
-  output="$(run_ocale 2>&1)"
-  status=$?
+  http_code="$(curl --silent --show-error --location \
+    --connect-timeout 20 \
+    --max-time 120 \
+    --output "$PUBLISH_RESPONSE" \
+    --write-out '%{http_code}' \
+    --request POST "$publish_url" \
+    --header "x-api-key: ${ROBLOX_API_KEY}" \
+    --header "Content-Type: application/octet-stream" \
+    --header "Accept: application/json" \
+    --data-binary "@${PLACE_FILE}")"
+  curl_status=$?
   set -e
 
-  printf '%s\n' "$output"
+  if [[ $curl_status -eq 0 && "$http_code" =~ ^2[0-9][0-9]$ ]]; then
+    version_number="$(python3 - "$PUBLISH_RESPONSE" <<'PY'
+import json
+import sys
 
-  if [[ $status -eq 0 ]]; then
-    exit 0
+with open(sys.argv[1], "r", encoding="utf-8") as handle:
+    data = json.load(handle)
+version = data.get("versionNumber")
+if not isinstance(version, int) or version <= 0:
+    raise SystemExit("Roblox publish response did not contain a valid versionNumber")
+print(version)
+PY
+)"
+    break
   fi
 
-  if grep -q '409 - .*Server is busy' <<<"$output" && [[ $attempt -lt $max_attempts ]]; then
+  response_body=""
+  if [[ -f "$PUBLISH_RESPONSE" ]]; then
+    response_body="$(cat "$PUBLISH_RESPONSE")"
+  fi
+
+  if [[ $attempt -lt $max_publish_attempts ]] && { [[ $curl_status -ne 0 ]] || [[ "$http_code" == "409" ]] || [[ "$http_code" =~ ^5[0-9][0-9]$ ]]; }; then
     delay=$((attempt * 15))
-    echo "Roblox place upload is busy; retrying in ${delay}s (${attempt}/${max_attempts})..." >&2
+    echo "Roblox place publish attempt ${attempt}/${max_publish_attempts} failed (curl=${curl_status}, HTTP=${http_code:-none}); retrying in ${delay}s..." >&2
     sleep "$delay"
     continue
   fi
 
-  exit "$status"
+  echo "Roblox place publish failed (curl=${curl_status}, HTTP=${http_code:-none})." >&2
+  if [[ -n "$response_body" ]]; then
+    echo "$response_body" >&2
+  fi
+  exit 5
 done
 
-exit 1
+if [[ -z "$version_number" ]]; then
+  echo "Roblox place publish did not return a usable version number." >&2
+  exit 5
+fi
+
+echo "Published OCALE test place version ${version_number}."
+echo "Running Scrap-to-Bot Jest suite through Roblox Open Cloud Luau Execution..."
+
+pushd "$ROCALE_WORKDIR" >/dev/null
+"$ROCALE_CLI" run \
+  --universeId "$ROBLOX_UNIVERSE_ID" \
+  --placeId "$ROBLOX_PLACE_ID" \
+  --load.version "$version_number" \
+  --script "$SPEC_FILE" \
+  --timeout 300 \
+  --verbose
+popd >/dev/null
