@@ -12,8 +12,10 @@ local Validation = require(ReplicatedStorage.Shared.Util.Validation)
 
 local DataService = require(script.Parent.DataService)
 local EconomyService = require(script.Parent.EconomyService)
+local RateLimiter = require(script.Parent.RateLimiter)
 local RemoteService = require(script.Parent.RemoteService)
 local StateService = require(script.Parent.StateService)
+local WorldService = require(script.Parent.WorldService)
 
 local MachineService = {}
 local initialized = false
@@ -48,6 +50,23 @@ local function result(success: boolean, code: string, payload: any?): any
 	}
 end
 
+local function playerPosition(player: Player): Vector3?
+	local character = player.Character
+	if character == nil then
+		return nil
+	end
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if root == nil or not root:IsA("BasePart") then
+		return nil
+	end
+	return root.Position
+end
+
+local function isNear(player: Player, part: BasePart): boolean
+	local position = playerPosition(player)
+	return position ~= nil and (position - part.Position).Magnitude <= GameConfig.World.InteractionDistance
+end
+
 local function sendTransactionResult(player: Player, actionName: string, executed: boolean, transactionResult: any?)
 	if not executed then
 		StateService.ActionResult(player, actionName, false, tostring(transactionResult), nil)
@@ -79,8 +98,13 @@ function MachineService.StartProcessor(player: Player, recipeId: any)
 	end
 
 	local recipe = Recipes.Processor[recipeId]
-	if recipe == nil then
+	local control = WorldService.GetProcessorControl(recipeId)
+	if recipe == nil or control == nil then
 		StateService.ActionResult(player, RemoteNames.RequestProcess, false, "UNKNOWN_RECIPE", nil)
+		return
+	end
+	if not isNear(player, control) then
+		StateService.ActionResult(player, RemoteNames.RequestProcess, false, "TOO_FAR_AWAY", nil)
 		return
 	end
 
@@ -114,6 +138,12 @@ function MachineService.StartProcessor(player: Player, recipeId: any)
 end
 
 function MachineService.StartAssembler(player: Player)
+	local assembler = WorldService.GetAssemblerPart()
+	if not isNear(player, assembler) then
+		StateService.ActionResult(player, RemoteNames.RequestAssemble, false, "TOO_FAR_AWAY", nil)
+		return
+	end
+
 	local executed, transactionResult = DataService.Transaction(player, function(data)
 		local job = data.Machines.AssemblerJob
 		if job.Active then
@@ -231,6 +261,30 @@ function MachineService.PollPlayer(player: Player)
 	completeAssembler(player, now)
 end
 
+local function bindWorldPrompts()
+	for _, control in WorldService.GetProcessorControls() do
+		local recipeId = control:GetAttribute("ProcessorRecipeId")
+		local prompt = control:FindFirstChildOfClass("ProximityPrompt")
+		if typeof(recipeId) == "string" and prompt then
+			prompt.Triggered:Connect(function(player)
+				if RateLimiter.Consume(player, RemoteNames.RequestProcess) then
+					MachineService.StartProcessor(player, recipeId)
+				end
+			end)
+		end
+	end
+
+	local assembler = WorldService.GetAssemblerPart()
+	local assemblerPrompt = assembler:FindFirstChildOfClass("ProximityPrompt")
+	if assemblerPrompt then
+		assemblerPrompt.Triggered:Connect(function(player)
+			if RateLimiter.Consume(player, RemoteNames.RequestAssemble) then
+				MachineService.StartAssembler(player)
+			end
+		end)
+	end
+end
+
 function MachineService.Init()
 	if initialized then
 		return
@@ -243,6 +297,7 @@ function MachineService.Init()
 	RemoteService.BindRequest(RemoteNames.RequestAssemble, function(player)
 		MachineService.StartAssembler(player)
 	end)
+	bindWorldPrompts()
 
 	DataService.ProfileLoaded:Connect(function(player)
 		MachineService.PollPlayer(player)
