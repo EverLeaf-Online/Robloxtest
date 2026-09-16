@@ -19,12 +19,7 @@ function ReceiptRules.NormalizeRecentPurchaseIds(
 
 	local indices = {}
 	for key in source do
-		if
-			typeof(key) == "number"
-			and key % 1 == 0
-			and key >= 1
-			and key <= MAX_SOURCE_INDEX
-		then
+		if typeof(key) == "number" and key % 1 == 0 and key >= 1 and key <= MAX_SOURCE_INDEX then
 			table.insert(indices, key)
 		end
 	end
@@ -34,10 +29,7 @@ function ReceiptRules.NormalizeRecentPurchaseIds(
 	local reverse: { string } = {}
 	for index = #indices, 1, -1 do
 		local purchaseId = source[indices[index]]
-		if
-			isBoundedString(purchaseId, maxLength)
-			and seen[purchaseId :: string] ~= true
-		then
+		if isBoundedString(purchaseId, maxLength) and seen[purchaseId :: string] ~= true then
 			seen[purchaseId :: string] = true
 			table.insert(reverse, purchaseId :: string)
 			if #reverse >= maxEntries then
