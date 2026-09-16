@@ -223,7 +223,7 @@ local function completeProcessor(player: Player, now: number): boolean
 			resetProcessorJob(job)
 			return true, result(false, "PROCESS_RECIPE_REMOVED", nil)
 		end
-		if not EconomyService.GrantMaterials(data, recipe.Output) then
+		if not EconomyService.GrantProcessorOutput(data, recipe.Output) then
 			return false, result(false, "PROCESS_WAITING_FOR_STORAGE", nil)
 		end
 
