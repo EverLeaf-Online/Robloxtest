@@ -104,6 +104,10 @@ function StateService.Init()
 	end
 	initialized = true
 
+	RemoteService.BindRequest(RemoteNames.RequestState, function(player)
+		StateService.PushSnapshot(player)
+	end)
+
 	DataService.ProfileLoaded:Connect(function(player)
 		StateService.PushSnapshot(player)
 	end)
