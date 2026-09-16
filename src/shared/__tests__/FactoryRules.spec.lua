@@ -39,7 +39,9 @@ describe("FactoryRules", function()
 			PowerCoreFragments = 0,
 		}
 
-		expect(FactoryRules.CanFitTransaction(materials, { ScrapMetal = 4 }, { Wiring = 4 }, 50)).toBe(true)
+		expect(FactoryRules.CanFitTransaction(materials, { ScrapMetal = 4 }, { Wiring = 4 }, 50)).toBe(
+			true
+		)
 		expect(FactoryRules.CanFitTransaction(materials, {}, { Wiring = 1 }, 50)).toBe(false)
 	end)
 
