@@ -1,0 +1,134 @@
+--!strict
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
+local Robots = require(ReplicatedStorage.Shared.Config.Robots)
+local Validation = require(ReplicatedStorage.Shared.Util.Validation)
+
+local ProfileSanitizer = {}
+
+local function ensureTable(parent: any, key: string): any
+	if typeof(parent[key]) ~= "table" then
+		parent[key] = {}
+	end
+	return parent[key]
+end
+
+local function clampInteger(value: any, minimum: number, maximum: number, fallback: number): number
+	if not Validation.isSafeInteger(value, minimum, maximum) then
+		return fallback
+	end
+	return value :: number
+end
+
+local function sanitizeBoolean(value: any, fallback: boolean): boolean
+	if typeof(value) == "boolean" then
+		return value
+	end
+	return fallback
+end
+
+function ProfileSanitizer.Sanitize(data: any)
+	assert(typeof(data) == "table", "Profile data must be a table")
+
+	data.Version = GameConfig.ProfileSchemaVersion
+	data.Revision = clampInteger(data.Revision, 0, 2_147_483_647, 0)
+
+	local currencies = ensureTable(data, "Currencies")
+	currencies.Credits = clampInteger(currencies.Credits, 0, GameConfig.Economy.MaxCredits, 0)
+
+	local materials = ensureTable(data, "Materials")
+	for _, materialId in { "ScrapMetal", "Wiring", "PowerCoreFragments" } do
+		materials[materialId] = clampInteger(materials[materialId], 0, GameConfig.Economy.MaxMaterialCount, 0)
+	end
+
+	local robots = ensureTable(data, "Robots")
+	local ownedByUid = ensureTable(robots, "OwnedByUid")
+	robots.NextUid = clampInteger(robots.NextUid, 1, 2_147_483_647, 1)
+
+	local ownedCount = 0
+	for uid, robot in ownedByUid do
+		local valid = typeof(uid) == "string"
+			and typeof(robot) == "table"
+			and Validation.isKnownId(robot.RobotId, Robots.Definitions)
+
+		if not valid or ownedCount >= GameConfig.Economy.MaxOwnedRobots then
+			ownedByUid[uid] = nil
+		else
+			ownedCount += 1
+			robot.RobotId = robot.RobotId :: string
+			robot.AcquiredAt = clampInteger(robot.AcquiredAt, 0, 4_102_444_800, 0)
+		end
+	end
+
+	local assignments = ensureTable(data, "Assignments")
+	local workPads = ensureTable(assignments, "WorkPads")
+	for padId, robotUid in workPads do
+		if typeof(padId) ~= "string" or typeof(robotUid) ~= "string" or ownedByUid[robotUid] == nil then
+			workPads[padId] = nil
+		end
+	end
+
+	local machines = ensureTable(data, "Machines")
+	machines.ProcessorLevel = clampInteger(machines.ProcessorLevel, 1, 4, 1)
+	machines.AssemblerLevel = clampInteger(machines.AssemblerLevel, 1, 4, 1)
+	machines.StorageLevel = clampInteger(machines.StorageLevel, 1, 4, 1)
+	machines.WorkSlotsLevel = clampInteger(machines.WorkSlotsLevel, 1, 4, 1)
+
+	local progression = ensureTable(data, "Progression")
+	progression.Zone = clampInteger(progression.Zone, 1, 100, 1)
+	progression.FactoryTier = clampInteger(progression.FactoryTier, 1, 100, 1)
+	progression.PrestigeCount = clampInteger(progression.PrestigeCount, 0, 1_000_000, 0)
+
+	local collection = ensureTable(data, "Collection")
+	local robotSeen = ensureTable(collection, "RobotSeen")
+	local robotOwned = ensureTable(collection, "RobotOwned")
+	for robotId, seen in robotSeen do
+		if Robots.Definitions[robotId] == nil or seen ~= true then
+			robotSeen[robotId] = nil
+		end
+	end
+	for robotId, hasOwned in robotOwned do
+		if Robots.Definitions[robotId] == nil or hasOwned ~= true then
+			robotOwned[robotId] = nil
+		end
+	end
+
+	local tutorial = ensureTable(data, "Tutorial")
+	ensureTable(tutorial, "Milestones")
+
+	local entitlements = ensureTable(data, "Entitlements")
+	ensureTable(entitlements, "CachedPassFlags")
+
+	local receipts = ensureTable(data, "Receipts")
+	local recentPurchaseIds = receipts.RecentPurchaseIds
+	if typeof(recentPurchaseIds) ~= "table" then
+		recentPurchaseIds = {}
+		receipts.RecentPurchaseIds = recentPurchaseIds
+	end
+	while #recentPurchaseIds > 100 do
+		table.remove(recentPurchaseIds, 1)
+	end
+	for index = #recentPurchaseIds, 1, -1 do
+		if not Validation.isBoundedString(recentPurchaseIds[index], 128) then
+			table.remove(recentPurchaseIds, index)
+		end
+	end
+
+	local stats = ensureTable(data, "Stats")
+	stats.LifetimeCredits = clampInteger(stats.LifetimeCredits, 0, GameConfig.Economy.MaxCredits, 0)
+	stats.LifetimeRobotsBuilt = clampInteger(stats.LifetimeRobotsBuilt, 0, 2_147_483_647, 0)
+
+	local timestamps = ensureTable(data, "Timestamps")
+	timestamps.LastJoin = clampInteger(timestamps.LastJoin, 0, 4_102_444_800, 0)
+	timestamps.LastSave = clampInteger(timestamps.LastSave, 0, 4_102_444_800, 0)
+	timestamps.LastProductionTick = clampInteger(timestamps.LastProductionTick, 0, 4_102_444_800, 0)
+
+	local settings = ensureTable(data, "Settings")
+	settings.Audio = sanitizeBoolean(settings.Audio, true)
+	settings.Haptics = sanitizeBoolean(settings.Haptics, true)
+	ensureTable(settings, "UI")
+end
+
+return table.freeze(ProfileSanitizer)
