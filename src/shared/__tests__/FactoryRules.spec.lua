@@ -32,6 +32,17 @@ describe("FactoryRules", function()
 		expect(FactoryRules.CanAfford(materials, { PowerCoreFragments = 1 })).toBe(false)
 	end)
 
+	it("accounts for spent inputs before storage outputs", function()
+		local materials = {
+			ScrapMetal = 49,
+			Wiring = 1,
+			PowerCoreFragments = 0,
+		}
+
+		expect(FactoryRules.CanFitTransaction(materials, { ScrapMetal = 4 }, { Wiring = 4 }, 50)).toBe(true)
+		expect(FactoryRules.CanFitTransaction(materials, {}, { Wiring = 1 }, 50)).toBe(false)
+	end)
+
 	it("rejects transactions that would exceed storage", function()
 		local materials = {
 			ScrapMetal = 49,
@@ -49,12 +60,31 @@ describe("FactoryRules", function()
 		expect(FactoryRules.GetWorkSlots(999)).toBe(1)
 	end)
 
+	it("returns the next upgrade and stops at max level", function()
+		local nextStorage = FactoryRules.GetNextUpgrade("Storage", 1)
+		local maxStorage = FactoryRules.GetNextUpgrade("Storage", 4)
+		local unknown = FactoryRules.GetNextUpgrade("MissingUpgrade", 1)
+
+		expect(nextStorage ~= nil).toBe(true)
+		expect(nextStorage.CostCredits > 0).toBe(true)
+		expect(maxStorage).toBe(nil)
+		expect(unknown).toBe(nil)
+	end)
+
 	it("keeps first robot reveals inside the onboarding pool", function()
 		local lowRoll = FactoryRules.RollRobot(0, true)
 		local highRoll = FactoryRules.RollRobot(0.999999, true)
 
 		expect(table.find(Robots.FirstRevealPool, lowRoll) ~= nil).toBe(true)
 		expect(table.find(Robots.FirstRevealPool, highRoll) ~= nil).toBe(true)
+	end)
+
+	it("clamps out-of-range robot rolls to valid outcomes", function()
+		local lowRoll = FactoryRules.RollRobot(-100, false)
+		local highRoll = FactoryRules.RollRobot(100, false)
+
+		expect(Robots.Definitions[lowRoll] ~= nil).toBe(true)
+		expect(Robots.Definitions[highRoll] ~= nil).toBe(true)
 	end)
 
 	it("returns a known robot for standard rolls", function()
