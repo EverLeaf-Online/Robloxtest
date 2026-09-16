@@ -9,7 +9,7 @@ This document distinguishes what is implemented from what is merely selected or 
 
 - Source workflow: Rojo.
 - Toolchain manager: Rokit, not Aftman.
-- Package manager: Wally with committed manifest/lockfile once generated.
+- Package manager: Wally with committed manifest and lockfile.
 - Formatter: StyLua.
 - Linter: Selene.
 - Persistence: official `MadStudioRoblox/ProfileStore`, consumed through its own Wally package `lm-loleris/profilestore@1.0.3`.
@@ -44,11 +44,13 @@ Rejected as the primary architecture because the game is expected to have a shop
 
 - `rokit.toml` with pinned Rojo/Wally/StyLua/Selene versions.
 - `wally.toml` with pinned React, ReactRoblox, ProfileStore, Jest, and JestGlobals dependencies.
+- committed generated `wally.lock` resolving the full dependency graph.
 - `stylua.toml`.
 - `selene.toml`.
 - `.gitignore` for generated package/build artifacts.
 - shipping `default.project.json`.
 - isolated `test.project.json`.
+- GitHub Actions validation workflow.
 
 ### Shared contracts
 
@@ -94,24 +96,31 @@ Rejected as the primary architecture because the game is expected to have a shop
 - test discovery configuration;
 - initial validator tests for finite numbers, bounded integers, bounded strings, and known IDs.
 
-## Still requires execution verification
+## Verified automatically
 
-The GitHub connector can create/review repository files but does not execute the Roblox/Rokit toolchain. These must be run before Phase A is considered fully proven:
+A green GitHub Actions run on 2026-09-16 confirmed the repository can execute all of the following from a clean Ubuntu runner:
 
-1. `rokit install`
-2. `wally install`
-3. commit the generated `wally.lock`
-4. `stylua --check src`
-5. `selene src`
-6. `rojo build default.project.json`
-7. `rojo build test.project.json`
-8. run the Jest entrypoint in a supported Roblox/OCALE test environment
-9. Studio fresh-player test confirms ProfileStore mock session starts and releases cleanly
-10. Studio client test confirms React root mounts without visible artifacts or warnings
+1. install Rokit;
+2. install the pinned Rojo/Wally/StyLua/Selene toolchain;
+3. resolve and install the full Wally dependency graph;
+4. pass `stylua --check src spec.lua`;
+5. pass `selene src spec.lua` with 0 errors, 0 warnings, and 0 parse errors;
+6. build `default.project.json` into the shipping Roblox place;
+7. build `test.project.json` into the isolated test model.
+
+The final CI workflow also runs `git diff --exit-code -- wally.lock` after `wally install` so dependency-manifest changes cannot silently leave a stale lockfile behind.
+
+## Still requires Roblox execution verification
+
+These checks require an actual Roblox execution environment rather than repository/toolchain validation:
+
+1. run the Jest entrypoint in a supported Roblox/OCALE test environment;
+2. Studio fresh-player test confirms ProfileStore mock session starts and releases cleanly;
+3. Studio client test confirms React root mounts without visible artifacts or warnings.
 
 ## Phase A exit rule
 
-Phase A is complete only when the above checks run successfully. Configuration/code being present is not enough.
+Phase A is complete only when the Roblox execution checks above pass. Repository structure, package resolution, formatting, linting, and both Rojo builds are already proven by CI.
 
 Once Phase A passes, Phase B begins with the smallest complete graybox loop:
 
