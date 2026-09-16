@@ -8,6 +8,7 @@ local RemoteNames = require(ReplicatedStorage.Shared.Networking.RemoteNames)
 local Robots = require(ReplicatedStorage.Shared.Config.Robots)
 local Validation = require(ReplicatedStorage.Shared.Util.Validation)
 
+local AnalyticsService = require(script.Parent.AnalyticsService)
 local DataService = require(script.Parent.DataService)
 local EconomyService = require(script.Parent.EconomyService)
 local RemoteService = require(script.Parent.RemoteService)
@@ -166,6 +167,19 @@ function RobotService.Sell(player: Player, robotUid: any)
 				Credits = granted,
 			})
 	end)
+
+	if executed and typeof(transactionResult) == "table" and transactionResult.Success == true then
+		local payload = transactionResult.Payload
+		local updatedData = DataService.GetData(player)
+		if typeof(payload) == "table" and typeof(payload.Credits) == "number" and updatedData ~= nil then
+			AnalyticsService.RecordCreditSource(
+				player,
+				"RobotRecycle",
+				payload.Credits,
+				updatedData.Currencies.Credits
+			)
+		end
+	end
 
 	sendResult(player, RemoteNames.RequestSellRobot, executed, transactionResult)
 end
