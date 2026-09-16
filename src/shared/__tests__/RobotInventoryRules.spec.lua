@@ -52,4 +52,17 @@ describe("RobotInventoryRules", function()
 
 		expect(nextUid).toBe(nil)
 	end)
+
+	it("accepts only canonical bounded robot uid strings", function()
+		expect(RobotInventoryRules.ParseUid("R1")).toBe(1)
+		expect(RobotInventoryRules.ParseUid("R2147483647")).toBe(2_147_483_647)
+		expect(RobotInventoryRules.IsValidUid("R42")).toBe(true)
+
+		expect(RobotInventoryRules.ParseUid("R0")).toBe(nil)
+		expect(RobotInventoryRules.ParseUid("R01")).toBe(nil)
+		expect(RobotInventoryRules.ParseUid("R2147483648")).toBe(nil)
+		expect(RobotInventoryRules.ParseUid("robot-1")).toBe(nil)
+		expect(RobotInventoryRules.ParseUid(1)).toBe(nil)
+		expect(RobotInventoryRules.IsValidUid("R01")).toBe(false)
+	end)
 end)
