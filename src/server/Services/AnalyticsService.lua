@@ -37,7 +37,13 @@ local function logOnboardingStep(player: Player, step: number, stepName: string)
 		EngineAnalyticsService:LogOnboardingFunnelStepEvent(player, step, stepName, {})
 	end)
 	if not ok then
-		warn(("[AnalyticsService] Failed onboarding event %s for %d: %s"):format(stepName, player.UserId, tostring(err)))
+		warn(
+			("[AnalyticsService] Failed onboarding event %s for %d: %s"):format(
+				stepName,
+				player.UserId,
+				tostring(err)
+			)
+		)
 	end
 end
 
@@ -107,7 +113,10 @@ local function checkMilestones(player: Player, state: SessionState)
 	end
 
 	for _, definition in milestoneSteps do
-		if not state.Emitted[definition.Key] and data.Tutorial.Milestones[definition.Key] == true then
+		if
+			not state.Emitted[definition.Key]
+			and data.Tutorial.Milestones[definition.Key] == true
+		then
 			state.Emitted[definition.Key] = true
 			logOnboardingStep(player, definition.Step, definition.Name)
 		end
