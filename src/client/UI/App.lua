@@ -161,13 +161,17 @@ end
 local function getObjective(snapshot: any): (string, string)
 	local milestones = snapshot.Tutorial.Milestones
 	local ownedPlotId = plotId(snapshot)
-	local plotText = if ownedPlotId then (" at your highlighted Plot %d"):format(ownedPlotId) else ""
+	local plotText = if ownedPlotId
+		then (" at your highlighted Plot %d"):format(ownedPlotId)
+		else ""
 	if milestones.FirstScrap ~= true then
 		return "Collect scrap", "Walk to a scrap pile and use its Collect prompt."
 	elseif milestones.FirstProcess ~= true then
-		return "Process materials", ("Use the processor%s to make wiring or recover a core."):format(plotText)
+		return "Process materials",
+			("Use the processor%s to make wiring or recover a core."):format(plotText)
 	elseif milestones.FirstBotReveal ~= true then
-		return "Build your first bot", ("Use the assembler%s once you have enough materials."):format(plotText)
+		return "Build your first bot",
+			("Use the assembler%s once you have enough materials."):format(plotText)
 	elseif milestones.FirstBotAssigned ~= true then
 		return "Put your bot to work", "Open Bots and assign your new bot to Pad 1."
 	elseif milestones.FirstIncomeEarned ~= true then
