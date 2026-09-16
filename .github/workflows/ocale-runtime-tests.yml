@@ -94,24 +94,10 @@ jobs:
           # Treat an absent/empty log collection as no output so task-state handling still runs.
           python3 - <<'PY'
           from pathlib import Path
-
           path = Path("src/core/ocaleSdk.luau")
           text = path.read_text()
-          old = '''\tlocal body = json.deserialize(response.body) :: any
-\tlocal logs = body.luauExecutionSessionTaskLogs[1].messages
-\tlog.fatalif(not logs, "Error downloading task logs")
-
-\treturn logs
-'''
-          new = '''\tlocal body = json.deserialize(response.body) :: any
-\tlocal taskLogs = body.luauExecutionSessionTaskLogs
-\tif not taskLogs or #taskLogs == 0 then
-\t\treturn {}
-\tend
-
-\tlocal logs = taskLogs[1].messages
-\treturn logs or {}
-'''
+          old = "\tlocal body = json.deserialize(response.body) :: any\n\tlocal logs = body.luauExecutionSessionTaskLogs[1].messages\n\tlog.fatalif(not logs, \"Error downloading task logs\")\n\n\treturn logs\n"
+          new = "\tlocal body = json.deserialize(response.body) :: any\n\tlocal taskLogs = body.luauExecutionSessionTaskLogs\n\tif not taskLogs or #taskLogs == 0 then\n\t\treturn {}\n\tend\n\n\tlocal logs = taskLogs[1].messages\n\treturn logs or {}\n"
           if text.count(old) != 1:
               raise SystemExit("Unexpected v0.1.3 getTaskLogs source shape")
           path.write_text(text.replace(old, new, 1))
