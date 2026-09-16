@@ -24,7 +24,7 @@ jobs:
           ROKIT_INSTALLER_URL="https://raw.githubusercontent.com/rojo-rbx/rokit/2f2618428ef31279e2fc80b0b1d73485bc929ddd/scripts/install.sh"
           curl --fail --silent --show-error --location \
             --retry 4 --retry-delay 2 --retry-all-errors \
-            "$ROKIT_INSTALLER_URL" | bash
+            "$ROKIT_INSTALLER_URL" | bash -s -- 1.2.0
           echo "$HOME/.rokit/bin" >> "$GITHUB_PATH"
 
       - name: Install pinned toolchain
