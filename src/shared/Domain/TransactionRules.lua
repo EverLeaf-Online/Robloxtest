@@ -27,6 +27,17 @@ local function replaceContents(target: any, source: any)
 	end
 end
 
+function TransactionRules.Snapshot(data: any): any
+	assert(typeof(data) == "table", "snapshot data must be a table")
+	return deepCopy(data, {})
+end
+
+function TransactionRules.Restore(liveData: any, snapshot: any)
+	assert(typeof(liveData) == "table", "live restore data must be a table")
+	assert(typeof(snapshot) == "table", "restore snapshot must be a table")
+	replaceContents(liveData, deepCopy(snapshot, {}))
+end
+
 function TransactionRules.Execute(
 	liveData: any,
 	transaction: (any) -> (boolean, any?),
@@ -34,7 +45,7 @@ function TransactionRules.Execute(
 ): (boolean, any?, string?)
 	assert(typeof(liveData) == "table", "live transaction data must be a table")
 
-	local draft = deepCopy(liveData, {})
+	local draft = TransactionRules.Snapshot(liveData)
 	local ok, shouldCommit, result = pcall(transaction, draft)
 	if not ok then
 		return false, "TRANSACTION_FAILED", tostring(shouldCommit)
