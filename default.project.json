@@ -14,12 +14,9 @@
       "$className": "StarterPlayer",
       "StarterPlayerScripts": {
         "$className": "StarterPlayerScripts",
-        "$path": "src/StarterPlayer/StarterPlayerScripts"
+        "$path": "src/StarterPlayer/StarterPlayerScripts",
+        "UIManager": { "$path": "src/StarterGui/UIManager.client.lua" }
       }
-    },
-    "StarterGui": {
-      "$className": "StarterGui",
-      "$path": "src/StarterGui"
     }
   }
 }
