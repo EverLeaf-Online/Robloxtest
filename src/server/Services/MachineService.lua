@@ -7,6 +7,7 @@ local FactoryRules = require(ReplicatedStorage.Shared.Domain.FactoryRules)
 local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
 local Recipes = require(ReplicatedStorage.Shared.Config.Recipes)
 local RemoteNames = require(ReplicatedStorage.Shared.Networking.RemoteNames)
+local RobotInventoryRules = require(ReplicatedStorage.Shared.Domain.RobotInventoryRules)
 local Robots = require(ReplicatedStorage.Shared.Config.Robots)
 local Validation = require(ReplicatedStorage.Shared.Util.Validation)
 
@@ -267,8 +268,16 @@ local function completeAssembler(player: Player, now: number): boolean
 		local robotId = FactoryRules.RollRobot(random:NextNumber(), firstBuild)
 		assert(Robots.Definitions[robotId] ~= nil, "robot roll must resolve to a known definition")
 
-		local uid = ("R%d"):format(data.Robots.NextUid)
-		data.Robots.NextUid += 1
+		local uidNumber = RobotInventoryRules.FindAvailableUidNumber(
+			data.Robots.OwnedByUid,
+			data.Robots.NextUid,
+			GameConfig.Economy.MaxOwnedRobots
+		)
+		if uidNumber == nil then
+			return false, result(false, "ROBOT_UID_UNAVAILABLE", nil)
+		end
+		local uid = RobotInventoryRules.FormatUid(uidNumber)
+		data.Robots.NextUid = RobotInventoryRules.AdvanceUidNumber(uidNumber)
 		data.Robots.OwnedByUid[uid] = {
 			RobotId = robotId,
 			AcquiredAt = now,
