@@ -49,7 +49,12 @@ function RateLimiter.Consume(player: Player, actionName: string, cost: number?):
 	bucket.Tokens = math.min(policy.Capacity, bucket.Tokens + elapsed * policy.RefillPerSecond)
 
 	local tokenCost = cost or 1
-	if tokenCost ~= tokenCost or tokenCost <= 0 or tokenCost == math.huge or tokenCost > policy.Capacity then
+	if
+		tokenCost ~= tokenCost
+		or tokenCost <= 0
+		or tokenCost == math.huge
+		or tokenCost > policy.Capacity
+	then
 		return false
 	end
 
