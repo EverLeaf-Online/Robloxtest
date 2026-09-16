@@ -2,6 +2,11 @@
   "name": "ScrapToBotTests",
   "tree": {
     "$className": "DataModel",
+    "ServerScriptService": {
+      "$properties": {
+        "LoadStringEnabled": true
+      }
+    },
     "ReplicatedStorage": {
       "Shared": {
         "$path": "src/shared"
