@@ -1,6 +1,9 @@
 --!strict
 
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local PlotRules = require(ReplicatedStorage.Shared.Domain.PlotRules)
 
 local DataService = require(script.Parent.DataService)
 local WorldService = require(script.Parent.WorldService)
@@ -34,12 +37,11 @@ local function setPlotLabel(plotId: number, player: Player?)
 end
 
 local function firstFreePlot(): number?
-	for plotId = 1, #WorldService.GetPlots() do
-		if ownerByPlot[plotId] == nil then
-			return plotId
-		end
+	local claimed: { [number]: boolean } = {}
+	for plotId in ownerByPlot do
+		claimed[plotId] = true
 	end
-	return nil
+	return PlotRules.FindFirstFree(#WorldService.GetPlots(), claimed)
 end
 
 local function release(player: Player)
