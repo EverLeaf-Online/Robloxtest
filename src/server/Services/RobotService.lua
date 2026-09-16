@@ -129,6 +129,38 @@ function RobotService.Assign(player: Player, robotUid: any, padId: any)
 	sendResult(player, RemoteNames.RequestAssignRobot, executed, transactionResult)
 end
 
+function RobotService.Unassign(player: Player, robotUid: any)
+	if not validString(robotUid) then
+		StateService.ActionResult(
+			player,
+			RemoteNames.RequestUnassignRobot,
+			false,
+			"INVALID_ROBOT_UID",
+			nil
+		)
+		return
+	end
+
+	local executed, transactionResult = DataService.Transaction(player, function(data)
+		if data.Robots.OwnedByUid[robotUid] == nil then
+			return false, result(false, "ROBOT_NOT_OWNED", nil)
+		end
+
+		local padId = findAssignedPad(data.Assignments.WorkPads, robotUid)
+		if padId == nil then
+			return false, result(false, "ROBOT_NOT_ASSIGNED", nil)
+		end
+
+		data.Assignments.WorkPads[padId] = nil
+		return true, result(true, "ROBOT_UNASSIGNED", {
+			RobotUid = robotUid,
+			PadId = padId,
+		})
+	end)
+
+	sendResult(player, RemoteNames.RequestUnassignRobot, executed, transactionResult)
+end
+
 function RobotService.Sell(player: Player, robotUid: any)
 	if not validString(robotUid) then
 		StateService.ActionResult(
@@ -196,6 +228,9 @@ function RobotService.Init()
 
 	RemoteService.BindRequest(RemoteNames.RequestAssignRobot, function(player, robotUid, padId)
 		RobotService.Assign(player, robotUid, padId)
+	end)
+	RemoteService.BindRequest(RemoteNames.RequestUnassignRobot, function(player, robotUid)
+		RobotService.Unassign(player, robotUid)
 	end)
 	RemoteService.BindRequest(RemoteNames.RequestSellRobot, function(player, robotUid)
 		RobotService.Sell(player, robotUid)
