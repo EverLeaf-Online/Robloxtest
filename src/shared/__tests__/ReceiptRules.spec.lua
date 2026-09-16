@@ -51,7 +51,8 @@ describe("ReceiptRules", function()
 	end)
 
 	it("rejects overlong ids and malformed source tables", function()
-		local normalized = ReceiptRules.NormalizeRecentPurchaseIds({ string.rep("x", 129), "OK" }, 100, 128)
+		local normalized =
+			ReceiptRules.NormalizeRecentPurchaseIds({ string.rep("x", 129), "OK" }, 100, 128)
 		local malformed = ReceiptRules.NormalizeRecentPurchaseIds("bad", 100, 128)
 
 		expect(#normalized).toBe(1)
