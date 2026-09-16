@@ -11,6 +11,7 @@ local Robots = require(ReplicatedStorage.Shared.Config.Robots)
 local Upgrades = require(ReplicatedStorage.Shared.Config.Upgrades)
 local Zones = require(ReplicatedStorage.Shared.Config.Zones)
 
+local UIBus = require(script.Parent.UIBus)
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 
 local COLORS = {
@@ -22,7 +23,6 @@ local COLORS = {
 	Accent = Color3.fromRGB(104, 214, 156),
 	AccentDark = Color3.fromRGB(48, 132, 88),
 	Danger = Color3.fromRGB(228, 101, 101),
-	Warning = Color3.fromRGB(240, 190, 82),
 }
 
 local rarityColors = table.freeze({
@@ -115,7 +115,6 @@ local function button(text: string, enabled: boolean, callback: (() -> ())?): an
 	if enabled and callback ~= nil then
 		props[React.Event.Activated] = callback
 	end
-
 	return React.createElement("TextButton", props, {
 		Corner = corner(7),
 	})
@@ -127,25 +126,25 @@ local function statCard(title: string, value: string): any
 		BorderSizePixel = 0,
 		Size = UDim2.new(0.25, -6, 1, 0),
 	}, {
-		Corner = corner(9),
+		Corner = corner(8),
 		Title = React.createElement("TextLabel", {
 			BackgroundTransparency = 1,
 			Font = Enum.Font.Gotham,
-			Position = UDim2.fromOffset(10, 8),
-			Size = UDim2.new(1, -20, 0, 17),
+			Position = UDim2.fromOffset(9, 4),
+			Size = UDim2.new(1, -18, 0, 14),
 			Text = title,
 			TextColor3 = COLORS.Muted,
-			TextSize = 11,
+			TextSize = 9,
 			TextXAlignment = Enum.TextXAlignment.Left,
 		}),
 		Value = React.createElement("TextLabel", {
 			BackgroundTransparency = 1,
 			Font = Enum.Font.GothamBold,
-			Position = UDim2.fromOffset(10, 25),
-			Size = UDim2.new(1, -20, 0, 25),
+			Position = UDim2.fromOffset(9, 17),
+			Size = UDim2.new(1, -18, 0, 20),
 			Text = value,
 			TextColor3 = COLORS.Text,
-			TextSize = 18,
+			TextSize = 15,
 			TextXAlignment = Enum.TextXAlignment.Left,
 		}),
 	})
@@ -161,27 +160,23 @@ end
 local function getObjective(snapshot: any): (string, string)
 	local milestones = snapshot.Tutorial.Milestones
 	local ownedPlotId = plotId(snapshot)
-	local plotText = if ownedPlotId
-		then (" at your highlighted Plot %d"):format(ownedPlotId)
-		else ""
+	local plotText = if ownedPlotId then (" at Plot %d"):format(ownedPlotId) else ""
 	if milestones.FirstScrap ~= true then
 		return "Collect scrap", "Walk to a scrap pile and use its Collect prompt."
 	elseif milestones.FirstProcess ~= true then
-		return "Process materials",
-			("Use the processor%s to make wiring or recover a core."):format(plotText)
+		return "Process materials", ("Use your processor%s to make wiring or recover a core."):format(plotText)
 	elseif milestones.FirstBotReveal ~= true then
-		return "Build your first bot",
-			("Use the assembler%s once you have enough materials."):format(plotText)
+		return "Build your first bot", ("Use your assembler%s once you have enough materials."):format(plotText)
 	elseif milestones.FirstBotAssigned ~= true then
-		return "Put your bot to work", "Open Bots and assign your new bot to Pad 1."
+		return "Put your bot to work", "Use the BOT CONTROL terminal and assign the bot to a work pad."
 	elseif milestones.FirstIncomeEarned ~= true then
 		return "Earn your first credits", "Your assigned bot produces credits automatically."
 	elseif milestones.FirstUpgrade ~= true then
-		return "Buy an upgrade", "Open Upgrades and improve your factory."
+		return "Buy an upgrade", "Use the UPGRADES terminal at your factory."
 	elseif snapshot.Progression.Zone < 2 then
 		local zone = Zones[2]
 		return "Unlock Circuit Yard",
-			("Gate progress: %s/%s Credits • %d/%d bots built. Use the east-side gate."):format(
+			("Gate progress: %s/%s Credits • %d/%d bots built."):format(
 				formatNumber(snapshot.Currencies.Credits),
 				formatNumber(zone.UnlockCredits),
 				math.min(snapshot.Stats.LifetimeRobotsBuilt, zone.RequiredLifetimeRobots),
@@ -253,26 +248,19 @@ local function machineStatus(snapshot: any, now: number): string
 	local lines = {}
 	local ownedPlotId = plotId(snapshot)
 
-	if ownedPlotId then
-		table.insert(lines, ("Factory Plot %d"):format(ownedPlotId))
-	else
-		table.insert(lines, "Factory Plot: assigning...")
-	end
-
+	table.insert(lines, if ownedPlotId then ("Plot %d"):format(ownedPlotId) else "Assigning plot...")
 	if processor.Active then
 		local remaining = math.max(0, processor.CompletesAt - now)
 		table.insert(lines, ("Processor: %s (%ds)"):format(processor.RecipeId, remaining))
 	else
 		table.insert(lines, "Processor: Ready")
 	end
-
 	if assembler.Active then
 		local remaining = math.max(0, assembler.CompletesAt - now)
 		table.insert(lines, ("Assembler: Building (%ds)"):format(remaining))
 	else
 		table.insert(lines, "Assembler: Ready")
 	end
-
 	return table.concat(lines, "\n")
 end
 
@@ -283,13 +271,11 @@ local function buildRobotRows(snapshot: any): any
 			SortOrder = Enum.SortOrder.LayoutOrder,
 		}),
 	}
-
 	local ids = {}
 	for uid in snapshot.Robots.OwnedByUid do
 		table.insert(ids, uid)
 	end
 	table.sort(ids)
-
 	if #ids == 0 then
 		rows.Empty = textLabel("No bots yet. Build one at the assembler.", 13, COLORS.Muted)
 		return rows
@@ -316,13 +302,18 @@ local function buildRobotRows(snapshot: any): any
 				end
 			end
 
-			local rowChildren: { [string]: any } = {
+			rows[("Robot_%s"):format(uid)] = React.createElement("Frame", {
+				BackgroundColor3 = COLORS.PanelSoft,
+				BorderSizePixel = 0,
+				LayoutOrder = index,
+				Size = UDim2.new(1, 0, 0, 58),
+			}, {
 				Corner = corner(8),
 				Name = React.createElement("TextLabel", {
 					BackgroundTransparency = 1,
 					Font = Enum.Font.GothamBold,
 					Position = UDim2.fromOffset(10, 7),
-					Size = UDim2.new(1, -200, 0, 20),
+					Size = UDim2.new(1, -210, 0, 20),
 					Text = definition.DisplayName,
 					TextColor3 = COLORS.Text,
 					TextSize = 14,
@@ -331,8 +322,8 @@ local function buildRobotRows(snapshot: any): any
 				Meta = React.createElement("TextLabel", {
 					BackgroundTransparency = 1,
 					Font = Enum.Font.Gotham,
-					Position = UDim2.fromOffset(10, 28),
-					Size = UDim2.new(1, -200, 0, 18),
+					Position = UDim2.fromOffset(10, 30),
+					Size = UDim2.new(1, -210, 0, 18),
 					Text = ("%s • %.1f credits/s • %s"):format(
 						definition.Rarity,
 						definition.ProductionPerSecond,
@@ -344,18 +335,18 @@ local function buildRobotRows(snapshot: any): any
 				}),
 				Assign = React.createElement("Frame", {
 					BackgroundTransparency = 1,
-					Position = UDim2.new(1, -188, 0.5, -16),
+					Position = UDim2.new(1, -198, 0.5, -16),
 					Size = UDim2.fromOffset(92, 32),
 				}, {
 					Button = button(assignmentText, assignmentCallback ~= nil, assignmentCallback),
 				}),
 				Recycle = React.createElement("Frame", {
 					BackgroundTransparency = 1,
-					Position = UDim2.new(1, -92, 0.5, -16),
+					Position = UDim2.new(1, -100, 0.5, -16),
 					Size = UDim2.fromOffset(92, 32),
 				}, {
 					Button = button(
-						("+%s"):format(formatNumber(definition.RecycleCredits)),
+						("Recycle +%s"):format(formatNumber(definition.RecycleCredits)),
 						canRecycle,
 						if canRecycle
 							then function()
@@ -364,17 +355,9 @@ local function buildRobotRows(snapshot: any): any
 							else nil
 					),
 				}),
-			}
-
-			rows[("Robot_%s"):format(uid)] = React.createElement("Frame", {
-				BackgroundColor3 = COLORS.PanelSoft,
-				BorderSizePixel = 0,
-				LayoutOrder = index,
-				Size = UDim2.new(1, 0, 0, 54),
-			}, rowChildren)
+			})
 		end
 	end
-
 	return rows
 end
 
@@ -385,7 +368,6 @@ local function buildUpgradeRows(snapshot: any): any
 			SortOrder = Enum.SortOrder.LayoutOrder,
 		}),
 	}
-
 	for index, upgradeId in upgradeOrder do
 		local definition = Upgrades[upgradeId]
 		local field = upgradeFields[upgradeId]
@@ -393,10 +375,7 @@ local function buildUpgradeRows(snapshot: any): any
 		local nextLevel = FactoryRules.GetNextUpgrade(upgradeId, currentLevel)
 		local enabled = nextLevel ~= nil and snapshot.Currencies.Credits >= nextLevel.CostCredits
 		local valueText = if nextLevel
-			then ("Next: %s • %s credits"):format(
-				tostring(nextLevel.Value),
-				formatNumber(nextLevel.CostCredits)
-			)
+			then ("Next: %s • %s credits"):format(tostring(nextLevel.Value), formatNumber(nextLevel.CostCredits))
 			else "Maximum level reached"
 
 		rows[("Upgrade_%s"):format(upgradeId)] = React.createElement("Frame", {
@@ -443,7 +422,6 @@ local function buildUpgradeRows(snapshot: any): any
 			}),
 		})
 	end
-
 	return rows
 end
 
@@ -493,7 +471,6 @@ local function buildIndexRows(snapshot: any): any
 			Rarity = React.createElement("Frame", {
 				BackgroundColor3 = rarityColors[definition.Rarity] or COLORS.Muted,
 				BorderSizePixel = 0,
-				Position = UDim2.fromOffset(0, 0),
 				Size = UDim2.fromOffset(5, 58),
 			}),
 			Name = React.createElement("TextLabel", {
@@ -518,32 +495,31 @@ local function buildIndexRows(snapshot: any): any
 			}),
 		})
 	end
-
 	return rows
 end
 
-local function panelTitle(activeTab: string, snapshot: any): string
-	if activeTab == "Bots" then
-		return ("Bots (%d)"):format(countOwnedRobots(snapshot))
-	elseif activeTab == "Upgrades" then
+local function panelTitle(panelName: string, snapshot: any): string
+	if panelName == "Bots" then
+		return ("Bot Control (%d)"):format(countOwnedRobots(snapshot))
+	elseif panelName == "Upgrades" then
 		return "Factory Upgrades"
 	end
 	return ("Robot Index (%d/%d)"):format(countDiscovered(snapshot), countRobotDefinitions())
 end
 
-local function panelHint(activeTab: string): string
-	if activeTab == "Bots" then
-		return "Assign or unassign bots on unlocked pads. Assigned bots generate credits."
-	elseif activeTab == "Upgrades" then
-		return "Upgrade prices and levels are validated by the server."
+local function panelHint(panelName: string): string
+	if panelName == "Bots" then
+		return "Assign or unassign bots from unlocked work pads. Idle bots can be recycled."
+	elseif panelName == "Upgrades" then
+		return "Upgrade prices, ownership, and currency spending are validated by the server."
 	end
-	return "Discover robot outcomes by assembling them. Undiscovered names stay hidden."
+	return "Discover robot outcomes by assembling them. Undiscovered names remain hidden."
 end
 
-local function panelContent(activeTab: string, snapshot: any): any
-	if activeTab == "Bots" then
+local function panelContent(panelName: string, snapshot: any): any
+	if panelName == "Bots" then
 		return buildRobotRows(snapshot)
-	elseif activeTab == "Upgrades" then
+	elseif panelName == "Upgrades" then
 		return buildUpgradeRows(snapshot)
 	end
 	return buildIndexRows(snapshot)
@@ -551,8 +527,8 @@ end
 
 local function App()
 	local snapshot, setSnapshot = React.useState(nil :: any?)
-	local activeTab, setActiveTab = React.useState("Bots")
-	local actionMessage, setActionMessage = React.useState("" :: string)
+	local openPanel, setOpenPanel = React.useState(nil :: string?)
+	local actionMessage, setActionMessage = React.useState("")
 	local actionSuccess, setActionSuccess = React.useState(true)
 	local now, setNow = React.useState(os.time())
 	local compact, setCompact = React.useState(false)
@@ -561,7 +537,6 @@ local function App()
 		local stateRemote = getRemote(RemoteNames.StateSnapshot)
 		local actionRemote = getRemote(RemoteNames.ActionResult)
 		local requestState = getRemote(RemoteNames.RequestState)
-
 		local stateConnection = stateRemote.OnClientEvent:Connect(function(nextSnapshot)
 			setSnapshot(nextSnapshot)
 		end)
@@ -572,11 +547,19 @@ local function App()
 			setActionSuccess(actionResult.Success == true)
 			setActionMessage(readableCode(tostring(actionResult.Code)))
 		end)
-
 		requestState:FireServer()
 		return function()
 			stateConnection:Disconnect()
 			actionConnection:Disconnect()
+		end
+	end, {})
+
+	React.useEffect(function()
+		local connection = UIBus.PanelRequested:Connect(function(panelName: string)
+			setOpenPanel(panelName)
+		end)
+		return function()
+			connection:Disconnect()
 		end
 	end, {})
 
@@ -600,7 +583,6 @@ local function App()
 		if camera == nil then
 			return nil
 		end
-
 		local function refreshCompact()
 			setCompact(camera.ViewportSize.X < 760)
 		end
@@ -632,11 +614,8 @@ local function App()
 	end
 
 	local objectiveTitle, objectiveBody = getObjective(snapshot)
-	local panelSize = if compact then UDim2.new(1, -24, 0.46, 0) else UDim2.new(0, 430, 1, -96)
-	local panelPosition = if compact then UDim2.new(0, 12, 1, -12) else UDim2.new(1, -12, 0, 84)
-	local panelAnchor = if compact then Vector2.new(0, 1) else Vector2.new(1, 0)
-	local objectiveWidth = if compact then UDim2.new(1, -24, 0, 76) else UDim2.fromOffset(380, 76)
-	local contentChildren = panelContent(activeTab, snapshot)
+	local objectiveWidth = if compact then UDim2.new(1, -24, 0, 70) else UDim2.fromOffset(330, 70)
+	local modalSize = if compact then UDim2.new(1, -24, 0.72, 0) else UDim2.fromOffset(560, 520)
 
 	return React.createElement("Frame", {
 		BackgroundTransparency = 1,
@@ -646,13 +625,13 @@ local function App()
 			BackgroundColor3 = COLORS.Panel,
 			BorderSizePixel = 0,
 			Position = UDim2.fromOffset(12, 12),
-			Size = UDim2.new(1, -24, 0, 60),
+			Size = UDim2.new(1, -24, 0, 46),
 		}, {
-			Corner = corner(10),
-			Padding = padding(6),
+			Corner = corner(9),
+			Padding = padding(5),
 			Layout = React.createElement("UIListLayout", {
 				FillDirection = Enum.FillDirection.Horizontal,
-				Padding = UDim.new(0, 8),
+				Padding = UDim.new(0, 6),
 				SortOrder = Enum.SortOrder.LayoutOrder,
 			}),
 			Credits = statCard("CREDITS", formatNumber(snapshot.Currencies.Credits)),
@@ -664,28 +643,28 @@ local function App()
 		Objective = React.createElement("Frame", {
 			BackgroundColor3 = COLORS.Panel,
 			BorderSizePixel = 0,
-			Position = UDim2.fromOffset(12, 84),
+			Position = UDim2.fromOffset(12, 68),
 			Size = objectiveWidth,
 		}, {
-			Corner = corner(10),
+			Corner = corner(9),
 			Title = React.createElement("TextLabel", {
 				BackgroundTransparency = 1,
 				Font = Enum.Font.GothamBold,
-				Position = UDim2.fromOffset(12, 10),
-				Size = UDim2.new(1, -24, 0, 20),
+				Position = UDim2.fromOffset(12, 8),
+				Size = UDim2.new(1, -24, 0, 18),
 				Text = objectiveTitle,
 				TextColor3 = COLORS.Accent,
-				TextSize = 15,
+				TextSize = 14,
 				TextXAlignment = Enum.TextXAlignment.Left,
 			}),
 			Body = React.createElement("TextLabel", {
 				BackgroundTransparency = 1,
 				Font = Enum.Font.Gotham,
-				Position = UDim2.fromOffset(12, 32),
+				Position = UDim2.fromOffset(12, 28),
 				Size = UDim2.new(1, -24, 0, 34),
 				Text = objectiveBody,
 				TextColor3 = COLORS.Text,
-				TextSize = 12,
+				TextSize = 11,
 				TextWrapped = true,
 				TextXAlignment = Enum.TextXAlignment.Left,
 				TextYAlignment = Enum.TextYAlignment.Top,
@@ -695,125 +674,100 @@ local function App()
 		MachineStatus = React.createElement("Frame", {
 			BackgroundColor3 = COLORS.Panel,
 			BorderSizePixel = 0,
-			Position = UDim2.fromOffset(12, 168),
-			Size = if compact then UDim2.new(1, -24, 0, 76) else UDim2.fromOffset(380, 76),
+			Position = UDim2.fromOffset(12, 146),
+			Size = if compact then UDim2.new(1, -24, 0, 66) else UDim2.fromOffset(330, 66),
 		}, {
-			Corner = corner(10),
+			Corner = corner(9),
 			Text = React.createElement("TextLabel", {
 				BackgroundTransparency = 1,
 				Font = Enum.Font.GothamMedium,
-				Position = UDim2.fromOffset(12, 9),
-				Size = UDim2.new(1, -24, 1, -18),
+				Position = UDim2.fromOffset(12, 7),
+				Size = UDim2.new(1, -24, 1, -14),
 				Text = machineStatus(snapshot, now),
 				TextColor3 = COLORS.Text,
-				TextSize = 12,
+				TextSize = 11,
 				TextXAlignment = Enum.TextXAlignment.Left,
 				TextYAlignment = Enum.TextYAlignment.Center,
 			}),
 		}),
 
-		Panel = React.createElement("Frame", {
-			AnchorPoint = panelAnchor,
-			BackgroundColor3 = COLORS.Panel,
-			BorderSizePixel = 0,
-			Position = panelPosition,
-			Size = panelSize,
-		}, {
-			Corner = corner(12),
-			Header = React.createElement("Frame", {
-				BackgroundTransparency = 1,
-				Position = UDim2.fromOffset(12, 10),
-				Size = UDim2.new(1, -24, 0, 40),
-			}, {
-				Title = React.createElement("TextLabel", {
-					BackgroundTransparency = 1,
-					Font = Enum.Font.GothamBold,
-					Size = UDim2.new(1, -252, 1, 0),
-					Text = panelTitle(activeTab, snapshot),
-					TextColor3 = COLORS.Text,
-					TextSize = 17,
-					TextXAlignment = Enum.TextXAlignment.Left,
-				}),
-				Bots = React.createElement("TextButton", {
-					BackgroundColor3 = if activeTab == "Bots"
-						then COLORS.AccentDark
-						else COLORS.PanelSoft,
-					Font = Enum.Font.GothamBold,
-					Position = UDim2.new(1, -246, 0.5, -16),
-					Size = UDim2.fromOffset(74, 32),
-					Text = "Bots",
-					TextColor3 = COLORS.Text,
-					TextSize = 12,
-					[React.Event.Activated] = function()
-						setActiveTab("Bots")
-					end,
-				}, {
-					Corner = corner(7),
-				}),
-				Upgrades = React.createElement("TextButton", {
-					BackgroundColor3 = if activeTab == "Upgrades"
-						then COLORS.AccentDark
-						else COLORS.PanelSoft,
-					Font = Enum.Font.GothamBold,
-					Position = UDim2.new(1, -168, 0.5, -16),
-					Size = UDim2.fromOffset(86, 32),
-					Text = "Upgrades",
-					TextColor3 = COLORS.Text,
-					TextSize = 12,
-					[React.Event.Activated] = function()
-						setActiveTab("Upgrades")
-					end,
-				}, {
-					Corner = corner(7),
-				}),
-				Index = React.createElement("TextButton", {
-					BackgroundColor3 = if activeTab == "Index"
-						then COLORS.AccentDark
-						else COLORS.PanelSoft,
-					Font = Enum.Font.GothamBold,
-					Position = UDim2.new(1, -78, 0.5, -16),
-					Size = UDim2.fromOffset(78, 32),
-					Text = "Index",
-					TextColor3 = COLORS.Text,
-					TextSize = 12,
-					[React.Event.Activated] = function()
-						setActiveTab("Index")
-					end,
-				}, {
-					Corner = corner(7),
-				}),
-			}),
-			Hint = React.createElement("TextLabel", {
-				BackgroundTransparency = 1,
-				Font = Enum.Font.Gotham,
-				Position = UDim2.fromOffset(12, 52),
-				Size = UDim2.new(1, -24, 0, 30),
-				Text = panelHint(activeTab),
-				TextColor3 = COLORS.Muted,
-				TextSize = 11,
-				TextWrapped = true,
-				TextXAlignment = Enum.TextXAlignment.Left,
-			}),
-			Content = React.createElement("ScrollingFrame", {
-				AutomaticCanvasSize = Enum.AutomaticSize.Y,
-				BackgroundTransparency = 1,
+		Overlay = if openPanel ~= nil
+			then React.createElement("Frame", {
+				BackgroundColor3 = Color3.new(0, 0, 0),
+				BackgroundTransparency = 0.45,
 				BorderSizePixel = 0,
-				CanvasSize = UDim2.fromOffset(0, 0),
-				Position = UDim2.fromOffset(12, 88),
-				ScrollBarThickness = 4,
-				Size = UDim2.new(1, -24, 1, -100),
-			}, contentChildren),
-		}),
+				Size = UDim2.fromScale(1, 1),
+				ZIndex = 20,
+			}, {
+				Panel = React.createElement("Frame", {
+					AnchorPoint = Vector2.new(0.5, 0.5),
+					BackgroundColor3 = COLORS.Panel,
+					BorderSizePixel = 0,
+					Position = UDim2.fromScale(0.5, 0.5),
+					Size = modalSize,
+					ZIndex = 21,
+				}, {
+					Corner = corner(12),
+					Title = React.createElement("TextLabel", {
+						BackgroundTransparency = 1,
+						Font = Enum.Font.GothamBold,
+						Position = UDim2.fromOffset(16, 14),
+						Size = UDim2.new(1, -100, 0, 24),
+						Text = panelTitle(openPanel :: string, snapshot),
+						TextColor3 = COLORS.Text,
+						TextSize = 18,
+						TextXAlignment = Enum.TextXAlignment.Left,
+						ZIndex = 22,
+					}),
+					Close = React.createElement("TextButton", {
+						BackgroundColor3 = COLORS.PanelSoft,
+						Font = Enum.Font.GothamBold,
+						Position = UDim2.new(1, -82, 0, 12),
+						Size = UDim2.fromOffset(66, 30),
+						Text = "Close",
+						TextColor3 = COLORS.Text,
+						TextSize = 12,
+						ZIndex = 22,
+						[React.Event.Activated] = function()
+							setOpenPanel(nil)
+						end,
+					}, {
+						Corner = corner(7),
+					}),
+					Hint = React.createElement("TextLabel", {
+						BackgroundTransparency = 1,
+						Font = Enum.Font.Gotham,
+						Position = UDim2.fromOffset(16, 48),
+						Size = UDim2.new(1, -32, 0, 34),
+						Text = panelHint(openPanel :: string),
+						TextColor3 = COLORS.Muted,
+						TextSize = 11,
+						TextWrapped = true,
+						TextXAlignment = Enum.TextXAlignment.Left,
+						ZIndex = 22,
+					}),
+					Content = React.createElement("ScrollingFrame", {
+						AutomaticCanvasSize = Enum.AutomaticSize.Y,
+						BackgroundTransparency = 1,
+						BorderSizePixel = 0,
+						CanvasSize = UDim2.fromOffset(0, 0),
+						Position = UDim2.fromOffset(16, 88),
+						ScrollBarThickness = 4,
+						Size = UDim2.new(1, -32, 1, -104),
+						ZIndex = 22,
+					}, panelContent(openPanel :: string, snapshot)),
+				}),
+			})
+			else nil,
 
 		Toast = if actionMessage ~= ""
 			then React.createElement("Frame", {
 				AnchorPoint = Vector2.new(0.5, 1),
 				BackgroundColor3 = if actionSuccess then COLORS.AccentDark else COLORS.Danger,
 				BorderSizePixel = 0,
-				Position = if compact
-					then UDim2.new(0.5, 0, 0.53, -8)
-					else UDim2.new(0.5, 0, 1, -16),
+				Position = UDim2.new(0.5, 0, 1, -16),
 				Size = UDim2.fromOffset(300, 38),
+				ZIndex = 30,
 			}, {
 				Corner = corner(9),
 				Text = React.createElement("TextLabel", {
@@ -823,6 +777,7 @@ local function App()
 					Text = actionMessage,
 					TextColor3 = COLORS.Text,
 					TextSize = 13,
+					ZIndex = 31,
 				}),
 			})
 			else nil,
