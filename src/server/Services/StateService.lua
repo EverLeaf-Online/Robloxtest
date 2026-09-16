@@ -83,10 +83,17 @@ function StateService.PushSnapshot(player: Player)
 	if data == nil then
 		return
 	end
-	RemoteService.Get(RemoteNames.StateSnapshot):FireClient(player, StateService.BuildSnapshot(data))
+	RemoteService.Get(RemoteNames.StateSnapshot)
+		:FireClient(player, StateService.BuildSnapshot(data))
 end
 
-function StateService.ActionResult(player: Player, actionName: string, success: boolean, code: string, payload: any?)
+function StateService.ActionResult(
+	player: Player,
+	actionName: string,
+	success: boolean,
+	code: string,
+	payload: any?
+)
 	RemoteService.Get(RemoteNames.ActionResult):FireClient(player, {
 		Action = actionName,
 		Success = success,
