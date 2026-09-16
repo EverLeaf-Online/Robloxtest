@@ -104,7 +104,10 @@ function DataService.GetData(player: Player): any?
 	return profile.Data
 end
 
-function DataService.Transaction(player: Player, transaction: (any) -> (boolean, any?)): (boolean, any?)
+function DataService.Transaction(
+	player: Player,
+	transaction: (any) -> (boolean, any?)
+): (boolean, any?)
 	local profile = profiles[player]
 	if profile == nil then
 		return false, "PROFILE_NOT_READY"
@@ -112,7 +115,12 @@ function DataService.Transaction(player: Player, transaction: (any) -> (boolean,
 
 	local ok, shouldCommit, result = pcall(transaction, profile.Data)
 	if not ok then
-		warn(("[DataService] Transaction failed for %d: %s"):format(player.UserId, tostring(shouldCommit)))
+		warn(
+			("[DataService] Transaction failed for %d: %s"):format(
+				player.UserId,
+				tostring(shouldCommit)
+			)
+		)
 		return false, "TRANSACTION_FAILED"
 	end
 
