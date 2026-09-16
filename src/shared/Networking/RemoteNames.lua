@@ -10,10 +10,8 @@ local RemoteNames = table.freeze({
 	RequestSellRobot = "RequestSellRobot",
 	RequestUpgrade = "RequestUpgrade",
 	RequestUnlockZone = "RequestUnlockZone",
-	RequestPrestige = "RequestPrestige",
 
 	StateSnapshot = "StateSnapshot",
-	StateDelta = "StateDelta",
 	ActionResult = "ActionResult",
 })
 
