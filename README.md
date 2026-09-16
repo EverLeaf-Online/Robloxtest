@@ -24,6 +24,7 @@ We are optimizing for:
 ## Research documents
 
 - `docs/ROBLOX_CREATOR_HUB_BASELINE.md` — **primary implementation authority**, converting current official Roblox Creator Hub guidance into project rules for design, analytics, monetization, security, persistence, mobile UX, and performance.
+- `docs/ROBLOX_OFFICIAL_GITHUB_RESEARCH_2026-09-16.md` — audit of the official `Roblox` GitHub organization, including current UI/testing/Open Cloud/data-operations/asset tooling and stale/archived projects to avoid as new foundations.
 - `docs/GITHUB_ECOSYSTEM_RESEARCH_2026-09-16.md` — curated current Roblox/Luau OSS ecosystem, toolchain modernization, library candidates, archived projects to avoid, and the proposed clean-project stack.
 - `docs/MARKET_RESEARCH_2026-09-16.md` — current Roblox market, discovery, retention, and competitor findings.
 - `docs/PRODUCT_STRATEGY.md` — product requirements, concept shortlist, and current recommended direction.
@@ -37,13 +38,15 @@ When implementation guidance conflicts, use sources in this order:
 
 1. Roblox Creator Hub / current official API and policy documentation (`https://create.roblox.com/docs`);
 2. `https://github.com/Roblox/creator-docs`, the searchable public Creator documentation source synchronized from Roblox internal docs;
-3. official Luau / Roblox-maintained source repositories where relevant;
+3. current, relevant repositories under `https://github.com/Roblox` and official Luau sources, after checking maintenance/archive status;
 4. Roblox staff platform announcements;
 5. our own live analytics and experiments;
 6. reviewed maintained OSS dependencies with compatible licenses;
 7. competitor/market research;
 8. community discussion;
 9. old scripts/tutorials only as historical or exploit references.
+
+**Official ownership alone is not enough.** Archived or stale Roblox repositories are treated as historical references unless current Creator Hub guidance or a maintained replacement says otherwise.
 
 ## Historical code
 
