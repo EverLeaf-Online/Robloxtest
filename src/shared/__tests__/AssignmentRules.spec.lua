@@ -55,6 +55,22 @@ describe("AssignmentRules", function()
 		expect(normalized.NotAPad).toBe(nil)
 	end)
 
+	it("drops assignments above the currently unlocked work-slot count", function()
+		local normalized = AssignmentRules.NormalizeWorkPads({
+			Pad1 = "R1",
+			Pad2 = "R2",
+			Pad3 = "R3",
+		}, {
+			R1 = {},
+			R2 = {},
+			R3 = {},
+		}, 1)
+
+		expect(normalized.Pad1).toBe("R1")
+		expect(normalized.Pad2).toBe(nil)
+		expect(normalized.Pad3).toBe(nil)
+	end)
+
 	it("returns an empty assignment set for malformed inputs", function()
 		local normalized = AssignmentRules.NormalizeWorkPads("bad", {}, 4)
 		expect(next(normalized)).toBe(nil)
