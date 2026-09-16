@@ -49,7 +49,12 @@ local function endSessionSafely(player: Player, profile: any)
 		end
 	end)
 	if not ok then
-		warn(("[DataService] Failed to end profile session for %d: %s"):format(player.UserId, tostring(err)))
+		warn(
+			("[DataService] Failed to end profile session for %d: %s"):format(
+				player.UserId,
+				tostring(err)
+			)
+		)
 	end
 end
 
@@ -83,7 +88,12 @@ function DataService.LoadPlayer(player: Player): boolean
 		})
 	end)
 	if not started then
-		warn(("[DataService] Profile session start failed for %d: %s"):format(player.UserId, tostring(profileOrError)))
+		warn(
+			("[DataService] Profile session start failed for %d: %s"):format(
+				player.UserId,
+				tostring(profileOrError)
+			)
+		)
 		kickDataFailure(player)
 		return false
 	end
@@ -96,7 +106,12 @@ function DataService.LoadPlayer(player: Player): boolean
 
 	local snapshotOk, originalDataOrError = pcall(TransactionRules.Snapshot, profile.Data)
 	if not snapshotOk then
-		warn(("[DataService] Profile snapshot failed for %d: %s"):format(player.UserId, tostring(originalDataOrError)))
+		warn(
+			("[DataService] Profile snapshot failed for %d: %s"):format(
+				player.UserId,
+				tostring(originalDataOrError)
+			)
+		)
 		endSessionSafely(player, profile)
 		kickDataFailure(player)
 		return false
@@ -112,9 +127,19 @@ function DataService.LoadPlayer(player: Player): boolean
 	if not prepared then
 		local restored, restoreError = pcall(TransactionRules.Restore, profile.Data, originalData)
 		if not restored then
-			warn(("[DataService] Profile restore failed for %d: %s"):format(player.UserId, tostring(restoreError)))
+			warn(
+				("[DataService] Profile restore failed for %d: %s"):format(
+					player.UserId,
+					tostring(restoreError)
+				)
+			)
 		end
-		warn(("[DataService] Profile preparation failed for %d: %s"):format(player.UserId, tostring(prepareError)))
+		warn(
+			("[DataService] Profile preparation failed for %d: %s"):format(
+				player.UserId,
+				tostring(prepareError)
+			)
+		)
 		endSessionSafely(player, profile)
 		kickDataFailure(player)
 		return false
