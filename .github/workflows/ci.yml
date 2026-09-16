@@ -31,8 +31,8 @@ jobs:
       - name: Install Wally packages
         run: wally install
 
-      - name: Emit initial Wally lockfile
-        run: cat wally.lock
+      - name: Verify Wally lockfile is current
+        run: git diff --exit-code -- wally.lock
 
       - name: Check formatting
         run: stylua --check src spec.lua
