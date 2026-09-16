@@ -40,7 +40,10 @@ end
 local function sanitizeProcessorJob(machines: any)
 	local job = ensureTable(machines, "ProcessorJob")
 	job.Active = sanitizeBoolean(job.Active, false)
-	job.RecipeId = if Validation.isBoundedString(job.RecipeId, GameConfig.Networking.MaxStringLength)
+	job.RecipeId = if Validation.isBoundedString(
+			job.RecipeId,
+			GameConfig.Networking.MaxStringLength
+		)
 		then job.RecipeId
 		else ""
 	job.StartedAt = clampInteger(job.StartedAt, 0, 4_102_444_800, 0)
