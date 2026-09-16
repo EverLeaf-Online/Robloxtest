@@ -75,16 +75,16 @@ function PlanetMath.getTileVisual(tileType, index, cosmicSkin)
 		return config.COLORS.GlowPlant, Enum.Material.Neon, 0
 	end
 
-	-- Bare land is represented by the smooth BaseSphere. Logical land cells stay
-	-- invisible until developed; this avoids the overlapping-block shell that made
-	-- the planet look jagged while keeping all 192 cells available for gameplay.
+	-- Bare land is the smooth BaseSphere. Logical cells remain almost completely
+	-- invisible until developed; 0.99 (rather than 1) keeps Roblox Highlight
+	-- reliable when the player selects an undeveloped cell.
 	if cosmicSkin then
 		local row, col = PlanetMath.indexToRowCol(index)
 		local color = ((row + col) % 2 == 0) and config.COLORS.CosmicLandA or config.COLORS.CosmicLandB
-		return color, Enum.Material.SmoothPlastic, 1
+		return color, Enum.Material.SmoothPlastic, 0.99
 	end
 
-	return config.COLORS.Land, Enum.Material.Ground, 1
+	return config.COLORS.Land, Enum.Material.SmoothPlastic, 0.99
 end
 
 return PlanetMath
