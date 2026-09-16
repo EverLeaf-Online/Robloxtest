@@ -164,11 +164,14 @@ local function getObjective(snapshot: any): (string, string)
 	if milestones.FirstScrap ~= true then
 		return "Collect scrap", "Walk to a scrap pile and use its Collect prompt."
 	elseif milestones.FirstProcess ~= true then
-		return "Process materials", ("Use your processor%s to make wiring or recover a core."):format(plotText)
+		return "Process materials",
+			("Use your processor%s to make wiring or recover a core."):format(plotText)
 	elseif milestones.FirstBotReveal ~= true then
-		return "Build your first bot", ("Use your assembler%s once you have enough materials."):format(plotText)
+		return "Build your first bot",
+			("Use your assembler%s once you have enough materials."):format(plotText)
 	elseif milestones.FirstBotAssigned ~= true then
-		return "Put your bot to work", "Use the BOT CONTROL terminal and assign the bot to a work pad."
+		return "Put your bot to work",
+			"Use the BOT CONTROL terminal and assign the bot to a work pad."
 	elseif milestones.FirstIncomeEarned ~= true then
 		return "Earn your first credits", "Your assigned bot produces credits automatically."
 	elseif milestones.FirstUpgrade ~= true then
@@ -248,7 +251,10 @@ local function machineStatus(snapshot: any, now: number): string
 	local lines = {}
 	local ownedPlotId = plotId(snapshot)
 
-	table.insert(lines, if ownedPlotId then ("Plot %d"):format(ownedPlotId) else "Assigning plot...")
+	table.insert(
+		lines,
+		if ownedPlotId then ("Plot %d"):format(ownedPlotId) else "Assigning plot..."
+	)
 	if processor.Active then
 		local remaining = math.max(0, processor.CompletesAt - now)
 		table.insert(lines, ("Processor: %s (%ds)"):format(processor.RecipeId, remaining))
@@ -375,7 +381,10 @@ local function buildUpgradeRows(snapshot: any): any
 		local nextLevel = FactoryRules.GetNextUpgrade(upgradeId, currentLevel)
 		local enabled = nextLevel ~= nil and snapshot.Currencies.Credits >= nextLevel.CostCredits
 		local valueText = if nextLevel
-			then ("Next: %s • %s credits"):format(tostring(nextLevel.Value), formatNumber(nextLevel.CostCredits))
+			then ("Next: %s • %s credits"):format(
+				tostring(nextLevel.Value),
+				formatNumber(nextLevel.CostCredits)
+			)
 			else "Maximum level reached"
 
 		rows[("Upgrade_%s"):format(upgradeId)] = React.createElement("Frame", {
