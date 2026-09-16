@@ -2,6 +2,26 @@
   "name": "GrowATinyPlanet",
   "tree": {
     "$className": "DataModel",
+    "Workspace": {
+      "$className": "Workspace",
+      "$properties": {
+        "StreamingEnabled": false
+      }
+    },
+    "ReplicatedFirst": {
+      "$className": "ReplicatedFirst",
+      "Remotes": {
+        "$className": "Folder",
+        "ApplyAction": { "$className": "RemoteEvent" },
+        "UpdateEnergy": { "$className": "RemoteEvent" },
+        "UpdateTile": { "$className": "RemoteEvent" },
+        "MilestoneReached": { "$className": "RemoteEvent" },
+        "PurchaseConfirmed": { "$className": "RemoteEvent" },
+        "Notify": { "$className": "RemoteEvent" },
+        "UpdateStats": { "$className": "RemoteEvent" },
+        "GetPlanetState": { "$className": "RemoteFunction" }
+      }
+    },
     "ReplicatedStorage": {
       "$className": "ReplicatedStorage",
       "Shared": { "$path": "src/ReplicatedStorage/Shared" }
@@ -14,8 +34,7 @@
       "$className": "StarterPlayer",
       "StarterPlayerScripts": {
         "$className": "StarterPlayerScripts",
-        "$path": "src/StarterPlayer/StarterPlayerScripts",
-        "UIManager": { "$path": "src/StarterGui/UIManager.client.lua" }
+        "$path": "src/StarterPlayer/StarterPlayerScripts"
       }
     }
   }
