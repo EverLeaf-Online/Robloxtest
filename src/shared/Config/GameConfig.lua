@@ -28,7 +28,7 @@ local GameConfig = {
 	Networking = {
 		MaxStringLength = 64,
 		RateLimits = {
-			RequestState = { Capacity = 4, RefillPerSecond = 1 },
+			RequestState = { Capacity = 2, RefillPerSecond = 0.5 },
 			RequestCollect = { Capacity = 8, RefillPerSecond = 4 },
 			RequestProcess = { Capacity = 5, RefillPerSecond = 2 },
 			RequestAssemble = { Capacity = 4, RefillPerSecond = 1 },
@@ -37,7 +37,6 @@ local GameConfig = {
 			RequestSellRobot = { Capacity = 6, RefillPerSecond = 2 },
 			RequestUpgrade = { Capacity = 4, RefillPerSecond = 1 },
 			RequestUnlockZone = { Capacity = 3, RefillPerSecond = 0.5 },
-			RequestPrestige = { Capacity = 2, RefillPerSecond = 0.25 },
 		},
 	},
 }
