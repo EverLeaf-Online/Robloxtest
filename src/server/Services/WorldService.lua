@@ -7,6 +7,7 @@ local initialized = false
 local root: Folder? = nil
 local salvageNodes: { [string]: BasePart } = {}
 local processorControls: { BasePart } = {}
+local processorControlByRecipe: { [string]: BasePart } = {}
 local assemblerPart: BasePart? = nil
 
 local function makePart(parent: Instance, name: string, size: Vector3, position: Vector3): Part
@@ -30,6 +31,12 @@ local function addPrompt(part: BasePart, actionText: string, objectText: string)
 	prompt.RequiresLineOfSight = false
 	prompt.Parent = part
 	return prompt
+end
+
+local function registerProcessorControl(part: BasePart, recipeId: string)
+	part:SetAttribute("ProcessorRecipeId", recipeId)
+	processorControlByRecipe[recipeId] = part
+	table.insert(processorControls, part)
 end
 
 local function buildWorld(): Folder
@@ -83,14 +90,12 @@ local function buildWorld(): Folder
 	processor.Material = Enum.Material.Metal
 
 	local wiringControl = makePart(factoryFolder, "MakeWiring", Vector3.new(5, 2, 4), Vector3.new(-22, 2, 17))
-	wiringControl:SetAttribute("ProcessorRecipeId", "MakeWiring")
+	registerProcessorControl(wiringControl, "MakeWiring")
 	addPrompt(wiringControl, "Process", "Make Wiring")
-	table.insert(processorControls, wiringControl)
 
 	local coreControl = makePart(factoryFolder, "RecoverCore", Vector3.new(5, 2, 4), Vector3.new(-14, 2, 17))
-	coreControl:SetAttribute("ProcessorRecipeId", "RecoverCore")
+	registerProcessorControl(coreControl, "RecoverCore")
 	addPrompt(coreControl, "Process", "Recover Core")
-	table.insert(processorControls, coreControl)
 
 	local assembler = makePart(factoryFolder, "Assembler", Vector3.new(14, 8, 10), Vector3.new(3, 4.5, 24))
 	assembler.Material = Enum.Material.Metal
@@ -128,6 +133,10 @@ end
 
 function WorldService.GetProcessorControls(): { BasePart }
 	return processorControls
+end
+
+function WorldService.GetProcessorControl(recipeId: string): BasePart?
+	return processorControlByRecipe[recipeId]
 end
 
 function WorldService.GetAssemblerPart(): BasePart
