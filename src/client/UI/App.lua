@@ -78,7 +78,7 @@ local function textLabel(text: string, size: number, color: Color3?, bold: boole
 		AutomaticSize = Enum.AutomaticSize.Y,
 		BackgroundTransparency = 1,
 		Font = if bold then Enum.Font.GothamBold else Enum.Font.Gotham,
-		Size = UDim2.new(1, 0, 0, 0),
+		Size = UDim2.fromScale(1, 0),
 		Text = text,
 		TextColor3 = color or COLORS.Text,
 		TextSize = size,
