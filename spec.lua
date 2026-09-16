@@ -1,3 +1,5 @@
+--# selene: allow(incorrect_standard_library_use)
+
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local DevPackages = ReplicatedStorage:WaitForChild("DevPackages")
