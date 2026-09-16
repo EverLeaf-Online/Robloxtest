@@ -4,6 +4,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local RemoteNames = require(ReplicatedStorage.Shared.Networking.RemoteNames)
+local DataService = require(script.Parent.DataService)
 local RateLimiter = require(script.Parent.RateLimiter)
 
 local REMOTE_FOLDER_NAME = "Remotes"
@@ -86,6 +87,10 @@ function RemoteService.BindRequest(name: string, handler: (Player, ...any) -> ()
 	local remote = RemoteService.Get(name)
 
 	remote.OnServerEvent:Connect(function(player, ...)
+		if not DataService.IsReady(player) then
+			return
+		end
+
 		if not RateLimiter.Consume(player, name) then
 			return
 		end
