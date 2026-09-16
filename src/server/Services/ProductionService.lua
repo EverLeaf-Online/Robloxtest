@@ -66,7 +66,6 @@ function ProductionService.TickPlayer(player: Player)
 
 	local rate = productionRate(data)
 	if rate <= 0 then
-		fractionalCreditsByUser[player.UserId] = 0
 		return
 	end
 
