@@ -28,7 +28,13 @@ local Robots: { [string]: RobotDefinition } = {
 		Weight = 180,
 		ProductionPerSecond = 1,
 		RecycleCredits = 20,
-		Visual = { Body = "Compact", Head = "Round", Tool = "Grabber", Locomotion = "Wheels", Accent = "Steel" },
+		Visual = {
+			Body = "Compact",
+			Head = "Round",
+			Tool = "Grabber",
+			Locomotion = "Wheels",
+			Accent = "Steel",
+		},
 	},
 	BoltBuddy = {
 		Id = "BoltBuddy",
@@ -38,7 +44,13 @@ local Robots: { [string]: RobotDefinition } = {
 		Weight = 160,
 		ProductionPerSecond = 1.1,
 		RecycleCredits = 22,
-		Visual = { Body = "Compact", Head = "Box", Tool = "Magnet", Locomotion = "Wheels", Accent = "Orange" },
+		Visual = {
+			Body = "Compact",
+			Head = "Box",
+			Tool = "Magnet",
+			Locomotion = "Wheels",
+			Accent = "Orange",
+		},
 	},
 	WireWisp = {
 		Id = "WireWisp",
@@ -48,7 +60,13 @@ local Robots: { [string]: RobotDefinition } = {
 		Weight = 145,
 		ProductionPerSecond = 1.2,
 		RecycleCredits = 24,
-		Visual = { Body = "Orb", Head = "Lens", Tool = "Coil", Locomotion = "Hover", Accent = "Blue" },
+		Visual = {
+			Body = "Orb",
+			Head = "Lens",
+			Tool = "Coil",
+			Locomotion = "Hover",
+			Accent = "Blue",
+		},
 	},
 	RivetRunner = {
 		Id = "RivetRunner",
@@ -58,7 +76,13 @@ local Robots: { [string]: RobotDefinition } = {
 		Weight = 125,
 		ProductionPerSecond = 1.3,
 		RecycleCredits = 26,
-		Visual = { Body = "Utility", Head = "Round", Tool = "Clamp", Locomotion = "Legs", Accent = "Yellow" },
+		Visual = {
+			Body = "Utility",
+			Head = "Round",
+			Tool = "Clamp",
+			Locomotion = "Legs",
+			Accent = "Yellow",
+		},
 	},
 	CopperClaw = {
 		Id = "CopperClaw",
@@ -68,7 +92,13 @@ local Robots: { [string]: RobotDefinition } = {
 		Weight = 82,
 		ProductionPerSecond = 1.8,
 		RecycleCredits = 45,
-		Visual = { Body = "Utility", Head = "Box", Tool = "Claw", Locomotion = "Wheels", Accent = "Copper" },
+		Visual = {
+			Body = "Utility",
+			Head = "Box",
+			Tool = "Claw",
+			Locomotion = "Wheels",
+			Accent = "Copper",
+		},
 	},
 	CircuitMender = {
 		Id = "CircuitMender",
@@ -78,7 +108,13 @@ local Robots: { [string]: RobotDefinition } = {
 		Weight = 70,
 		ProductionPerSecond = 2,
 		RecycleCredits = 50,
-		Visual = { Body = "Compact", Head = "Lens", Tool = "Welder", Locomotion = "Legs", Accent = "Green" },
+		Visual = {
+			Body = "Compact",
+			Head = "Lens",
+			Tool = "Welder",
+			Locomotion = "Legs",
+			Accent = "Green",
+		},
 	},
 	GearGlider = {
 		Id = "GearGlider",
@@ -88,7 +124,13 @@ local Robots: { [string]: RobotDefinition } = {
 		Weight = 62,
 		ProductionPerSecond = 2.2,
 		RecycleCredits = 55,
-		Visual = { Body = "Orb", Head = "Round", Tool = "Cargo", Locomotion = "Hover", Accent = "Teal" },
+		Visual = {
+			Body = "Orb",
+			Head = "Round",
+			Tool = "Cargo",
+			Locomotion = "Hover",
+			Accent = "Teal",
+		},
 	},
 	ForgeHound = {
 		Id = "ForgeHound",
@@ -98,7 +140,13 @@ local Robots: { [string]: RobotDefinition } = {
 		Weight = 55,
 		ProductionPerSecond = 2.4,
 		RecycleCredits = 60,
-		Visual = { Body = "Heavy", Head = "Visor", Tool = "Pusher", Locomotion = "Legs", Accent = "Red" },
+		Visual = {
+			Body = "Heavy",
+			Head = "Visor",
+			Tool = "Pusher",
+			Locomotion = "Legs",
+			Accent = "Red",
+		},
 	},
 	CoreDriller = {
 		Id = "CoreDriller",
@@ -108,7 +156,13 @@ local Robots: { [string]: RobotDefinition } = {
 		Weight = 38,
 		ProductionPerSecond = 3.5,
 		RecycleCredits = 110,
-		Visual = { Body = "Heavy", Head = "Lens", Tool = "Drill", Locomotion = "Tracks", Accent = "Violet" },
+		Visual = {
+			Body = "Heavy",
+			Head = "Lens",
+			Tool = "Drill",
+			Locomotion = "Tracks",
+			Accent = "Violet",
+		},
 	},
 	ArcWelder = {
 		Id = "ArcWelder",
@@ -118,7 +172,13 @@ local Robots: { [string]: RobotDefinition } = {
 		Weight = 30,
 		ProductionPerSecond = 3.9,
 		RecycleCredits = 125,
-		Visual = { Body = "Utility", Head = "Visor", Tool = "ArcTool", Locomotion = "Hover", Accent = "Cyan" },
+		Visual = {
+			Body = "Utility",
+			Head = "Visor",
+			Tool = "ArcTool",
+			Locomotion = "Hover",
+			Accent = "Cyan",
+		},
 	},
 	Magnetitan = {
 		Id = "Magnetitan",
@@ -128,7 +188,13 @@ local Robots: { [string]: RobotDefinition } = {
 		Weight = 24,
 		ProductionPerSecond = 4.4,
 		RecycleCredits = 145,
-		Visual = { Body = "Heavy", Head = "Box", Tool = "TwinMagnet", Locomotion = "Tracks", Accent = "Magenta" },
+		Visual = {
+			Body = "Heavy",
+			Head = "Box",
+			Tool = "TwinMagnet",
+			Locomotion = "Tracks",
+			Accent = "Magenta",
+		},
 	},
 	NovaForeman = {
 		Id = "NovaForeman",
@@ -138,7 +204,13 @@ local Robots: { [string]: RobotDefinition } = {
 		Weight = 9,
 		ProductionPerSecond = 7.5,
 		RecycleCredits = 300,
-		Visual = { Body = "Command", Head = "Visor", Tool = "MultiTool", Locomotion = "Hover", Accent = "Gold" },
+		Visual = {
+			Body = "Command",
+			Head = "Visor",
+			Tool = "MultiTool",
+			Locomotion = "Hover",
+			Accent = "Gold",
+		},
 	},
 }
 
