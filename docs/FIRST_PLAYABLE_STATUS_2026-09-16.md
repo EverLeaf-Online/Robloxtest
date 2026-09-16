@@ -7,7 +7,7 @@ This is the execution status for the first playable graybox. It separates implem
 
 ## Implemented; static/build checks green
 
-The systems below are implemented in source. The complete code head immediately before this documentation refresh passed the current repository formatting, lint, dependency-lock, shipping-build, OCALE-runner-syntax, and test-project-build gates in **CI #113**. This documentation-only commit still requires its own CI run before the branch head is called green. Runtime behavior still belongs to the Studio/OCALE section below.
+The systems below are implemented in source. The accumulated first-playable hardening head passed the current repository formatting, lint, dependency-lock, shipping-build, OCALE-runner-syntax, and test-project-build gates in **CI #120**. Runtime behavior still belongs to the Studio/OCALE section below.
 
 ### World / multiplayer plots
 
@@ -16,6 +16,7 @@ The systems below are implemented in source. The complete code head immediately 
 - deterministic first-free plot allocation;
 - plot owner labels and clean release on player leave/session release;
 - players are explicitly removed with a clear message if no factory plot can be allocated instead of entering a broken no-plot session;
+- profile release cleanup is emitted exactly once so plot/session consumers can reliably clear per-player state;
 - requesting player's plot ID included in safe replicated state;
 - local client highlights only the player's own factory and labels it `YOUR FACTORY`;
 - processor/assembler prompt paths reject foreign-plot use;
@@ -35,6 +36,7 @@ The systems below are implemented in source. The complete code head immediately 
 - guaranteed usable first-reveal pool;
 - robot assignment to server-validated unlocked work pads;
 - assigned bots can be explicitly unassigned so a full lineup never becomes permanently locked;
+- assignment requests reject already-assigned robots and occupied pads instead of silently moving/replacing lineup state;
 - server-calculated passive Credit generation;
 - idle robot recycling;
 - server-priced processor, assembler, storage, and work-slot upgrades.
@@ -73,7 +75,7 @@ The systems below are implemented in source. The complete code head immediately 
 - zone unlock is implemented as an atomic server transaction;
 - gate travel requires the authoritative physical gate proximity check;
 - locked-zone salvage performs server-side progression checks, including inside the transaction;
-- current zone is persisted and sanitized.
+- persisted zone progression is normalized through the contiguous configured zone catalog, so malformed/high saved values cannot pre-unlock future zones.
 
 ### Persistence / security
 
@@ -121,13 +123,13 @@ GitHub CI currently validates:
 Jest spec files currently exist for:
 
 - factory/economy rules;
-- progression/zone rules;
+- progression/zone rules, including persisted-zone normalization;
 - validation helpers;
 - deterministic plot allocation;
 - assignment normalization, including duplicate/invalid/locked-pad cleanup;
 - collision-safe robot UID allocation, wraparound, malformed counters, and bounded exhaustion behavior.
 
-The full accumulated code hardening head passed **CI #113** on 2026-09-16. The current documentation-only head is pending its own CI run.
+The full accumulated hardening head passed **CI #120** on 2026-09-16.
 
 **Important:** GitHub CI does not currently execute the Jest suite. It proves the test project and spec source build/lint cleanly, not that the specs passed in a Roblox runtime. Actual Jest execution is a Studio/OCALE runtime gate.
 
@@ -140,6 +142,7 @@ These are **not** considered complete until tested in an actual Roblox runtime:
 - fresh-player end-to-end loop: collect -> process -> assemble -> reveal -> assign -> earn -> upgrade;
 - first robot appears correctly on Pad 1;
 - assigned bot can be unassigned, replaced, and recycled after becoming idle;
+- processor completion clearly communicates a full-storage stall at runtime;
 - robot model pieces are aligned/oriented correctly for all locomotion/body variants;
 - two players receive different plots;
 - one player cannot use another player's processor or assembler through prompts;
