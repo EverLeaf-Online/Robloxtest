@@ -113,9 +113,11 @@ function RobotService.Assign(player: Player, robotUid: any, padId: any)
 		end
 
 		local workPads = data.Assignments.WorkPads
-		local oldPad = findAssignedPad(workPads, robotUid)
-		if oldPad ~= nil and oldPad ~= padId then
-			workPads[oldPad] = nil
+		if findAssignedPad(workPads, robotUid) ~= nil then
+			return false, result(false, "ROBOT_ALREADY_ASSIGNED", nil)
+		end
+		if workPads[padId] ~= nil then
+			return false, result(false, "WORK_PAD_OCCUPIED", nil)
 		end
 
 		workPads[padId] = robotUid
