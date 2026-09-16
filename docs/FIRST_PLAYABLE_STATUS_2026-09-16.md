@@ -7,7 +7,7 @@ This is the execution status for the first playable graybox. It separates implem
 
 ## Implemented; static/build checks green
 
-The complete accumulated first-playable code head passed the repository formatting, lint, dependency-lock, shipping-build, OCALE-runner-syntax, and test-project-build gates in **CI #159**. The first documentation refresh then passed the same branch gate in **CI #160**. Runtime behavior still belongs to the Studio/OCALE section below.
+The accumulated first-playable code, security, runtime-cost, and CI-bootstrap head passed the repository formatting, lint, dependency-lock, shipping-build, OCALE-runner-syntax, and test-project-build gates in **CI #164**. Runtime behavior still belongs to the Studio/OCALE section below.
 
 ### World / multiplayer plots
 
@@ -19,6 +19,7 @@ The complete accumulated first-playable code head passed the repository formatti
 - profile release cleanup is emitted exactly once so plot/session consumers can reliably clear per-player state;
 - requesting player's plot ID included in safe replicated state;
 - local client highlights only the player's own factory and labels it `YOUR FACTORY`;
+- the local plot-marker replication fallback uses one retry worker that follows the latest requested plot instead of spawning a new retry task for every state snapshot;
 - processor/assembler prompt paths reject foreign-plot use;
 - processor/assembler remote paths resolve only against the requesting player's allocated plot;
 - ProximityPrompt activation distance is config-driven at 12 studs;
@@ -30,6 +31,7 @@ The complete accumulated first-playable code head passed the repository formatti
 - authoritative salvage collection with distance, cooldown, storage, node existence, and zone validation;
 - a shared salvage node is synchronously claim-locked before profile mutation so two players cannot receive the same node reward concurrently;
 - failed salvage transactions release only the invisible node claim instead of flickering/disabling the shared prompt for other players;
+- salvage claim state is finalized before client notification, so a disconnect/`FireClient` failure cannot strand a shared node claim;
 - starter first-collect bonus;
 - processor jobs with durable start/completion timestamps;
 - active processor output reserves material-storage space, preventing later salvage from consuming the slot needed for completion;
@@ -56,6 +58,7 @@ The complete accumulated first-playable code head passed the repository formatti
 - this removes approximately 64 unnecessary profile drafts per second in an 8-player idle server under the previous implementation;
 - passive production skips its assignment scan, profile transaction, analytics path, and full state push while Credits are capped;
 - robot visual synchronization remains bounded to four work pads per player;
+- repeated missing-plot state snapshots cannot stack client retry loops;
 - full state snapshot/delta-protocol optimization remains a runtime-profiling decision rather than an unmeasured rewrite.
 
 ### Physical progression / presentation
@@ -151,6 +154,12 @@ GitHub CI currently validates:
 - shipping Rojo project build;
 - Jest/OCALE test Rojo project build.
 
+CI bootstrap hardening:
+
+- Rokit's installer URL is pinned to verified upstream commit `2f2618428ef31279e2fc80b0b1d73485bc929ddd` instead of mutable `main`;
+- the Rokit installer download uses bounded curl retry/backoff for transient raw-GitHub failures;
+- this change was validated as part of **CI #164** after a prior runner hit an external HTTP 403 before any project validation step could start.
+
 Jest spec files currently exist for:
 
 - factory/economy rules, including processor storage reservation and data-driven upgrade-level normalization;
@@ -162,10 +171,7 @@ Jest spec files currently exist for:
 - transaction rollback, thrown callbacks, prepare-commit failure, successful draft commit, and snapshot/restore isolation;
 - receipt-history normalization, duplicate handling, sparse/arbitrary keys, malformed IDs, and bounded history.
 
-Latest verification:
-
-- complete accumulated gameplay/security/runtime-cost code head: **CI #159 green**;
-- first refreshed status-document head: **CI #160 green**.
+Latest verified accumulated code/CI-bootstrap head: **CI #164 green** on 2026-09-16.
 
 **Important:** GitHub CI does not currently execute the Jest suite. It proves the test project and spec source build/lint cleanly, not that the specs passed in a Roblox runtime. Actual Jest execution is a Studio/OCALE runtime gate.
 
@@ -189,6 +195,7 @@ These are **not** considered complete until tested in an actual Roblox runtime:
 - one player cannot use another player's processor or assembler through prompts;
 - plot release/reassignment works after leave/rejoin;
 - `YOUR FACTORY` local marker points to the correct plot for each player;
+- plot marker still appears if its first state snapshot arrives before the generated plot replicates;
 - plot stations do not overlap machines, pads, labels, or player movement paths;
 - all ProximityPrompts are reachable and readable;
 - Circuit Yard gate proximity, unlock, teleport, salvage, and return portal work physically;
