@@ -1,0 +1,12 @@
+[package]
+name = "everleaf-online/scrap-to-bot-factory"
+description = "Profit-first Roblox simulator prototype"
+version = "0.1.0"
+registry = "https://github.com/UpliftGames/wally-index"
+realm = "shared"
+
+[dependencies]
+
+[server-dependencies]
+
+[dev-dependencies]
