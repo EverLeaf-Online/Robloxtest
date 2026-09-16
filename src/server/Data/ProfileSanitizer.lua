@@ -7,6 +7,7 @@ local FactoryRules = require(ReplicatedStorage.Shared.Domain.FactoryRules)
 local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
 local Materials = require(ReplicatedStorage.Shared.Config.Materials)
 local ProgressionRules = require(ReplicatedStorage.Shared.Domain.ProgressionRules)
+local ReceiptRules = require(ReplicatedStorage.Shared.Domain.ReceiptRules)
 local RobotInventoryRules = require(ReplicatedStorage.Shared.Domain.RobotInventoryRules)
 local Recipes = require(ReplicatedStorage.Shared.Config.Recipes)
 local Robots = require(ReplicatedStorage.Shared.Config.Robots)
@@ -186,19 +187,11 @@ function ProfileSanitizer.Sanitize(data: any)
 	ensureTable(entitlements, "CachedPassFlags")
 
 	local receipts = ensureTable(data, "Receipts")
-	local recentPurchaseIds = receipts.RecentPurchaseIds
-	if typeof(recentPurchaseIds) ~= "table" then
-		recentPurchaseIds = {}
-		receipts.RecentPurchaseIds = recentPurchaseIds
-	end
-	while #recentPurchaseIds > 100 do
-		table.remove(recentPurchaseIds, 1)
-	end
-	for index = #recentPurchaseIds, 1, -1 do
-		if not Validation.isBoundedString(recentPurchaseIds[index], 128) then
-			table.remove(recentPurchaseIds, index)
-		end
-	end
+	receipts.RecentPurchaseIds = ReceiptRules.NormalizeRecentPurchaseIds(
+		receipts.RecentPurchaseIds,
+		100,
+		128
+	)
 
 	local stats = ensureTable(data, "Stats")
 	stats.LifetimeCredits = clampInteger(stats.LifetimeCredits, 0, GameConfig.Economy.MaxCredits, 0)
