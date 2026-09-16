@@ -33,7 +33,8 @@ function EconomyService.GetStorageCapacity(data: any): number
 end
 
 function EconomyService.CanAffordMaterials(data: any, cost: { [string]: number }): boolean
-	return EconomyService.ValidateMaterialAmounts(cost) and FactoryRules.CanAfford(data.Materials, cost)
+	return EconomyService.ValidateMaterialAmounts(cost)
+		and FactoryRules.CanAfford(data.Materials, cost)
 end
 
 function EconomyService.CanFitTransaction(
@@ -41,7 +42,10 @@ function EconomyService.CanFitTransaction(
 	cost: { [string]: number },
 	output: { [string]: number }
 ): boolean
-	if not EconomyService.ValidateMaterialAmounts(cost) or not EconomyService.ValidateMaterialAmounts(output) then
+	if
+		not EconomyService.ValidateMaterialAmounts(cost)
+		or not EconomyService.ValidateMaterialAmounts(output)
+	then
 		return false
 	end
 
