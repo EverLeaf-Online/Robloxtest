@@ -3,6 +3,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local FactoryRules = require(ReplicatedStorage.Shared.Domain.FactoryRules)
 local Robots = require(ReplicatedStorage.Shared.Config.Robots)
 
 local DataService = require(script.Parent.DataService)
@@ -308,12 +309,14 @@ local function syncPlayer(player: Player)
 		return
 	end
 
+	local unlockedSlots = FactoryRules.GetWorkSlots(data.Machines.WorkSlotsLevel)
 	local folder = getVisualFolder(plot)
 	for index = 1, 4 do
 		local padId = ("Pad%d"):format(index)
 		local pad = WorldService.GetPlotWorkPad(plotId, padId)
 		if pad ~= nil then
-			syncPad(folder, pad, data.Assignments.WorkPads[padId], data)
+			local assignedUid = if index <= unlockedSlots then data.Assignments.WorkPads[padId] else nil
+			syncPad(folder, pad, assignedUid, data)
 		end
 	end
 end
