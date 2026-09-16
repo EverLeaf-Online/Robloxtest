@@ -66,7 +66,12 @@ local function registerProcessorControl(part: BasePart, recipeId: string)
 	table.insert(processorControls, part)
 end
 
-local function registerSalvageNode(parent: Instance, nodeId: string, position: Vector3, zoneId: number)
+local function registerSalvageNode(
+	parent: Instance,
+	nodeId: string,
+	position: Vector3,
+	zoneId: number
+)
 	local node = makePart(parent, nodeId, Vector3.new(7, 3, 7), position)
 	node.Material = Enum.Material.Metal
 	node:SetAttribute("SalvageNodeId", nodeId)
@@ -152,7 +157,7 @@ local function buildStarterZone(folder: Folder)
 	addPrompt(gate, "Unlock / Travel", zoneTwo.DisplayName)
 	addBillboard(
 		gate,
-		("%s\n%,d Credits • Build %d Bots"):format(
+		("%s\n%d Credits • Build %d Bots"):format(
 			zoneTwo.DisplayName,
 			zoneTwo.UnlockCredits,
 			zoneTwo.RequiredLifetimeRobots
@@ -174,7 +179,8 @@ local function buildCircuitYard(folder: Folder)
 	arrival.CanCollide = false
 	zoneArrivalById[2] = arrival
 
-	local returnPortal = makePart(zoneFolder, "ReturnPortal", Vector3.new(7, 7, 3), Vector3.new(177, 3.5, 0))
+	local returnPortal =
+		makePart(zoneFolder, "ReturnPortal", Vector3.new(7, 7, 3), Vector3.new(177, 3.5, 0))
 	returnPortal.Material = Enum.Material.Metal
 	addPrompt(returnPortal, "Return", Zones[1].DisplayName)
 	zoneReturnById[2] = returnPortal
