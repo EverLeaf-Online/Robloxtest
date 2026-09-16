@@ -60,22 +60,23 @@ local function addMarker(plotId: number)
 	highlight.Adornee = plot
 	highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
 	highlight.FillColor = Color3.fromRGB(104, 214, 156)
-	highlight.FillTransparency = 0.88
+	highlight.FillTransparency = 0.9
 	highlight.OutlineColor = Color3.fromRGB(104, 214, 156)
-	highlight.OutlineTransparency = 0.05
+	highlight.OutlineTransparency = 0.08
 	highlight.Parent = plot
 
 	local marker = Instance.new("BillboardGui")
 	marker.Name = "LocalFactoryMarker"
 	marker.Adornee = sign
 	marker.AlwaysOnTop = true
-	marker.Size = UDim2.fromOffset(220, 48)
-	marker.StudsOffset = Vector3.new(0, 11, 0)
+	marker.Size = UDim2.fromOffset(170, 34)
+	marker.StudsOffset = Vector3.new(0, 9, 0)
+	marker.MaxDistance = 60
 	marker.Parent = plot
 
 	local label = Instance.new("TextLabel")
 	label.BackgroundColor3 = Color3.fromRGB(48, 132, 88)
-	label.BackgroundTransparency = 0.1
+	label.BackgroundTransparency = 0.08
 	label.BorderSizePixel = 0
 	label.Font = Enum.Font.GothamBold
 	label.Size = UDim2.fromScale(1, 1)
@@ -85,7 +86,7 @@ local function addMarker(plotId: number)
 	label.Parent = marker
 
 	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 8)
+	corner.CornerRadius = UDim.new(0, 7)
 	corner.Parent = label
 
 	currentPlotId = plotId
