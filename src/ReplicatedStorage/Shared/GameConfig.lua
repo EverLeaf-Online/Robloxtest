@@ -19,8 +19,7 @@ GameConfig.TILE_ROWS = 12
 GameConfig.TILE_COLS = 16
 GameConfig.TILE_SIZE = Vector3.new(13, 1.2, 13)
 
--- The old 100 Energy / +1 every 5 seconds curve made the first milestone take
--- far too long. This keeps Energy meaningful while making the core loop testable.
+-- Fast enough for an actual play session while still making Energy matter.
 GameConfig.START_ENERGY = 300
 GameConfig.MAX_ENERGY = 1_000_000
 GameConfig.ENERGY_REGEN_AMOUNT = 5
@@ -52,23 +51,20 @@ GameConfig.MILESTONES = {
 	{
 		Tiles = 10,
 		Title = "Milestone: 10 Developed Tiles",
-		Message = "Animals unlocked! +200 Energy",
+		Message = "Animals are now unlocked!",
 		Unlock = "Animal",
-		EnergyReward = 200,
 	},
 	{
 		Tiles = 25,
 		Title = "Milestone: 25 Developed Tiles",
-		Message = "Settlements unlocked! +450 Energy",
+		Message = "Settlements are now unlocked!",
 		Unlock = "Settlement",
-		EnergyReward = 450,
 	},
 	{
 		Tiles = 50,
 		Title = "Milestone: 50 Developed Tiles",
-		Message = "Glowing plants unlocked! +900 Energy",
+		Message = "Your planet now has a chance to grow glowing plants!",
 		Unlock = "GoldenPlant",
-		EnergyReward = 900,
 	},
 }
 
