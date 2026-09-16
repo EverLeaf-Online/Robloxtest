@@ -9,6 +9,8 @@ This repository is being rebuilt from a clean `main` branch for a new Roblox sim
 
 **Do not begin production gameplay implementation until the research and product brief are locked.**
 
+For this project, "research" does **not** mean only identifying a trending genre. It means understanding the full production system required to design, build, secure, test, publish, monetize, measure, operate, update, and grow the game. The master research gate is documented in `docs/ROBLOX_GAME_PRODUCTION_RESEARCH_MASTER_2026-09-16.md`.
+
 We are optimizing for:
 
 - strong play-through rate and low first-session bounce;
@@ -23,6 +25,7 @@ We are optimizing for:
 
 ## Research documents
 
+- `docs/ROBLOX_GAME_PRODUCTION_RESEARCH_MASTER_2026-09-16.md` — **master research gate** covering product design, architecture, networking, exploit resistance, persistence, economy, monetization, analytics, UI/input, performance, testing, assets, publishing/operations, safety, discovery, and the remaining unanswered research questions before production starts.
 - `docs/ROBLOX_CREATOR_HUB_BASELINE.md` — **primary implementation authority**, converting current official Roblox Creator Hub guidance into project rules for design, analytics, monetization, security, persistence, mobile UX, and performance.
 - `docs/ROBLOX_OFFICIAL_GITHUB_RESEARCH_2026-09-16.md` — audit of the official `Roblox` GitHub organization, including current UI/testing/Open Cloud/data-operations/asset tooling and stale/archived projects to avoid as new foundations.
 - `docs/GITHUB_ECOSYSTEM_RESEARCH_2026-09-16.md` — curated current Roblox/Luau OSS ecosystem, toolchain modernization, library candidates, archived projects to avoid, and the proposed clean-project stack.
