@@ -7,6 +7,7 @@ local FactoryRules = require(ReplicatedStorage.Shared.Domain.FactoryRules)
 local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
 local Robots = require(ReplicatedStorage.Shared.Config.Robots)
 
+local AnalyticsService = require(script.Parent.AnalyticsService)
 local DataService = require(script.Parent.DataService)
 local EconomyService = require(script.Parent.EconomyService)
 local StateService = require(script.Parent.StateService)
@@ -86,6 +87,15 @@ function ProductionService.TickPlayer(player: Player)
 	end)
 
 	if executed and typeof(transactionResult) == "number" and transactionResult > 0 then
+		local updatedData = DataService.GetData(player)
+		if updatedData ~= nil then
+			AnalyticsService.RecordCreditSource(
+				player,
+				"BotProduction",
+				transactionResult,
+				updatedData.Currencies.Credits
+			)
+		end
 		StateService.PushSnapshot(player)
 	end
 end
