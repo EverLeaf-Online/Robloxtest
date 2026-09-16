@@ -23,6 +23,7 @@ end
 
 local DataService = {}
 local profiles: { [Player]: any } = {}
+local transactionActive: { [Player]: boolean } = {}
 local initialized = false
 
 local profileLoadedEvent = Instance.new("BindableEvent")
@@ -38,10 +39,12 @@ end
 local function releaseProfile(player: Player)
 	local profile = profiles[player]
 	if profile == nil then
+		transactionActive[player] = nil
 		return
 	end
 
 	profile:EndSession()
+	transactionActive[player] = nil
 	if profiles[player] == profile then
 		profiles[player] = nil
 		profileReleasedEvent:Fire(player)
@@ -72,6 +75,7 @@ function DataService.LoadPlayer(player: Player): boolean
 	ProfileSanitizer.Sanitize(profile.Data)
 
 	profile.OnSessionEnd:Connect(function()
+		transactionActive[player] = nil
 		if profiles[player] == profile then
 			profiles[player] = nil
 			profileReleasedEvent:Fire(player)
@@ -118,16 +122,35 @@ function DataService.Transaction(
 	if profile == nil then
 		return false, "PROFILE_NOT_READY"
 	end
+	if transactionActive[player] == true then
+		return false, "TRANSACTION_BUSY"
+	end
 
-	local executed, result, transactionError = TransactionRules.Execute(
+	transactionActive[player] = true
+	local callOk, executed, result, transactionError = pcall(
+		TransactionRules.Execute,
 		profile.Data,
 		transaction,
 		function(draft)
+			if profiles[player] ~= profile then
+				error("profile session ended during transaction")
+			end
 			draft.Revision += 1
 			ProfileSanitizer.Sanitize(draft)
 		end
 	)
-	if not executed then
+	transactionActive[player] = nil
+
+	if not callOk then
+		warn(
+			("[DataService] Transaction boundary failed for %d: %s"):format(
+				player.UserId,
+				tostring(executed)
+			)
+		)
+		return false, "TRANSACTION_FAILED"
+	end
+	if executed ~= true then
 		warn(
 			("[DataService] Transaction failed for %d: %s"):format(
 				player.UserId,
