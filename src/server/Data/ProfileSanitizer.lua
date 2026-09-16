@@ -2,6 +2,7 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local AssignmentRules = require(ReplicatedStorage.Shared.Domain.AssignmentRules)
 local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
 local Recipes = require(ReplicatedStorage.Shared.Config.Recipes)
 local Robots = require(ReplicatedStorage.Shared.Config.Robots)
@@ -112,14 +113,14 @@ function ProfileSanitizer.Sanitize(data: any)
 
 	local assignments = ensureTable(data, "Assignments")
 	local workPads = ensureTable(assignments, "WorkPads")
-	for padId, robotUid in workPads do
-		if
-			typeof(padId) ~= "string"
-			or typeof(robotUid) ~= "string"
-			or ownedByUid[robotUid] == nil
-		then
-			workPads[padId] = nil
-		end
+	local normalizedWorkPads = AssignmentRules.NormalizeWorkPads(
+		workPads,
+		ownedByUid,
+		GameConfig.Factory.MaxWorkSlots
+	)
+	table.clear(workPads)
+	for padId, robotUid in normalizedWorkPads do
+		workPads[padId] = robotUid
 	end
 
 	local machines = ensureTable(data, "Machines")
