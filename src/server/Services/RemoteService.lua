@@ -10,6 +10,7 @@ local RateLimiter = require(script.Parent.RateLimiter)
 local REMOTE_FOLDER_NAME = "Remotes"
 
 local requestNames = {
+	RemoteNames.RequestState,
 	RemoteNames.RequestCollect,
 	RemoteNames.RequestProcess,
 	RemoteNames.RequestAssemble,
