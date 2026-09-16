@@ -6,6 +6,7 @@ local RemoteNames = table.freeze({
 	RequestProcess = "RequestProcess",
 	RequestAssemble = "RequestAssemble",
 	RequestAssignRobot = "RequestAssignRobot",
+	RequestUnassignRobot = "RequestUnassignRobot",
 	RequestSellRobot = "RequestSellRobot",
 	RequestUpgrade = "RequestUpgrade",
 	RequestUnlockZone = "RequestUnlockZone",
