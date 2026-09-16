@@ -34,12 +34,17 @@ local function buildFailureSummary(results)
 	}
 
 	for _, suite in ipairs(results.testResults or {}) do
-		local suiteFailed = (suite.numFailingTests or 0) > 0 or suite.testExecError ~= nil or suite.failureMessage ~= nil
+		local suiteFailed = (suite.numFailingTests or 0) > 0
+			or suite.testExecError ~= nil
+			or suite.failureMessage ~= nil
 		if suiteFailed then
 			appendLine(lines, "Suite: " .. tostring(suite.testFilePath or "<unknown>"))
 
 			if suite.testExecError ~= nil then
-				appendLine(lines, suite.testExecError.message or suite.testExecError.stack or suite.testExecError)
+				appendLine(
+					lines,
+					suite.testExecError.message or suite.testExecError.stack or suite.testExecError
+				)
 			end
 
 			if suite.failureMessage ~= nil then
@@ -48,7 +53,10 @@ local function buildFailureSummary(results)
 
 			for _, assertion in ipairs(suite.testResults or {}) do
 				if assertion.status == "failed" then
-					appendLine(lines, "Test: " .. tostring(assertion.fullName or assertion.title or "<unknown>"))
+					appendLine(
+						lines,
+						"Test: " .. tostring(assertion.fullName or assertion.title or "<unknown>")
+					)
 					for _, message in ipairs(assertion.failureMessages or {}) do
 						appendLine(lines, message)
 					end
