@@ -26,6 +26,7 @@ We are optimizing for:
 - `docs/ROBLOX_CREATOR_HUB_BASELINE.md` — **primary implementation authority**, converting current official Roblox Creator Hub guidance into project rules for design, analytics, monetization, security, persistence, mobile UX, and performance.
 - `docs/ROBLOX_OFFICIAL_GITHUB_RESEARCH_2026-09-16.md` — audit of the official `Roblox` GitHub organization, including current UI/testing/Open Cloud/data-operations/asset tooling and stale/archived projects to avoid as new foundations.
 - `docs/GITHUB_ECOSYSTEM_RESEARCH_2026-09-16.md` — curated current Roblox/Luau OSS ecosystem, toolchain modernization, library candidates, archived projects to avoid, and the proposed clean-project stack.
+- `docs/UNCOPYLOCKED_ARCHIVE_RESEARCH_2026-09-16.md` — provenance/licensing review of a large third-party uncopylocked-game archive plus high-level simulator/tycoon design lessons that may be studied without copying its code/assets.
 - `docs/MARKET_RESEARCH_2026-09-16.md` — current Roblox market, discovery, retention, and competitor findings.
 - `docs/PRODUCT_STRATEGY.md` — product requirements, concept shortlist, and current recommended direction.
 - `docs/MONETIZATION_AND_SECURITY.md` — revenue architecture, compliance, persistence, receipts, and exploit threat model.
@@ -44,9 +45,11 @@ When implementation guidance conflicts, use sources in this order:
 6. reviewed maintained OSS dependencies with compatible licenses;
 7. competitor/market research;
 8. community discussion;
-9. old scripts/tutorials only as historical or exploit references.
+9. old scripts/tutorials and third-party game archives only as historical/design/exploit references.
 
 **Official ownership alone is not enough.** Archived or stale Roblox repositories are treated as historical references unless current Creator Hub guidance or a maintained replacement says otherwise.
+
+**Public availability is not a commercial-use license.** Third-party `.rbxl`/`.rbxlx` archives with unclear provenance are not code or asset sources for this project. We may study general mechanics and then implement original systems/assets from scratch.
 
 ## Historical code
 
@@ -60,3 +63,7 @@ The following repositories are treated only as historical exploit/threat catalog
 - `https://github.com/Stefanuk12/ROBLOX`
 
 Their client exploit scripts are **not production dependencies and must never be imported into the game**. They are used to identify threat classes such as remote spoofing, autofarming, teleport collection, anti-cheat bypass, client function hooking, hidden-key extraction, ESP, and progression automation so the simulator can be hardened server-side from the beginning.
+
+## Reference-only game archive
+
+`https://github.com/IIIStatusIII/Roblox-Uncopylocked-Games` is treated only as design archaeology. Its README says the files came from multiple third-party sources and do not belong to the repository owner, and the repository has no license establishing commercial reuse rights. Do not copy its games, scripts, maps, UI, assets, branding, or third-party IP into Robloxtest.
