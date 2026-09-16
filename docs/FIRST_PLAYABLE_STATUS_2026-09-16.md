@@ -7,7 +7,7 @@ This is the execution status for the first playable graybox. It separates implem
 
 ## Implemented; static/build checks green
 
-The systems below are implemented in source and pass the current repository formatting, lint, dependency-lock, shipping-build, and test-project-build gates. Runtime behavior still belongs to the Studio/OCALE section below.
+The systems below are implemented in source and pass the current repository formatting, lint, dependency-lock, shipping-build, OCALE-runner-syntax, and test-project-build gates. Runtime behavior still belongs to the Studio/OCALE section below.
 
 ### World / multiplayer plots
 
@@ -15,6 +15,7 @@ The systems below are implemented in source and pass the current repository form
 - 8 generated personal factory plots;
 - deterministic first-free plot allocation;
 - plot owner labels and clean release on player leave/session release;
+- players are explicitly removed with a clear message if no factory plot can be allocated instead of entering a broken no-plot session;
 - requesting player's plot ID included in safe replicated state;
 - local client highlights only the player's own factory and labels it `YOUR FACTORY`;
 - processor/assembler prompt paths reject foreign-plot use;
@@ -33,13 +34,15 @@ The systems below are implemented in source and pass the current repository form
 - Common / Uncommon / Rare / Epic rarity tiers;
 - guaranteed usable first-reveal pool;
 - robot assignment to server-validated unlocked work pads;
+- assigned bots can be explicitly unassigned so a full lineup never becomes permanently locked;
 - server-calculated passive Credit generation;
 - idle robot recycling;
 - server-priced processor, assembler, storage, and work-slot upgrades.
 
 ### Physical progression / presentation
 
-- assigned robots are generated for their owner's work pads;
+- assigned robots are generated for their owner's unlocked work pads;
+- locked work pads cannot retain/render stale robot visuals after load;
 - robot graybox visuals use configured body, head, tool, locomotion, accent, rarity, and production metadata;
 - player factories are placed together in one shared yard;
 - visible Circuit Yard gate;
@@ -55,7 +58,7 @@ The systems below are implemented in source and pass the current repository form
 - first-session objective guidance;
 - machine job countdown/status;
 - assigned factory plot number;
-- Bots tab with assignment/recycling controls;
+- Bots tab with assignment, unassignment, and recycling controls;
 - Upgrades tab with authoritative prices/levels;
 - Robot Index tab;
 - collection completion count;
@@ -68,6 +71,7 @@ The systems below are implemented in source and pass the current repository form
 - Circuit Yard initial graybox requirement: **2,500 Credits + 3 lifetime robots built**;
 - zone requirements are data-driven;
 - zone unlock is implemented as an atomic server transaction;
+- gate travel requires the authoritative physical gate proximity check;
 - locked-zone salvage performs server-side progression checks, including inside the transaction;
 - current zone is persisted and sanitized.
 
@@ -79,9 +83,13 @@ The systems below are implemented in source and pass the current repository form
 - atomic profile transaction wrapper;
 - bounded economic values;
 - durable machine jobs;
+- saved work-pad assignments are normalized to owned robots, unique robot UIDs, valid pad IDs, and currently unlocked work slots;
+- stale `Robots.NextUid` counters are repaired on profile load;
+- assembler completion searches for a free robot UID before writing and never blindly overwrites an existing robot entry;
+- robot UID allocation safely wraps at the configured integer ceiling;
 - safe state snapshots omit server-only receipt/entitlement internals;
 - server-owned prices, rewards, robot outcomes, production rates, upgrade targets, and zone costs;
-- rate-limited action remotes;
+- rate-limited action remotes, including the unassign action;
 - proximity validation for physical actions;
 - foreign-plot machine interaction rejection;
 - duplicate robot sell prevention through authoritative ownership mutation;
@@ -106,6 +114,7 @@ GitHub CI currently validates:
 - Wally lockfile freshness;
 - StyLua formatting;
 - Selene lint;
+- Bash and PowerShell OCALE runner syntax;
 - shipping Rojo project build;
 - Jest/OCALE test Rojo project build.
 
@@ -114,7 +123,11 @@ Jest spec files currently exist for:
 - factory/economy rules;
 - progression/zone rules;
 - validation helpers;
-- deterministic plot allocation.
+- deterministic plot allocation;
+- assignment normalization, including duplicate/invalid/locked-pad cleanup;
+- collision-safe robot UID allocation, wraparound, malformed counters, and bounded exhaustion behavior.
+
+The full accumulated hardening head passed **CI #113** on 2026-09-16.
 
 **Important:** GitHub CI does not currently execute the Jest suite. It proves the test project and spec source build/lint cleanly, not that the specs passed in a Roblox runtime. Actual Jest execution is a Studio/OCALE runtime gate.
 
@@ -126,6 +139,7 @@ These are **not** considered complete until tested in an actual Roblox runtime:
 - clean game boot with no runtime errors;
 - fresh-player end-to-end loop: collect -> process -> assemble -> reveal -> assign -> earn -> upgrade;
 - first robot appears correctly on Pad 1;
+- assigned bot can be unassigned, replaced, and recycled after becoming idle;
 - robot model pieces are aligned/oriented correctly for all locomotion/body variants;
 - two players receive different plots;
 - one player cannot use another player's processor or assembler through prompts;
@@ -175,11 +189,12 @@ Existing monetization architecture/config hooks may remain in the codebase, but 
 ## Immediate next execution order
 
 1. Keep the branch green in GitHub CI.
-2. Configure a dedicated simulator test universe/place and scoped OCALE API key when available.
-3. Execute the Jest suite in OCALE or Studio.
-4. Sync/open the branch through the user's local Rojo/Roblox Studio workflow.
-5. Run a fresh-player desktop smoke test.
-6. Run a two-player ownership/plot smoke test.
-7. Run a small-screen/mobile UI pass.
-8. Fix every runtime/layout issue found and re-run CI/runtime tests.
-9. Only then begin the first monetization UI/receipt slice.
+2. Continue static abuse/persistence auditing until the runtime test environment is available.
+3. Configure a dedicated simulator test universe/place and scoped OCALE API key when available.
+4. Execute the Jest suite in OCALE or Studio.
+5. Sync/open the branch through the user's local Rojo/Roblox Studio workflow.
+6. Run a fresh-player desktop smoke test.
+7. Run a two-player ownership/plot smoke test.
+8. Run a small-screen/mobile UI pass.
+9. Fix every runtime/layout issue found and re-run CI/runtime tests.
+10. Only then begin the first monetization UI/receipt slice.
