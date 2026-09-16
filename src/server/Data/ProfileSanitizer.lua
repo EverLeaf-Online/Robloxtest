@@ -139,10 +139,12 @@ function ProfileSanitizer.Sanitize(data: any)
 	) or 1
 
 	local machines = ensureTable(data, "Machines")
-	machines.ProcessorLevel = clampInteger(machines.ProcessorLevel, 1, 4, 1)
-	machines.AssemblerLevel = clampInteger(machines.AssemblerLevel, 1, 4, 1)
-	machines.StorageLevel = clampInteger(machines.StorageLevel, 1, 4, 1)
-	machines.WorkSlotsLevel = clampInteger(machines.WorkSlotsLevel, 1, 4, 1)
+	machines.ProcessorLevel =
+		FactoryRules.NormalizeUpgradeLevel("ProcessorSpeed", machines.ProcessorLevel)
+	machines.AssemblerLevel =
+		FactoryRules.NormalizeUpgradeLevel("AssemblerSpeed", machines.AssemblerLevel)
+	machines.StorageLevel = FactoryRules.NormalizeUpgradeLevel("Storage", machines.StorageLevel)
+	machines.WorkSlotsLevel = FactoryRules.NormalizeUpgradeLevel("WorkSlots", machines.WorkSlotsLevel)
 	sanitizeProcessorJob(machines)
 	sanitizeAssemblerJob(machines)
 
