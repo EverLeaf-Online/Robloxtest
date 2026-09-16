@@ -36,6 +36,21 @@ local function profileKey(player: Player): string
 	return ("Player_%d"):format(player.UserId)
 end
 
+local function kickDataFailure(player: Player)
+	if player.Parent == Players then
+		player:Kick("Your data could not be loaded safely. Please rejoin.")
+	end
+end
+
+local function endSessionSafely(player: Player, profile: any)
+	local ok, err = pcall(function()
+		profile:EndSession()
+	end)
+	if not ok then
+		warn(("[DataService] Failed to end profile session for %d: %s"):format(player.UserId, tostring(err)))
+	end
+end
+
 local function releaseProfile(player: Player)
 	local profile = profiles[player]
 	if profile == nil then
@@ -43,7 +58,7 @@ local function releaseProfile(player: Player)
 		return
 	end
 
-	profile:EndSession()
+	endSessionSafely(player, profile)
 	transactionActive[player] = nil
 	if profiles[player] == profile then
 		profiles[player] = nil
@@ -56,23 +71,50 @@ function DataService.LoadPlayer(player: Player): boolean
 		return true
 	end
 
-	local profile = PlayerStore:StartSessionAsync(profileKey(player), {
-		Cancel = function()
-			return player.Parent ~= Players
-		end,
-	})
-
-	if profile == nil then
-		if player.Parent == Players then
-			player:Kick("Your data could not be loaded safely. Please rejoin.")
-		end
+	local started, profileOrError = pcall(function()
+		return PlayerStore:StartSessionAsync(profileKey(player), {
+			Cancel = function()
+				return player.Parent ~= Players
+			end,
+		})
+	end)
+	if not started then
+		warn(("[DataService] Profile session start failed for %d: %s"):format(player.UserId, tostring(profileOrError)))
+		kickDataFailure(player)
 		return false
 	end
 
-	profile:AddUserId(player.UserId)
-	ProfileMigrations.Apply(profile.Data)
-	profile:Reconcile()
-	ProfileSanitizer.Sanitize(profile.Data)
+	local profile = profileOrError
+	if profile == nil then
+		kickDataFailure(player)
+		return false
+	end
+
+	local snapshotOk, originalDataOrError = pcall(TransactionRules.Snapshot, profile.Data)
+	if not snapshotOk then
+		warn(("[DataService] Profile snapshot failed for %d: %s"):format(player.UserId, tostring(originalDataOrError)))
+		endSessionSafely(player, profile)
+		kickDataFailure(player)
+		return false
+	end
+	local originalData = originalDataOrError
+
+	local prepared, prepareError = pcall(function()
+		profile:AddUserId(player.UserId)
+		ProfileMigrations.Apply(profile.Data)
+		profile:Reconcile()
+		ProfileSanitizer.Sanitize(profile.Data)
+	end)
+	if not prepared then
+		local restored, restoreError = pcall(TransactionRules.Restore, profile.Data, originalData)
+		if not restored then
+			warn(("[DataService] Profile restore failed for %d: %s"):format(player.UserId, tostring(restoreError)))
+		end
+		warn(("[DataService] Profile preparation failed for %d: %s"):format(player.UserId, tostring(prepareError)))
+		endSessionSafely(player, profile)
+		kickDataFailure(player)
+		return false
+	end
 
 	profile.OnSessionEnd:Connect(function()
 		transactionActive[player] = nil
@@ -87,7 +129,7 @@ function DataService.LoadPlayer(player: Player): boolean
 	end)
 
 	if player.Parent ~= Players then
-		profile:EndSession()
+		endSessionSafely(player, profile)
 		return false
 	end
 
