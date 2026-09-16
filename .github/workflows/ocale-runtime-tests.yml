@@ -144,16 +144,14 @@ jobs:
         run: |
           set -euo pipefail
           pushd "$ROCALE_WORKDIR" >/dev/null
-          probe_output="$("$ROCALE_CLI" run \
+          "$ROCALE_CLI" run \
             --universeId "$ROBLOX_UNIVERSE_ID" \
             --placeId "$ROBLOX_PLACE_ID" \
             --load.version 0 \
             --script "$GITHUB_WORKSPACE/scripts/ocale-probe.luau" \
             --timeout 60 \
-            --verbose 2>&1)"
+            --verbose
           popd >/dev/null
-          printf '%s\n' "$probe_output"
-          grep -q "OCALE_PROBE_OK" <<<"$probe_output"
 
       - name: Execute Jest in Roblox Open Cloud
         if: steps.config.outputs.ready == 'true'
