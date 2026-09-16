@@ -97,6 +97,12 @@ function EconomyService.SpendCredits(data: any, amount: number): boolean
 	return true
 end
 
+function EconomyService.CanGrantCreditsExact(data: any, amount: number): boolean
+	return isValidAmount(amount)
+		and amount > 0
+		and data.Currencies.Credits <= GameConfig.Economy.MaxCredits - amount
+end
+
 function EconomyService.GrantCredits(data: any, amount: number): number
 	if not isValidAmount(amount) or amount == 0 then
 		return 0
@@ -108,6 +114,16 @@ function EconomyService.GrantCredits(data: any, amount: number): number
 	data.Stats.LifetimeCredits =
 		math.min(GameConfig.Economy.MaxCredits, data.Stats.LifetimeCredits + granted)
 	return granted
+end
+
+function EconomyService.GrantCreditsExact(data: any, amount: number): boolean
+	if not EconomyService.CanGrantCreditsExact(data, amount) then
+		return false
+	end
+
+	local granted = EconomyService.GrantCredits(data, amount)
+	assert(granted == amount, "validated exact credit grant must not truncate")
+	return true
 end
 
 return table.freeze(EconomyService)
