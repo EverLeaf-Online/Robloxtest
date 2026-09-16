@@ -13,6 +13,8 @@ local initialized = false
 local plotByPlayer: { [Player]: number } = {}
 local ownerByPlot: { [number]: Player } = {}
 
+local NO_FREE_PLOT_MESSAGE = "This server has no free factory plot. Please join another server."
+
 local function setPlotLabel(plotId: number, player: Player?)
 	local sign = WorldService.GetPlotSign(plotId)
 	local plot = WorldService.GetPlot(plotId)
@@ -57,6 +59,15 @@ local function release(player: Player)
 	end
 end
 
+local function rejectWithoutPlot(player: Player)
+	warn(("[PlotService] No free factory plot for %d"):format(player.UserId))
+	task.defer(function()
+		if player.Parent == Players then
+			player:Kick(NO_FREE_PLOT_MESSAGE)
+		end
+	end)
+end
+
 function PlotService.Assign(player: Player): number?
 	local existing = plotByPlayer[player]
 	if existing ~= nil then
@@ -65,7 +76,7 @@ function PlotService.Assign(player: Player): number?
 
 	local plotId = firstFreePlot()
 	if plotId == nil then
-		warn(("[PlotService] No free factory plot for %d"):format(player.UserId))
+		rejectWithoutPlot(player)
 		return nil
 	end
 
