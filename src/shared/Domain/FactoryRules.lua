@@ -35,11 +35,17 @@ end
 function FactoryRules.GetWorkSlots(level: number): number
 	local upgradeLevel = getUpgradeLevel("WorkSlots", level)
 	local value = if upgradeLevel then upgradeLevel.Value else GameConfig.Factory.BaseWorkSlots
-	return math.clamp(math.floor(value), GameConfig.Factory.BaseWorkSlots, GameConfig.Factory.MaxWorkSlots)
+	return math.clamp(
+		math.floor(value),
+		GameConfig.Factory.BaseWorkSlots,
+		GameConfig.Factory.MaxWorkSlots
+	)
 end
 
 function FactoryRules.GetAssemblerCost(lifetimeRobotsBuilt: number): { [string]: number }
-	return if lifetimeRobotsBuilt <= 0 then Recipes.Assembler.FirstBuildInput else Recipes.Assembler.StandardInput
+	return if lifetimeRobotsBuilt <= 0
+		then Recipes.Assembler.FirstBuildInput
+		else Recipes.Assembler.StandardInput
 end
 
 function FactoryRules.TotalMaterials(materials: { [string]: number }): number
@@ -52,7 +58,10 @@ function FactoryRules.TotalMaterials(materials: { [string]: number }): number
 	return total
 end
 
-function FactoryRules.CanAfford(materials: { [string]: number }, cost: { [string]: number }): boolean
+function FactoryRules.CanAfford(
+	materials: { [string]: number },
+	cost: { [string]: number }
+): boolean
 	for materialId, amount in cost do
 		local owned = materials[materialId] or 0
 		if amount < 0 or owned < amount then
