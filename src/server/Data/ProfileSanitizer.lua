@@ -3,6 +3,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local AssignmentRules = require(ReplicatedStorage.Shared.Domain.AssignmentRules)
+local FactoryRules = require(ReplicatedStorage.Shared.Domain.FactoryRules)
 local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
 local RobotInventoryRules = require(ReplicatedStorage.Shared.Domain.RobotInventoryRules)
 local Recipes = require(ReplicatedStorage.Shared.Config.Recipes)
@@ -118,15 +119,6 @@ function ProfileSanitizer.Sanitize(data: any)
 		GameConfig.Economy.MaxOwnedRobots
 	) or 1
 
-	local assignments = ensureTable(data, "Assignments")
-	local workPads = ensureTable(assignments, "WorkPads")
-	local normalizedWorkPads =
-		AssignmentRules.NormalizeWorkPads(workPads, ownedByUid, GameConfig.Factory.MaxWorkSlots)
-	table.clear(workPads)
-	for padId, robotUid in normalizedWorkPads do
-		workPads[padId] = robotUid
-	end
-
 	local machines = ensureTable(data, "Machines")
 	machines.ProcessorLevel = clampInteger(machines.ProcessorLevel, 1, 4, 1)
 	machines.AssemblerLevel = clampInteger(machines.AssemblerLevel, 1, 4, 1)
@@ -134,6 +126,15 @@ function ProfileSanitizer.Sanitize(data: any)
 	machines.WorkSlotsLevel = clampInteger(machines.WorkSlotsLevel, 1, 4, 1)
 	sanitizeProcessorJob(machines)
 	sanitizeAssemblerJob(machines)
+
+	local assignments = ensureTable(data, "Assignments")
+	local workPads = ensureTable(assignments, "WorkPads")
+	local unlockedSlots = FactoryRules.GetWorkSlots(machines.WorkSlotsLevel)
+	local normalizedWorkPads = AssignmentRules.NormalizeWorkPads(workPads, ownedByUid, unlockedSlots)
+	table.clear(workPads)
+	for padId, robotUid in normalizedWorkPads do
+		workPads[padId] = robotUid
+	end
 
 	local progression = ensureTable(data, "Progression")
 	progression.Zone = clampInteger(progression.Zone, 1, 100, 1)
