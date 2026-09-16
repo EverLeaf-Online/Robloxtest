@@ -104,7 +104,12 @@ local function buildHead(model: Model, headType: string, accent: Color3, bodyHei
 	end
 end
 
-local function buildLocomotion(model: Model, locomotion: string, bodySizeValue: Vector3, baseColor: Color3)
+local function buildLocomotion(
+	model: Model,
+	locomotion: string,
+	bodySizeValue: Vector3,
+	baseColor: Color3
+)
 	local y = -(bodySizeValue.Y / 2 + 0.55)
 	if locomotion == "Hover" then
 		makePart(
@@ -116,11 +121,39 @@ local function buildLocomotion(model: Model, locomotion: string, bodySizeValue: 
 			Enum.PartType.Cylinder
 		)
 	elseif locomotion == "Tracks" then
-		makePart(model, "LeftTrack", Vector3.new(1, 0.8, 3), CFrame.new(-1.25, y, 0), baseColor, nil)
-		makePart(model, "RightTrack", Vector3.new(1, 0.8, 3), CFrame.new(1.25, y, 0), baseColor, nil)
+		makePart(
+			model,
+			"LeftTrack",
+			Vector3.new(1, 0.8, 3),
+			CFrame.new(-1.25, y, 0),
+			baseColor,
+			nil
+		)
+		makePart(
+			model,
+			"RightTrack",
+			Vector3.new(1, 0.8, 3),
+			CFrame.new(1.25, y, 0),
+			baseColor,
+			nil
+		)
 	elseif locomotion == "Legs" then
-		makePart(model, "LeftLeg", Vector3.new(0.75, 1.3, 0.75), CFrame.new(-0.9, y, 0), baseColor, nil)
-		makePart(model, "RightLeg", Vector3.new(0.75, 1.3, 0.75), CFrame.new(0.9, y, 0), baseColor, nil)
+		makePart(
+			model,
+			"LeftLeg",
+			Vector3.new(0.75, 1.3, 0.75),
+			CFrame.new(-0.9, y, 0),
+			baseColor,
+			nil
+		)
+		makePart(
+			model,
+			"RightLeg",
+			Vector3.new(0.75, 1.3, 0.75),
+			CFrame.new(0.9, y, 0),
+			baseColor,
+			nil
+		)
 	else
 		makePart(
 			model,
@@ -145,8 +178,11 @@ local function buildTool(model: Model, toolType: string, accent: Color3, bodySiz
 	local front = -(bodySizeValue.Z / 2 + 0.75)
 	local toolSize = if toolType == "Drill"
 		then Vector3.new(0.9, 0.9, 1.7)
-		elseif toolType == "TwinMagnet" or toolType == "MultiTool"
-		then Vector3.new(2.2, 0.75, 1)
+		elseif toolType == "TwinMagnet" or toolType == "MultiTool" then Vector3.new(
+			2.2,
+			0.75,
+			1
+		)
 		else Vector3.new(1.2, 0.8, 1.2)
 	makePart(model, "Tool", toolSize, CFrame.new(0, 0, front), accent, nil)
 end
