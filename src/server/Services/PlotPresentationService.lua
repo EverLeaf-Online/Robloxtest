@@ -107,12 +107,24 @@ local function buildStations(plot: Model, plotId: number, center: Vector3)
 		plotId,
 		"IndexTerminal",
 		Vector3.new(5, 4, 4),
-		center + Vector3.new(-4, 2.5, -10),
+		center + Vector3.new(-12, 2.5, -10),
 		Color3.fromRGB(63, 122, 132),
 		Enum.Material.Metal
 	)
 	addLabel(indexTerminal, "ROBOT INDEX")
 	addUIPrompt(indexTerminal, "Index", "Robot Index")
+
+	local botConsole = makePart(
+		plot,
+		plotId,
+		"BotConsole",
+		Vector3.new(5, 4, 4),
+		center + Vector3.new(-4, 2.5, -10),
+		Color3.fromRGB(66, 104, 138),
+		Enum.Material.Metal
+	)
+	addLabel(botConsole, "BOT CONTROL")
+	addUIPrompt(botConsole, "Bots", "Bot Control")
 
 	local upgradeConsole = makePart(
 		plot,
