@@ -9,11 +9,17 @@ export type Bucket = {
 	UpdatedAt: number,
 }
 
+export type RatePolicy = {
+	Capacity: number,
+	RefillPerSecond: number,
+}
+
 local RateLimiter = {}
 local bucketsByUser: { [number]: { [string]: Bucket } } = {}
+local policies = GameConfig.Networking.RateLimits :: { [string]: RatePolicy }
 
-local function getPolicy(actionName: string)
-	return GameConfig.Networking.RateLimits[actionName]
+local function getPolicy(actionName: string): RatePolicy?
+	return policies[actionName]
 end
 
 function RateLimiter.Consume(player: Player, actionName: string, cost: number?): boolean
@@ -43,7 +49,7 @@ function RateLimiter.Consume(player: Player, actionName: string, cost: number?):
 	bucket.Tokens = math.min(policy.Capacity, bucket.Tokens + elapsed * policy.RefillPerSecond)
 
 	local tokenCost = cost or 1
-	if tokenCost <= 0 or tokenCost > policy.Capacity then
+	if tokenCost ~= tokenCost or tokenCost <= 0 or tokenCost == math.huge or tokenCost > policy.Capacity then
 		return false
 	end
 
