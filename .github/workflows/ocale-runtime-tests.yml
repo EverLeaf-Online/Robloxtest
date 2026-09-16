@@ -1,0 +1,59 @@
+name: OCALE Runtime Tests
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ocale-runtime-${{ vars.ROBLOX_TEST_UNIVERSE_ID || 'unconfigured' }}
+  cancel-in-progress: false
+
+jobs:
+  runtime-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      ROBLOX_API_KEY: ${{ secrets.ROBLOX_API_KEY }}
+      ROBLOX_UNIVERSE_ID: ${{ vars.ROBLOX_TEST_UNIVERSE_ID }}
+      ROBLOX_PLACE_ID: ${{ vars.ROBLOX_TEST_PLACE_ID }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Validate Roblox test configuration
+        shell: bash
+        run: |
+          missing=0
+          for name in ROBLOX_API_KEY ROBLOX_UNIVERSE_ID ROBLOX_PLACE_ID; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "::error::Missing ${name}. Configure the simulator test credentials before running OCALE."
+              missing=1
+            fi
+          done
+          exit "$missing"
+
+      - name: Install Rokit
+        shell: bash
+        run: |
+          ROKIT_INSTALLER_URL="https://raw.githubusercontent.com/rojo-rbx/rokit/2f2618428ef31279e2fc80b0b1d73485bc929ddd/scripts/install.sh"
+          curl --fail --silent --show-error --location \
+            --retry 4 --retry-delay 2 --retry-all-errors \
+            "$ROKIT_INSTALLER_URL" | bash -s -- 1.2.0
+          echo "$HOME/.rokit/bin" >> "$GITHUB_PATH"
+
+      - name: Install pinned toolchain
+        shell: bash
+        run: "$HOME/.rokit/bin/rokit install --no-trust-check"
+
+      - name: Install Wally packages
+        run: wally install
+
+      - name: Verify OCALE CLI
+        run: rocale-cli --help >/dev/null
+
+      - name: Execute Jest in Roblox Open Cloud
+        shell: bash
+        run: ./scripts/run-ocale-tests.sh
