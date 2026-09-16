@@ -10,6 +10,22 @@ function ProgressionRules.GetNextZone(currentZone: number): any?
 	return Zones[currentZone + 1]
 end
 
+function ProgressionRules.NormalizeCurrentZone(value: any): number
+	if typeof(value) ~= "number" or value ~= value or value % 1 ~= 0 or value < 1 then
+		return 1
+	end
+
+	local requestedZone = math.floor(value)
+	local currentZone = 1
+	for zoneId = 2, requestedZone do
+		if Zones[zoneId] == nil then
+			break
+		end
+		currentZone = zoneId
+	end
+	return currentZone
+end
+
 function ProgressionRules.EvaluateZoneUnlock(
 	currentZone: number,
 	targetZone: number,
