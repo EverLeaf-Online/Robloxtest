@@ -40,6 +40,12 @@ jobs:
       - name: Lint Luau
         run: selene src spec.lua
 
+      - name: Validate OCALE runner scripts
+        shell: bash
+        run: |
+          bash -n scripts/run-ocale-tests.sh
+          pwsh -NoProfile -NonInteractive -Command '$tokens = $null; $errors = $null; [System.Management.Automation.Language.Parser]::ParseFile("scripts/run-ocale-tests.ps1", [ref]$tokens, [ref]$errors) | Out-Null; if ($errors.Count -gt 0) { $errors | ForEach-Object { Write-Error $_.Message }; exit 1 }'
+
       - name: Build shipping project
         run: |
           mkdir -p build
