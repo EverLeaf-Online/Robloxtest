@@ -97,7 +97,13 @@ function SalvageService.Collect(player: Player, nodeId: any)
 
 	local zoneId = node:GetAttribute("ZoneId")
 	if not Validation.isSafeInteger(zoneId, 1, 100) or Zones[zoneId :: number] == nil then
-		StateService.ActionResult(player, RemoteNames.RequestCollect, false, "INVALID_NODE_ZONE", nil)
+		StateService.ActionResult(
+			player,
+			RemoteNames.RequestCollect,
+			false,
+			"INVALID_NODE_ZONE",
+			nil
+		)
 		return
 	end
 	local authoritativeZoneId = zoneId :: number
