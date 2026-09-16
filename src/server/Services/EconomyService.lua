@@ -5,6 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local FactoryRules = require(ReplicatedStorage.Shared.Domain.FactoryRules)
 local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
 local Materials = require(ReplicatedStorage.Shared.Config.Materials)
+local Recipes = require(ReplicatedStorage.Shared.Config.Recipes)
 
 local EconomyService = {}
 
@@ -13,6 +14,14 @@ local function isValidAmount(amount: any): boolean
 		and amount % 1 == 0
 		and amount >= 0
 		and amount <= GameConfig.Economy.MaxTransactionQuantity
+end
+
+local function totalAmounts(amounts: { [string]: number }): number
+	local total = 0
+	for _, amount in amounts do
+		total += amount
+	end
+	return total
 end
 
 function EconomyService.ValidateMaterialAmounts(amounts: any): boolean
@@ -30,6 +39,19 @@ end
 
 function EconomyService.GetStorageCapacity(data: any): number
 	return FactoryRules.GetStorageCapacity(data.Machines.StorageLevel)
+end
+
+function EconomyService.GetReservedProcessorStorage(data: any): number
+	local job = data.Machines.ProcessorJob
+	if not job.Active then
+		return 0
+	end
+
+	local recipe = Recipes.Processor[job.RecipeId]
+	if recipe == nil or not EconomyService.ValidateMaterialAmounts(recipe.Output) then
+		return 0
+	end
+	return totalAmounts(recipe.Output)
 end
 
 function EconomyService.CanAffordMaterials(data: any, cost: { [string]: number }): boolean
@@ -73,13 +95,34 @@ function EconomyService.GrantMaterials(data: any, amounts: { [string]: number })
 		return false
 	end
 
+	local reserved = EconomyService.GetReservedProcessorStorage(data)
+	local usableCapacity = math.max(0, EconomyService.GetStorageCapacity(data) - reserved)
+	local total = FactoryRules.TotalMaterials(data.Materials)
+	local added = totalAmounts(amounts)
+	if total + added > usableCapacity then
+		return false
+	end
+
+	for materialId, amount in amounts do
+		data.Materials[materialId] += amount
+	end
+	return true
+end
+
+function EconomyService.GrantProcessorOutput(data: any, amounts: { [string]: number }): boolean
+	if not EconomyService.ValidateMaterialAmounts(amounts) then
+		return false
+	end
+
+	local reserved = EconomyService.GetReservedProcessorStorage(data)
+	local added = totalAmounts(amounts)
+	if reserved <= 0 or added > reserved then
+		return false
+	end
+
 	local capacity = EconomyService.GetStorageCapacity(data)
 	local total = FactoryRules.TotalMaterials(data.Materials)
-	local added = 0
-	for _, amount in amounts do
-		added += amount
-	end
-	if total + added > capacity then
+	if total + added > capacity + reserved then
 		return false
 	end
 
