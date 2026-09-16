@@ -33,7 +33,13 @@ end
 
 function UpgradeService.Purchase(player: Player, upgradeId: any)
 	if not Validation.isBoundedString(upgradeId, GameConfig.Networking.MaxStringLength) then
-		StateService.ActionResult(player, RemoteNames.RequestUpgrade, false, "INVALID_UPGRADE_ID", nil)
+		StateService.ActionResult(
+			player,
+			RemoteNames.RequestUpgrade,
+			false,
+			"INVALID_UPGRADE_ID",
+			nil
+		)
 		return
 	end
 
@@ -51,27 +57,41 @@ function UpgradeService.Purchase(player: Player, upgradeId: any)
 			return false, result(false, "MAX_LEVEL", { Level = currentLevel })
 		end
 		if not EconomyService.SpendCredits(data, nextUpgrade.CostCredits) then
-			return false, result(false, "NOT_ENOUGH_CREDITS", {
-				CostCredits = nextUpgrade.CostCredits,
-			})
+			return false,
+				result(false, "NOT_ENOUGH_CREDITS", {
+					CostCredits = nextUpgrade.CostCredits,
+				})
 		end
 
 		data.Machines[machineField] = currentLevel + 1
 		data.Tutorial.Milestones.FirstUpgrade = true
-		return true, result(true, "UPGRADE_PURCHASED", {
-			UpgradeId = upgradeId,
-			Level = currentLevel + 1,
-			Value = nextUpgrade.Value,
-			CostCredits = nextUpgrade.CostCredits,
-		})
+		return true,
+			result(true, "UPGRADE_PURCHASED", {
+				UpgradeId = upgradeId,
+				Level = currentLevel + 1,
+				Value = nextUpgrade.Value,
+				CostCredits = nextUpgrade.CostCredits,
+			})
 	end)
 
 	if not executed then
-		StateService.ActionResult(player, RemoteNames.RequestUpgrade, false, tostring(transactionResult), nil)
+		StateService.ActionResult(
+			player,
+			RemoteNames.RequestUpgrade,
+			false,
+			tostring(transactionResult),
+			nil
+		)
 		return
 	end
 	if typeof(transactionResult) ~= "table" then
-		StateService.ActionResult(player, RemoteNames.RequestUpgrade, false, "INVALID_TRANSACTION_RESULT", nil)
+		StateService.ActionResult(
+			player,
+			RemoteNames.RequestUpgrade,
+			false,
+			"INVALID_TRANSACTION_RESULT",
+			nil
+		)
 		return
 	end
 
