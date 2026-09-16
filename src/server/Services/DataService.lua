@@ -1,8 +1,11 @@
 --!strict
 
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local ServerScriptService = game:GetService("ServerScriptService")
+
+local TransactionRules = require(ReplicatedStorage.Shared.Domain.TransactionRules)
 
 local ProfileMigrations = require(script.Parent.Parent.Data.ProfileMigrations)
 local ProfileTemplate = require(script.Parent.Parent.Data.ProfileTemplate)
@@ -116,20 +119,22 @@ function DataService.Transaction(
 		return false, "PROFILE_NOT_READY"
 	end
 
-	local ok, shouldCommit, result = pcall(transaction, profile.Data)
-	if not ok then
+	local executed, result, transactionError = TransactionRules.Execute(
+		profile.Data,
+		transaction,
+		function(draft)
+			draft.Revision += 1
+			ProfileSanitizer.Sanitize(draft)
+		end
+	)
+	if not executed then
 		warn(
 			("[DataService] Transaction failed for %d: %s"):format(
 				player.UserId,
-				tostring(shouldCommit)
+				transactionError or tostring(result)
 			)
 		)
-		return false, "TRANSACTION_FAILED"
-	end
-
-	if shouldCommit == true then
-		profile.Data.Revision += 1
-		ProfileSanitizer.Sanitize(profile.Data)
+		return false, result
 	end
 
 	return true, result
