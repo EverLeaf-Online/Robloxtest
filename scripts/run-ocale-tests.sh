@@ -37,12 +37,46 @@ fi
 
 echo "Running Scrap-to-Bot Jest suite through Roblox Open Cloud Luau Execution..."
 
-pushd "$ROCALE_WORKDIR" >/dev/null
-"$ROCALE_CLI" run \
-  --universeId "$ROBLOX_UNIVERSE_ID" \
-  --placeId "$ROBLOX_PLACE_ID" \
-  --load.project "$PROJECT_FILE" \
-  --script "$SPEC_FILE" \
-  --timeout 300 \
-  --verbose
-popd >/dev/null
+run_ocale() {
+  pushd "$ROCALE_WORKDIR" >/dev/null
+  set +e
+  local output
+  output="$("$ROCALE_CLI" run \
+    --universeId "$ROBLOX_UNIVERSE_ID" \
+    --placeId "$ROBLOX_PLACE_ID" \
+    --load.project "$PROJECT_FILE" \
+    --script "$SPEC_FILE" \
+    --timeout 300 \
+    --verbose 2>&1)"
+  local status=$?
+  set -e
+  popd >/dev/null
+
+  printf '%s\n' "$output"
+  return "$status"
+}
+
+max_attempts=4
+for attempt in $(seq 1 "$max_attempts"); do
+  set +e
+  output="$(run_ocale 2>&1)"
+  status=$?
+  set -e
+
+  printf '%s\n' "$output"
+
+  if [[ $status -eq 0 ]]; then
+    exit 0
+  fi
+
+  if grep -q '409 - .*Server is busy' <<<"$output" && [[ $attempt -lt $max_attempts ]]; then
+    delay=$((attempt * 15))
+    echo "Roblox place upload is busy; retrying in ${delay}s (${attempt}/${max_attempts})..." >&2
+    sleep "$delay"
+    continue
+  fi
+
+  exit "$status"
+done
+
+exit 1
