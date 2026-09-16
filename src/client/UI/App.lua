@@ -9,6 +9,7 @@ local FactoryRules = require(ReplicatedStorage.Shared.Domain.FactoryRules)
 local RemoteNames = require(ReplicatedStorage.Shared.Networking.RemoteNames)
 local Robots = require(ReplicatedStorage.Shared.Config.Robots)
 local Upgrades = require(ReplicatedStorage.Shared.Config.Upgrades)
+local Zones = require(ReplicatedStorage.Shared.Config.Zones)
 
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 
@@ -150,8 +151,17 @@ local function getObjective(snapshot: any): (string, string)
 		return "Earn your first credits", "Your assigned bot produces credits automatically."
 	elseif milestones.FirstUpgrade ~= true then
 		return "Buy an upgrade", "Open Upgrades and improve your factory."
+	elseif snapshot.Progression.Zone < 2 then
+		local zone = Zones[2]
+		return "Unlock Circuit Yard",
+			("Gate progress: %s/%s Credits • %d/%d bots built. Use the east-side gate."):format(
+				formatNumber(snapshot.Currencies.Credits),
+				formatNumber(zone.UnlockCredits),
+				math.min(snapshot.Stats.LifetimeRobotsBuilt, zone.RequiredLifetimeRobots),
+				zone.RequiredLifetimeRobots
+			)
 	end
-	return "Grow the factory", "Collect, build better bots, and expand your production capacity."
+	return "Explore Circuit Yard", "Its salvage piles have better wiring and core-fragment yields."
 end
 
 local function getAssignedPad(snapshot: any, robotUid: string): string?
