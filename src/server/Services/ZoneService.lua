@@ -116,13 +116,7 @@ function ZoneService.UseGate(player: Player, targetZone: any)
 		return
 	end
 	if not isNear(player, gate) then
-		StateService.ActionResult(
-			player,
-			RemoteNames.RequestUnlockZone,
-			false,
-			"TOO_FAR_AWAY",
-			nil
-		)
+		StateService.ActionResult(player, RemoteNames.RequestUnlockZone, false, "TOO_FAR_AWAY", nil)
 		return
 	end
 
@@ -164,7 +158,8 @@ function ZoneService.UseGate(player: Player, targetZone: any)
 		end
 
 		if not EconomyService.SpendCredits(data, definition.UnlockCredits) then
-			return firstGoalInteraction, result(false, "NOT_ENOUGH_CREDITS", requirementPayload(definition, data))
+			return firstGoalInteraction,
+				result(false, "NOT_ENOUGH_CREDITS", requirementPayload(definition, data))
 		end
 
 		data.Progression.Zone = authoritativeTarget
@@ -177,11 +172,7 @@ function ZoneService.UseGate(player: Player, targetZone: any)
 			})
 	end)
 
-	if
-		executed
-		and typeof(transactionResult) == "table"
-		and transactionResult.Success == true
-	then
+	if executed and typeof(transactionResult) == "table" and transactionResult.Success == true then
 		local payload = transactionResult.Payload
 		local updatedData = DataService.GetData(player)
 		if
