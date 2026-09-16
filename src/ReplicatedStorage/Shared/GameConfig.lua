@@ -23,6 +23,15 @@ GameConfig.TILE_COLS = 16
 GameConfig.TILE_SIZE = Vector3.new(7.6, 0.18, 7.6)
 GameConfig.SELECTION_SIZE = Vector3.new(8.6, 0.10, 8.6)
 
+-- Studio gameplay must never wait on or accidentally overwrite production data.
+-- Enable this only when intentionally testing persistence in a published test place.
+GameConfig.STUDIO_DATASTORE_ENABLED = false
+GameConfig.DATASTORE_LOAD_TIMEOUT = 6
+GameConfig.DATASTORE_BACKUP_TIMEOUT = 3
+GameConfig.DATASTORE_SAVE_TIMEOUT = 6
+GameConfig.DATASTORE_SAVE_DELAY = 30
+GameConfig.DATASTORE_BACKUP_INTERVAL = 300
+
 -- Fast enough for an actual play session while still making Energy matter.
 GameConfig.START_ENERGY = 300
 GameConfig.MAX_ENERGY = 1_000_000
