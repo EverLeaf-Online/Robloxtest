@@ -7,9 +7,28 @@ local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
 local ProfileMigrations = {}
 
 local migrations: { [number]: (any) -> () } = {
-	-- [2] = function(data)
-	--     -- Transform a v1 profile into v2 here before the template is reconciled.
-	-- end,
+	[2] = function(data)
+		if typeof(data.Machines) ~= "table" then
+			data.Machines = {}
+		end
+
+		if typeof(data.Machines.ProcessorJob) ~= "table" then
+			data.Machines.ProcessorJob = {
+				Active = false,
+				RecipeId = "",
+				StartedAt = 0,
+				CompletesAt = 0,
+			}
+		end
+
+		if typeof(data.Machines.AssemblerJob) ~= "table" then
+			data.Machines.AssemblerJob = {
+				Active = false,
+				StartedAt = 0,
+				CompletesAt = 0,
+			}
+		end
+	end,
 }
 
 local function readVersion(data: any): number
