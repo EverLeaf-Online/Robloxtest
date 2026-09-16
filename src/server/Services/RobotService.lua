@@ -49,7 +49,12 @@ local function findAssignedPad(workPads: any, robotUid: string): string?
 	return nil
 end
 
-local function sendResult(player: Player, actionName: string, executed: boolean, transactionResult: any?)
+local function sendResult(
+	player: Player,
+	actionName: string,
+	executed: boolean,
+	transactionResult: any?
+)
 	if not executed then
 		StateService.ActionResult(player, actionName, false, tostring(transactionResult), nil)
 		return
@@ -73,13 +78,25 @@ end
 
 function RobotService.Assign(player: Player, robotUid: any, padId: any)
 	if not validString(robotUid) or not validString(padId) then
-		StateService.ActionResult(player, RemoteNames.RequestAssignRobot, false, "INVALID_ASSIGNMENT", nil)
+		StateService.ActionResult(
+			player,
+			RemoteNames.RequestAssignRobot,
+			false,
+			"INVALID_ASSIGNMENT",
+			nil
+		)
 		return
 	end
 
 	local padIndex = parsePadIndex(padId)
 	if padIndex == nil then
-		StateService.ActionResult(player, RemoteNames.RequestAssignRobot, false, "UNKNOWN_WORK_PAD", nil)
+		StateService.ActionResult(
+			player,
+			RemoteNames.RequestAssignRobot,
+			false,
+			"UNKNOWN_WORK_PAD",
+			nil
+		)
 		return
 	end
 
@@ -113,7 +130,13 @@ end
 
 function RobotService.Sell(player: Player, robotUid: any)
 	if not validString(robotUid) then
-		StateService.ActionResult(player, RemoteNames.RequestSellRobot, false, "INVALID_ROBOT_UID", nil)
+		StateService.ActionResult(
+			player,
+			RemoteNames.RequestSellRobot,
+			false,
+			"INVALID_ROBOT_UID",
+			nil
+		)
 		return
 	end
 
@@ -137,10 +160,11 @@ function RobotService.Sell(player: Player, robotUid: any)
 		end
 
 		data.Robots.OwnedByUid[robotUid] = nil
-		return true, result(true, "ROBOT_RECYCLED", {
-			RobotUid = robotUid,
-			Credits = granted,
-		})
+		return true,
+			result(true, "ROBOT_RECYCLED", {
+				RobotUid = robotUid,
+				Credits = granted,
+			})
 	end)
 
 	sendResult(player, RemoteNames.RequestSellRobot, executed, transactionResult)
