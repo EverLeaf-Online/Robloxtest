@@ -33,7 +33,10 @@ local initialized = false
 local function getOrCreateFolder(): Folder
 	local existing = ReplicatedStorage:FindFirstChild(REMOTE_FOLDER_NAME)
 	if existing then
-		assert(existing:IsA("Folder"), ("ReplicatedStorage.%s must be a Folder"):format(REMOTE_FOLDER_NAME))
+		assert(
+			existing:IsA("Folder"),
+			("ReplicatedStorage.%s must be a Folder"):format(REMOTE_FOLDER_NAME)
+		)
 		return existing
 	end
 
@@ -97,7 +100,9 @@ function RemoteService.BindRequest(name: string, handler: (Player, ...any) -> ()
 
 		local ok, err = pcall(handler, player, ...)
 		if not ok then
-			warn(("[RemoteService] %s failed for %d: %s"):format(name, player.UserId, tostring(err)))
+			warn(
+				("[RemoteService] %s failed for %d: %s"):format(name, player.UserId, tostring(err))
+			)
 		end
 	end)
 end
