@@ -189,17 +189,15 @@ function RobotService.Sell(player: Player, robotUid: any)
 		if definition == nil then
 			return false, result(false, "UNKNOWN_ROBOT_DEFINITION", nil)
 		end
-
-		local granted = EconomyService.GrantCredits(data, definition.RecycleCredits)
-		if granted <= 0 then
-			return false, result(false, "CREDIT_CAP_REACHED", nil)
+		if not EconomyService.GrantCreditsExact(data, definition.RecycleCredits) then
+			return false, result(false, "CREDIT_CAP_WOULD_TRUNCATE", nil)
 		end
 
 		data.Robots.OwnedByUid[robotUid] = nil
 		return true,
 			result(true, "ROBOT_RECYCLED", {
 				RobotUid = robotUid,
-				Credits = granted,
+				Credits = definition.RecycleCredits,
 			})
 	end)
 
