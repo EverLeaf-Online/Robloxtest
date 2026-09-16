@@ -163,7 +163,13 @@ end
 function MachineService.StartAssembler(player: Player)
 	local assembler = PlotService.GetAssembler(player)
 	if assembler == nil then
-		StateService.ActionResult(player, RemoteNames.RequestAssemble, false, "NO_FACTORY_PLOT", nil)
+		StateService.ActionResult(
+			player,
+			RemoteNames.RequestAssemble,
+			false,
+			"NO_FACTORY_PLOT",
+			nil
+		)
 		return
 	end
 	if not isNear(player, assembler) then
