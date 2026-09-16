@@ -347,11 +347,7 @@ local function buildRobotRows(snapshot: any): any
 					Position = UDim2.new(1, -188, 0.5, -16),
 					Size = UDim2.fromOffset(92, 32),
 				}, {
-					Button = button(
-						assignmentText,
-						assignmentCallback ~= nil,
-						assignmentCallback
-					),
+					Button = button(assignmentText, assignmentCallback ~= nil, assignmentCallback),
 				}),
 				Recycle = React.createElement("Frame", {
 					BackgroundTransparency = 1,
