@@ -40,7 +40,7 @@ local function addPrompt(part: BasePart, actionText: string, objectText: string)
 	prompt.ActionText = actionText
 	prompt.ObjectText = objectText
 	prompt.HoldDuration = 0.15
-	prompt.MaxActivationDistance = 12
+	prompt.MaxActivationDistance = GameConfig.World.PromptActivationDistance
 	prompt.RequiresLineOfSight = false
 	prompt.Parent = part
 	return prompt
