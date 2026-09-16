@@ -92,6 +92,34 @@ function FactoryRules.CanFitTransaction(
 	return projected >= 0 and projected <= storageCapacity
 end
 
+function FactoryRules.CanGrantWithReservation(
+	currentTotal: number,
+	added: number,
+	storageCapacity: number,
+	reserved: number
+): boolean
+	if currentTotal < 0 or added < 0 or storageCapacity < 0 or reserved < 0 then
+		return false
+	end
+	local usableCapacity = math.max(0, storageCapacity - reserved)
+	return currentTotal + added <= usableCapacity
+end
+
+function FactoryRules.CanCompleteReservedOutput(
+	currentTotal: number,
+	added: number,
+	storageCapacity: number,
+	reserved: number
+): boolean
+	if currentTotal < 0 or added < 0 or storageCapacity < 0 or reserved <= 0 then
+		return false
+	end
+	if added > reserved then
+		return false
+	end
+	return currentTotal + added <= storageCapacity + reserved
+end
+
 local function getRollIds(firstBuild: boolean): { string }
 	if firstBuild then
 		return table.clone(Robots.FirstRevealPool)
