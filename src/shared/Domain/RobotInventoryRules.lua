@@ -20,7 +20,10 @@ local function normalizeStart(value: any): number
 end
 
 function RobotInventoryRules.FormatUid(uidNumber: number): string
-	assert(uidNumber % 1 == 0 and uidNumber >= 1 and uidNumber <= MAX_UID_NUMBER, "invalid robot uid number")
+	assert(
+		uidNumber % 1 == 0 and uidNumber >= 1 and uidNumber <= MAX_UID_NUMBER,
+		"invalid robot uid number"
+	)
 	return ("R%d"):format(uidNumber)
 end
 
