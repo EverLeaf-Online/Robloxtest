@@ -96,10 +96,16 @@ function EconomyService.GrantMaterials(data: any, amounts: { [string]: number })
 	end
 
 	local reserved = EconomyService.GetReservedProcessorStorage(data)
-	local usableCapacity = math.max(0, EconomyService.GetStorageCapacity(data) - reserved)
-	local total = FactoryRules.TotalMaterials(data.Materials)
+	local currentTotal = FactoryRules.TotalMaterials(data.Materials)
 	local added = totalAmounts(amounts)
-	if total + added > usableCapacity then
+	if
+		not FactoryRules.CanGrantWithReservation(
+			currentTotal,
+			added,
+			EconomyService.GetStorageCapacity(data),
+			reserved
+		)
+	then
 		return false
 	end
 
@@ -115,14 +121,16 @@ function EconomyService.GrantProcessorOutput(data: any, amounts: { [string]: num
 	end
 
 	local reserved = EconomyService.GetReservedProcessorStorage(data)
+	local currentTotal = FactoryRules.TotalMaterials(data.Materials)
 	local added = totalAmounts(amounts)
-	if reserved <= 0 or added > reserved then
-		return false
-	end
-
-	local capacity = EconomyService.GetStorageCapacity(data)
-	local total = FactoryRules.TotalMaterials(data.Materials)
-	if total + added > capacity + reserved then
+	if
+		not FactoryRules.CanCompleteReservedOutput(
+			currentTotal,
+			added,
+			EconomyService.GetStorageCapacity(data),
+			reserved
+		)
+	then
 		return false
 	end
 
