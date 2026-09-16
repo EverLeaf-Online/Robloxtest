@@ -90,6 +90,19 @@ jobs:
             exit 1
           fi
 
+          # v0.1.3 predates Roblox's current binary-place Content-Type requirement.
+          # Current upstream rocale-cli detects .rbxl and uses application/octet-stream.
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("src/core/ocaleSdk.luau")
+          text = path.read_text()
+          old = '["content-type"] = "application/xml"'
+          if text.count(old) != 1:
+              raise SystemExit("Unexpected v0.1.3 upload Content-Type source shape")
+          path.write_text(text.replace(old, '["content-type"] = "application/octet-stream"', 1))
+          PY
+
           lute setup
           lute scripts/build "$ROCALE_TAG" "$ROCALE_COMMIT"
           popd >/dev/null
