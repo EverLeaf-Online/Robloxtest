@@ -3,6 +3,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
+local Recipes = require(ReplicatedStorage.Shared.Config.Recipes)
 local Robots = require(ReplicatedStorage.Shared.Config.Robots)
 local Validation = require(ReplicatedStorage.Shared.Util.Validation)
 
@@ -27,6 +28,49 @@ local function sanitizeBoolean(value: any, fallback: boolean): boolean
 		return value
 	end
 	return fallback
+end
+
+local function resetProcessorJob(job: any)
+	job.Active = false
+	job.RecipeId = ""
+	job.StartedAt = 0
+	job.CompletesAt = 0
+end
+
+local function sanitizeProcessorJob(machines: any)
+	local job = ensureTable(machines, "ProcessorJob")
+	job.Active = sanitizeBoolean(job.Active, false)
+	job.RecipeId = if Validation.isBoundedString(job.RecipeId, GameConfig.Networking.MaxStringLength)
+		then job.RecipeId
+		else ""
+	job.StartedAt = clampInteger(job.StartedAt, 0, 4_102_444_800, 0)
+	job.CompletesAt = clampInteger(job.CompletesAt, 0, 4_102_444_800, 0)
+
+	if
+		not job.Active
+		or Recipes.Processor[job.RecipeId] == nil
+		or job.StartedAt == 0
+		or job.CompletesAt < job.StartedAt
+	then
+		resetProcessorJob(job)
+	end
+end
+
+local function resetAssemblerJob(job: any)
+	job.Active = false
+	job.StartedAt = 0
+	job.CompletesAt = 0
+end
+
+local function sanitizeAssemblerJob(machines: any)
+	local job = ensureTable(machines, "AssemblerJob")
+	job.Active = sanitizeBoolean(job.Active, false)
+	job.StartedAt = clampInteger(job.StartedAt, 0, 4_102_444_800, 0)
+	job.CompletesAt = clampInteger(job.CompletesAt, 0, 4_102_444_800, 0)
+
+	if not job.Active or job.StartedAt == 0 or job.CompletesAt < job.StartedAt then
+		resetAssemblerJob(job)
+	end
 end
 
 function ProfileSanitizer.Sanitize(data: any)
@@ -80,6 +124,8 @@ function ProfileSanitizer.Sanitize(data: any)
 	machines.AssemblerLevel = clampInteger(machines.AssemblerLevel, 1, 4, 1)
 	machines.StorageLevel = clampInteger(machines.StorageLevel, 1, 4, 1)
 	machines.WorkSlotsLevel = clampInteger(machines.WorkSlotsLevel, 1, 4, 1)
+	sanitizeProcessorJob(machines)
+	sanitizeAssemblerJob(machines)
 
 	local progression = ensureTable(data, "Progression")
 	progression.Zone = clampInteger(progression.Zone, 1, 100, 1)
