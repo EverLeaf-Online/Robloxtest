@@ -196,19 +196,24 @@ function SalvageService.Collect(player: Player, nodeId: any)
 		return
 	end
 
+	local success = transactionResult.Success == true
+	if success then
+		consumeNodeClaim(nodeId)
+	else
+		releaseNodeClaim(nodeId)
+	end
+
 	StateService.ActionResult(
 		player,
 		RemoteNames.RequestCollect,
-		transactionResult.Success == true,
+		success,
 		tostring(transactionResult.Code),
 		transactionResult.Payload
 	)
-	if transactionResult.Success ~= true then
-		releaseNodeClaim(nodeId)
+	if not success then
 		return
 	end
 
-	consumeNodeClaim(nodeId)
 	StateService.PushSnapshot(player)
 	task.delay(GameConfig.World.NodeRespawnSeconds, function()
 		setNodeActive(nodeId, true)
