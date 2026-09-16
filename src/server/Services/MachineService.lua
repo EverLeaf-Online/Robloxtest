@@ -12,6 +12,7 @@ local Validation = require(ReplicatedStorage.Shared.Util.Validation)
 
 local DataService = require(script.Parent.DataService)
 local EconomyService = require(script.Parent.EconomyService)
+local PlotService = require(script.Parent.PlotService)
 local RateLimiter = require(script.Parent.RateLimiter)
 local RemoteService = require(script.Parent.RemoteService)
 local StateService = require(script.Parent.StateService)
@@ -110,9 +111,14 @@ function MachineService.StartProcessor(player: Player, recipeId: any)
 	end
 
 	local recipe = Recipes.Processor[recipeId]
-	local control = WorldService.GetProcessorControl(recipeId)
-	if recipe == nil or control == nil then
+	if recipe == nil then
 		StateService.ActionResult(player, RemoteNames.RequestProcess, false, "UNKNOWN_RECIPE", nil)
+		return
+	end
+
+	local control = PlotService.GetProcessorControl(player, recipeId)
+	if control == nil then
+		StateService.ActionResult(player, RemoteNames.RequestProcess, false, "NO_FACTORY_PLOT", nil)
 		return
 	end
 	if not isNear(player, control) then
@@ -155,7 +161,11 @@ function MachineService.StartProcessor(player: Player, recipeId: any)
 end
 
 function MachineService.StartAssembler(player: Player)
-	local assembler = WorldService.GetAssemblerPart()
+	local assembler = PlotService.GetAssembler(player)
+	if assembler == nil then
+		StateService.ActionResult(player, RemoteNames.RequestAssemble, false, "NO_FACTORY_PLOT", nil)
+		return
+	end
 	if not isNear(player, assembler) then
 		StateService.ActionResult(player, RemoteNames.RequestAssemble, false, "TOO_FAR_AWAY", nil)
 		return
@@ -296,27 +306,42 @@ function MachineService.PollPlayer(player: Player)
 	completeAssembler(player, now)
 end
 
+local function rejectForeignPlot(player: Player, actionName: string)
+	StateService.ActionResult(player, actionName, false, "NOT_YOUR_PLOT", nil)
+end
+
 local function bindWorldPrompts()
 	for _, control in WorldService.GetProcessorControls() do
 		local recipeId = control:GetAttribute("ProcessorRecipeId")
 		local prompt = control:FindFirstChildOfClass("ProximityPrompt")
 		if typeof(recipeId) == "string" and prompt then
 			prompt.Triggered:Connect(function(player)
-				if RateLimiter.Consume(player, RemoteNames.RequestProcess) then
-					MachineService.StartProcessor(player, recipeId)
+				if not RateLimiter.Consume(player, RemoteNames.RequestProcess) then
+					return
 				end
+				if not PlotService.OwnsPart(player, control) then
+					rejectForeignPlot(player, RemoteNames.RequestProcess)
+					return
+				end
+				MachineService.StartProcessor(player, recipeId)
 			end)
 		end
 	end
 
-	local assembler = WorldService.GetAssemblerPart()
-	local assemblerPrompt = assembler:FindFirstChildOfClass("ProximityPrompt")
-	if assemblerPrompt then
-		assemblerPrompt.Triggered:Connect(function(player)
-			if RateLimiter.Consume(player, RemoteNames.RequestAssemble) then
+	for _, assembler in WorldService.GetPlotAssemblers() do
+		local assemblerPrompt = assembler:FindFirstChildOfClass("ProximityPrompt")
+		if assemblerPrompt then
+			assemblerPrompt.Triggered:Connect(function(player)
+				if not RateLimiter.Consume(player, RemoteNames.RequestAssemble) then
+					return
+				end
+				if not PlotService.OwnsPart(player, assembler) then
+					rejectForeignPlot(player, RemoteNames.RequestAssemble)
+					return
+				end
 				MachineService.StartAssembler(player)
-			end
-		end)
+			end)
+		end
 	end
 end
 
