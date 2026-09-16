@@ -81,9 +81,20 @@ function StateService.PushSnapshot(player: Player)
 		return
 	end
 
+	-- ProfileLoaded listeners are not an ordering boundary. A client can request state
+	-- while PlotService's ProfileLoaded callback is still pending, so guarantee the
+	-- plot assignment before exposing an authoritative snapshot.
+	local plotId = PlotService.GetPlotId(player)
+	if plotId == nil then
+		plotId = PlotService.Assign(player)
+	end
+	if plotId == nil then
+		return
+	end
+
 	local snapshot = StateService.BuildSnapshot(data)
 	snapshot.Plot = {
-		Id = PlotService.GetPlotId(player),
+		Id = plotId,
 	}
 	RemoteService.Get(RemoteNames.StateSnapshot):FireClient(player, snapshot)
 end
