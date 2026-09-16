@@ -2,8 +2,11 @@ local Config = {}
 
 Config.PLANET_RADIUS = 40
 Config.TILE_COUNT = 144
-Config.TILE_SURFACE_OFFSET = 0.65
-Config.TILE_DIAMETER = 9.25
+Config.TILE_SURFACE_OFFSET = 0.45
+-- 144 equal-area cells on a radius-40 sphere need roughly a 13.3-stud
+-- equivalent diameter.  The old 9.25-stud discs covered only about half of the
+-- sphere and made the surface look like disconnected dots.
+Config.TILE_DIAMETER = 13.1
 Config.PLANET_SLOT_SPACING = 500
 
 Config.ENERGY_START = 100
@@ -48,8 +51,6 @@ Config.MILESTONE_ENERGY_REWARDS = {
 	[50] = 750,
 }
 
--- Client-facing evolution labels. They are derived from developed-tile count and
--- do not need extra persistent fields in player saves.
 Config.PLANET_STAGES = {
 	{ MinDeveloped = 0, Name = "Barren World", Description = "A quiet world waiting for its first ecosystem." },
 	{ MinDeveloped = 5, Name = "Young World", Description = "Water and vegetation are beginning to take hold." },
@@ -113,8 +114,6 @@ Config.PRODUCTS = {
 	},
 }
 
--- Starting land needs enough contrast to remain readable against a black space
--- background. Water/plants intentionally become progressively more saturated.
 Config.COLORS = {
 	Base = Color3.fromRGB(125, 91, 64),
 	Land = Color3.fromRGB(166, 125, 83),
