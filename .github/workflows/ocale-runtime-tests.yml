@@ -8,42 +8,38 @@ permissions:
   contents: read
 
 concurrency:
-  group: ocale-runtime-${{ vars.ROBLOX_TEST_UNIVERSE_ID || 'unconfigured' }}
+  group: ocale-runtime-10766713640
   cancel-in-progress: false
 
 jobs:
   runtime-tests:
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      (
-        github.event.pull_request.head.repo.full_name == github.repository &&
-        vars.ROBLOX_TEST_UNIVERSE_ID != '' &&
-        vars.ROBLOX_TEST_PLACE_ID != ''
-      )
+      github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
       ROBLOX_API_KEY: ${{ secrets.ROBLOX_API_KEY }}
-      ROBLOX_UNIVERSE_ID: ${{ vars.ROBLOX_TEST_UNIVERSE_ID }}
-      ROBLOX_PLACE_ID: ${{ vars.ROBLOX_TEST_PLACE_ID }}
+      ROBLOX_UNIVERSE_ID: "10766713640"
+      ROBLOX_PLACE_ID: "75490500628229"
 
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Validate Roblox test configuration
+      - name: Check Roblox test configuration
+        id: config
         shell: bash
         run: |
-          missing=0
-          for name in ROBLOX_API_KEY ROBLOX_UNIVERSE_ID ROBLOX_PLACE_ID; do
-            if [[ -z "${!name:-}" ]]; then
-              echo "::error::Missing ${name}. Configure the simulator test credentials before running OCALE."
-              missing=1
-            fi
-          done
-          exit "$missing"
+          if [[ -z "${ROBLOX_API_KEY:-}" ]]; then
+            echo "::notice::ROBLOX_API_KEY is not configured yet; OCALE execution is skipped."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "ready=true" >> "$GITHUB_OUTPUT"
 
       - name: Install Rokit
+        if: steps.config.outputs.ready == 'true'
         shell: bash
         run: |
           ROKIT_INSTALLER_URL="https://raw.githubusercontent.com/rojo-rbx/rokit/2f2618428ef31279e2fc80b0b1d73485bc929ddd/scripts/install.sh"
@@ -53,15 +49,19 @@ jobs:
           echo "$HOME/.rokit/bin" >> "$GITHUB_PATH"
 
       - name: Install pinned toolchain
+        if: steps.config.outputs.ready == 'true'
         shell: bash
         run: "$HOME/.rokit/bin/rokit install --no-trust-check"
 
       - name: Install Wally packages
+        if: steps.config.outputs.ready == 'true'
         run: wally install
 
       - name: Verify OCALE CLI
+        if: steps.config.outputs.ready == 'true'
         run: rocale-cli --help >/dev/null
 
       - name: Execute Jest in Roblox Open Cloud
+        if: steps.config.outputs.ready == 'true'
         shell: bash
         run: ./scripts/run-ocale-tests.sh
