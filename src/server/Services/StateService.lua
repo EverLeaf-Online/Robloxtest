@@ -5,6 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local RemoteNames = require(ReplicatedStorage.Shared.Networking.RemoteNames)
 local DataService = require(script.Parent.DataService)
+local PlotService = require(script.Parent.PlotService)
 local RemoteService = require(script.Parent.RemoteService)
 
 local StateService = {}
@@ -79,8 +80,12 @@ function StateService.PushSnapshot(player: Player)
 	if data == nil then
 		return
 	end
-	RemoteService.Get(RemoteNames.StateSnapshot)
-		:FireClient(player, StateService.BuildSnapshot(data))
+
+	local snapshot = StateService.BuildSnapshot(data)
+	snapshot.Plot = {
+		Id = PlotService.GetPlotId(player),
+	}
+	RemoteService.Get(RemoteNames.StateSnapshot):FireClient(player, snapshot)
 end
 
 function StateService.ActionResult(
