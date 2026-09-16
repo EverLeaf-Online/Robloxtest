@@ -44,7 +44,9 @@ end
 
 local function endSessionSafely(player: Player, profile: any)
 	local ok, err = pcall(function()
-		profile:EndSession()
+		if profile:IsActive() == true then
+			profile:EndSession()
+		end
 	end)
 	if not ok then
 		warn(("[DataService] Failed to end profile session for %d: %s"):format(player.UserId, tostring(err)))
@@ -67,9 +69,11 @@ local function releaseProfile(player: Player)
 end
 
 function DataService.LoadPlayer(player: Player): boolean
-	if profiles[player] ~= nil then
+	local existing = profiles[player]
+	if existing ~= nil and existing:IsActive() == true then
 		return true
 	end
+	profiles[player] = nil
 
 	local started, profileOrError = pcall(function()
 		return PlayerStore:StartSessionAsync(profileKey(player), {
@@ -128,7 +132,7 @@ function DataService.LoadPlayer(player: Player): boolean
 		end
 	end)
 
-	if player.Parent ~= Players then
+	if player.Parent ~= Players or profile:IsActive() ~= true then
 		endSessionSafely(player, profile)
 		return false
 	end
@@ -145,12 +149,13 @@ function DataService.LoadPlayer(player: Player): boolean
 end
 
 function DataService.IsReady(player: Player): boolean
-	return profiles[player] ~= nil
+	local profile = profiles[player]
+	return profile ~= nil and profile:IsActive() == true
 end
 
 function DataService.GetData(player: Player): any?
 	local profile = profiles[player]
-	if profile == nil then
+	if profile == nil or profile:IsActive() ~= true then
 		return nil
 	end
 	return profile.Data
@@ -161,7 +166,7 @@ function DataService.Transaction(
 	transaction: (any) -> (boolean, any?)
 ): (boolean, any?)
 	local profile = profiles[player]
-	if profile == nil then
+	if profile == nil or profile:IsActive() ~= true then
 		return false, "PROFILE_NOT_READY"
 	end
 	if transactionActive[player] == true then
@@ -174,7 +179,7 @@ function DataService.Transaction(
 		profile.Data,
 		transaction,
 		function(draft)
-			if profiles[player] ~= profile then
+			if profiles[player] ~= profile or profile:IsActive() ~= true then
 				error("profile session ended during transaction")
 			end
 			draft.Revision += 1
