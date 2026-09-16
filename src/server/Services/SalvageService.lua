@@ -6,6 +6,7 @@ local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
 local RemoteNames = require(ReplicatedStorage.Shared.Networking.RemoteNames)
 local Salvage = require(ReplicatedStorage.Shared.Config.Salvage)
 local Validation = require(ReplicatedStorage.Shared.Util.Validation)
+local Zones = require(ReplicatedStorage.Shared.Config.Zones)
 
 local DataService = require(script.Parent.DataService)
 local EconomyService = require(script.Parent.EconomyService)
@@ -54,15 +55,18 @@ local function setNodeActive(nodeId: string, active: boolean)
 	end
 end
 
-local function makeRewards(firstCollect: boolean): { [string]: number }
+local function makeRewards(zoneId: number, firstCollect: boolean): { [string]: number }
+	local zone = Zones[zoneId]
+	assert(zone ~= nil, "salvage node must reference a configured zone")
+	local tuning = zone.Salvage
 	local rewards: { [string]: number } = {
-		ScrapMetal = random:NextInteger(Salvage.ScrapMin, Salvage.ScrapMax),
+		ScrapMetal = random:NextInteger(tuning.ScrapMin, tuning.ScrapMax),
 	}
 
-	if random:NextNumber() < Salvage.WiringChance then
+	if random:NextNumber() < tuning.WiringChance then
 		rewards.Wiring = 1
 	end
-	if random:NextNumber() < Salvage.CoreChance then
+	if random:NextNumber() < tuning.CoreChance then
 		rewards.PowerCoreFragments = 1
 	end
 
@@ -91,6 +95,24 @@ function SalvageService.Collect(player: Player, nodeId: any)
 		return
 	end
 
+	local zoneId = node:GetAttribute("ZoneId")
+	if not Validation.isSafeInteger(zoneId, 1, 100) or Zones[zoneId :: number] == nil then
+		StateService.ActionResult(player, RemoteNames.RequestCollect, false, "INVALID_NODE_ZONE", nil)
+		return
+	end
+	local authoritativeZoneId = zoneId :: number
+
+	local data = DataService.GetData(player)
+	if data == nil then
+		return
+	end
+	if data.Progression.Zone < authoritativeZoneId then
+		StateService.ActionResult(player, RemoteNames.RequestCollect, false, "ZONE_LOCKED", {
+			RequiredZone = authoritativeZoneId,
+		})
+		return
+	end
+
 	local position = playerPosition(player)
 	if
 		position == nil
@@ -100,14 +122,13 @@ function SalvageService.Collect(player: Player, nodeId: any)
 		return
 	end
 
-	local data = DataService.GetData(player)
-	if data == nil then
-		return
-	end
 	local firstCollect = data.Tutorial.Milestones.FirstScrap ~= true
-	local rewards = makeRewards(firstCollect)
+	local rewards = makeRewards(authoritativeZoneId, firstCollect)
 
 	local executed, transactionResult = DataService.Transaction(player, function(profileData)
+		if profileData.Progression.Zone < authoritativeZoneId then
+			return false, result(false, "ZONE_LOCKED", { RequiredZone = authoritativeZoneId })
+		end
 		if not EconomyService.GrantMaterials(profileData, rewards) then
 			return false, result(false, "STORAGE_FULL", nil)
 		end
@@ -115,6 +136,7 @@ function SalvageService.Collect(player: Player, nodeId: any)
 		return true,
 			result(true, "SALVAGE_COLLECTED", {
 				NodeId = nodeId,
+				ZoneId = authoritativeZoneId,
 				Rewards = rewards,
 			})
 	end)
