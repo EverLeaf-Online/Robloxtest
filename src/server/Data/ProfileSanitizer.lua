@@ -5,6 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local AssignmentRules = require(ReplicatedStorage.Shared.Domain.AssignmentRules)
 local FactoryRules = require(ReplicatedStorage.Shared.Domain.FactoryRules)
 local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
+local ProgressionRules = require(ReplicatedStorage.Shared.Domain.ProgressionRules)
 local RobotInventoryRules = require(ReplicatedStorage.Shared.Domain.RobotInventoryRules)
 local Recipes = require(ReplicatedStorage.Shared.Config.Recipes)
 local Robots = require(ReplicatedStorage.Shared.Config.Robots)
@@ -138,7 +139,7 @@ function ProfileSanitizer.Sanitize(data: any)
 	end
 
 	local progression = ensureTable(data, "Progression")
-	progression.Zone = clampInteger(progression.Zone, 1, 100, 1)
+	progression.Zone = ProgressionRules.NormalizeCurrentZone(progression.Zone)
 	progression.FactoryTier = clampInteger(progression.FactoryTier, 1, 100, 1)
 	progression.PrestigeCount = clampInteger(progression.PrestigeCount, 0, 1_000_000, 0)
 
