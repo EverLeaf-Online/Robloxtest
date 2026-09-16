@@ -64,10 +64,16 @@ end
 
 local function isNear(player: Player, part: BasePart): boolean
 	local position = playerPosition(player)
-	return position ~= nil and (position - part.Position).Magnitude <= GameConfig.World.InteractionDistance
+	return position ~= nil
+		and (position - part.Position).Magnitude <= GameConfig.World.InteractionDistance
 end
 
-local function sendTransactionResult(player: Player, actionName: string, executed: boolean, transactionResult: any?)
+local function sendTransactionResult(
+	player: Player,
+	actionName: string,
+	executed: boolean,
+	transactionResult: any?
+)
 	if not executed then
 		StateService.ActionResult(player, actionName, false, tostring(transactionResult), nil)
 		return
@@ -93,7 +99,13 @@ end
 
 function MachineService.StartProcessor(player: Player, recipeId: any)
 	if not Validation.isBoundedString(recipeId, GameConfig.Networking.MaxStringLength) then
-		StateService.ActionResult(player, RemoteNames.RequestProcess, false, "INVALID_RECIPE_ID", nil)
+		StateService.ActionResult(
+			player,
+			RemoteNames.RequestProcess,
+			false,
+			"INVALID_RECIPE_ID",
+			nil
+		)
 		return
 	end
 
@@ -120,18 +132,23 @@ function MachineService.StartProcessor(player: Player, recipeId: any)
 			return false, result(false, "STORAGE_FULL", nil)
 		end
 
-		assert(EconomyService.SpendMaterials(data, recipe.Input), "validated processor cost must be spendable")
+		assert(
+			EconomyService.SpendMaterials(data, recipe.Input),
+			"validated processor cost must be spendable"
+		)
 		local startedAt = os.time()
-		local duration = math.max(1, math.ceil(FactoryRules.GetProcessorSeconds(data.Machines.ProcessorLevel)))
+		local duration =
+			math.max(1, math.ceil(FactoryRules.GetProcessorSeconds(data.Machines.ProcessorLevel)))
 		job.Active = true
 		job.RecipeId = recipe.Id
 		job.StartedAt = startedAt
 		job.CompletesAt = startedAt + duration
 
-		return true, result(true, "PROCESS_STARTED", {
-			RecipeId = recipe.Id,
-			CompletesAt = job.CompletesAt,
-		})
+		return true,
+			result(true, "PROCESS_STARTED", {
+				RecipeId = recipe.Id,
+				CompletesAt = job.CompletesAt,
+			})
 	end)
 
 	sendTransactionResult(player, RemoteNames.RequestProcess, executed, transactionResult)
@@ -158,9 +175,13 @@ function MachineService.StartAssembler(player: Player)
 			return false, result(false, "MISSING_MATERIALS", nil)
 		end
 
-		assert(EconomyService.SpendMaterials(data, cost), "validated assembler cost must be spendable")
+		assert(
+			EconomyService.SpendMaterials(data, cost),
+			"validated assembler cost must be spendable"
+		)
 		local startedAt = os.time()
-		local duration = math.max(1, math.ceil(FactoryRules.GetAssemblerSeconds(data.Machines.AssemblerLevel)))
+		local duration =
+			math.max(1, math.ceil(FactoryRules.GetAssemblerSeconds(data.Machines.AssemblerLevel)))
 		job.Active = true
 		job.StartedAt = startedAt
 		job.CompletesAt = startedAt + duration
@@ -192,17 +213,24 @@ local function completeProcessor(player: Player, now: number): boolean
 		local recipeId = job.RecipeId
 		resetProcessorJob(job)
 		data.Tutorial.Milestones.FirstProcess = true
-		return true, result(true, "PROCESS_COMPLETE", {
-			RecipeId = recipeId,
-			Output = recipe.Output,
-		})
+		return true,
+			result(true, "PROCESS_COMPLETE", {
+				RecipeId = recipeId,
+				Output = recipe.Output,
+			})
 	end)
 
 	if not executed or transactionResult == nil then
 		return false
 	end
 	if transactionResult.Success == true then
-		StateService.ActionResult(player, "ProcessorComplete", true, transactionResult.Code, transactionResult.Payload)
+		StateService.ActionResult(
+			player,
+			"ProcessorComplete",
+			true,
+			transactionResult.Code,
+			transactionResult.Payload
+		)
 		StateService.PushSnapshot(player)
 		return true
 	end
@@ -235,17 +263,24 @@ local function completeAssembler(player: Player, now: number): boolean
 		data.Tutorial.Milestones.FirstBotReveal = true
 		resetAssemblerJob(job)
 
-		return true, result(true, "ASSEMBLY_COMPLETE", {
-			RobotUid = uid,
-			RobotId = robotId,
-		})
+		return true,
+			result(true, "ASSEMBLY_COMPLETE", {
+				RobotUid = uid,
+				RobotId = robotId,
+			})
 	end)
 
 	if not executed or transactionResult == nil then
 		return false
 	end
 	if transactionResult.Success == true then
-		StateService.ActionResult(player, "AssemblerComplete", true, transactionResult.Code, transactionResult.Payload)
+		StateService.ActionResult(
+			player,
+			"AssemblerComplete",
+			true,
+			transactionResult.Code,
+			transactionResult.Payload
+		)
 		StateService.PushSnapshot(player)
 		return true
 	end
