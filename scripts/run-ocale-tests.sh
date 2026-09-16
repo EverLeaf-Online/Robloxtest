@@ -50,7 +50,7 @@ rojo build "$PROJECT_FILE" --output "$PLACE_FILE"
 
 publish_url="https://apis.roblox.com/universes/v1/${ROBLOX_UNIVERSE_ID}/places/${ROBLOX_PLACE_ID}/versions?versionType=Published"
 version_number=""
-max_publish_attempts=4
+max_publish_attempts=2
 
 for attempt in $(seq 1 "$max_publish_attempts"); do
   rm -f "$PUBLISH_RESPONSE"
@@ -91,13 +91,19 @@ PY
   fi
 
   if [[ $attempt -lt $max_publish_attempts ]] && { [[ $curl_status -ne 0 ]] || [[ "$http_code" == "409" ]] || [[ "$http_code" =~ ^5[0-9][0-9]$ ]]; }; then
-    delay=$((attempt * 15))
-    echo "Roblox place publish attempt ${attempt}/${max_publish_attempts} failed (curl=${curl_status}, HTTP=${http_code:-none}); retrying in ${delay}s..." >&2
-    sleep "$delay"
+    echo "Roblox place publish attempt ${attempt}/${max_publish_attempts} failed (curl=${curl_status}, HTTP=${http_code:-none}); retrying in 15s..." >&2
+    sleep 15
     continue
   fi
 
-  echo "Roblox place publish failed (curl=${curl_status}, HTTP=${http_code:-none})." >&2
+  if [[ "$http_code" == "409" ]]; then
+    echo "Roblox place publish is conflict-locked (HTTP 409)." >&2
+    echo "The OCALE no-publish probe already proves the API key, universe/place pairing, and Luau Execution scope are valid." >&2
+    echo "Close any active Roblox Studio/Team Create session for this test place, allow the edit session to release, then rerun." >&2
+  else
+    echo "Roblox place publish failed (curl=${curl_status}, HTTP=${http_code:-none})." >&2
+  fi
+
   if [[ -n "$response_body" ]]; then
     echo "$response_body" >&2
   fi
