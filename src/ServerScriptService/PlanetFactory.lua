@@ -54,12 +54,15 @@ local function createTilePart(model, index)
 	if not tilesFolder then
 		return nil
 	end
+
 	local part = Instance.new("Part")
 	part.Name = "Tile_" .. tostring(index)
 	part.Size = config.TILE_SIZE
 	setPartDefaults(part)
-	part.CanQuery = true
+	part.CanQuery = false
+	part.CastShadow = false
 	part:SetAttribute("TileIndex", index)
+
 	local normal = PlanetMath.getDirection(index)
 	local pos = modelCenter(model) + normal * config.TILE_RADIUS
 	part.CFrame = PlanetMath.getCFrameFromNormal(pos, normal)
@@ -71,14 +74,14 @@ local function createAtmosphere(model, position)
 	local atmosphere = Instance.new("Part")
 	atmosphere.Name = "AtmosphereShell"
 	atmosphere.Shape = Enum.PartType.Ball
-	atmosphere.Size = Vector3.new(config.PLANET_RADIUS * 2 + 5, config.PLANET_RADIUS * 2 + 5, config.PLANET_RADIUS * 2 + 5)
+	atmosphere.Size = Vector3.new(config.PLANET_RADIUS * 2 + 3, config.PLANET_RADIUS * 2 + 3, config.PLANET_RADIUS * 2 + 3)
 	atmosphere.CFrame = CFrame.new(position)
 	setPartDefaults(atmosphere)
 	atmosphere.CanQuery = false
 	atmosphere.CastShadow = false
 	atmosphere.Material = Enum.Material.ForceField
-	atmosphere.Color = Color3.fromRGB(84, 178, 255)
-	atmosphere.Transparency = 0.91
+	atmosphere.Color = Color3.fromRGB(92, 184, 255)
+	atmosphere.Transparency = 0.94
 	atmosphere.Parent = model
 end
 
@@ -101,6 +104,7 @@ function PlanetFactory.refreshTileDetail(model, index, tileType)
 	if tileType ~= config.TILE.Plant and tileType ~= config.TILE.GlowPlant then
 		return
 	end
+
 	local details = model:FindFirstChild("Details")
 	if not details then
 		return
@@ -115,43 +119,58 @@ function PlanetFactory.refreshTileDetail(model, index, tileType)
 	if tileType == config.TILE.Plant then
 		local trunk = Instance.new("Part")
 		trunk.Name = "Trunk"
-		trunk.Size = Vector3.new(0.7, 2.8, 0.7)
+		trunk.Size = Vector3.new(0.65, 2.4, 0.65)
 		setPartDefaults(trunk)
 		trunk.CanQuery = false
+		trunk.CastShadow = true
 		trunk.Material = Enum.Material.Wood
 		trunk.Color = Color3.fromRGB(105, 72, 45)
-		trunk.CFrame = cf * CFrame.new(math.sin(index * 1.7) * 1.2, 1.8, math.cos(index * 2.1) * 1.2)
+		trunk.CFrame = cf * CFrame.new(math.sin(index * 1.7) * 0.7, 1.28, math.cos(index * 2.1) * 0.7)
 		trunk.Parent = detail
 
 		local canopy = Instance.new("Part")
 		canopy.Name = "Canopy"
 		canopy.Shape = Enum.PartType.Ball
-		canopy.Size = Vector3.new(2.8, 2.8, 2.8)
+		canopy.Size = Vector3.new(2.7, 2.7, 2.7)
 		setPartDefaults(canopy)
 		canopy.CanQuery = false
+		canopy.CastShadow = true
 		canopy.Material = Enum.Material.Grass
 		canopy.Color = Color3.fromRGB(48, 172, 76)
-		canopy.CFrame = trunk.CFrame * CFrame.new(0, 2.2, 0)
+		canopy.CFrame = trunk.CFrame * CFrame.new(0, 1.85, 0)
 		canopy.Parent = detail
+
+		local bush = Instance.new("Part")
+		bush.Name = "Bush"
+		bush.Shape = Enum.PartType.Ball
+		bush.Size = Vector3.new(1.8, 1.25, 1.8)
+		setPartDefaults(bush)
+		bush.CanQuery = false
+		bush.CastShadow = true
+		bush.Material = Enum.Material.Grass
+		bush.Color = Color3.fromRGB(64, 158, 72)
+		bush.CFrame = cf * CFrame.new(-1.8, 0.75, 1.15)
+		bush.Parent = detail
 	else
 		for crystalIndex = 1, 3 do
-			local height = crystalIndex == 1 and 3.5 or 2.4
+			local height = crystalIndex == 1 and 3.2 or 2.2
 			local angle = (crystalIndex - 1) * math.pi * 2 / 3 + index * 0.21
-			local radius = crystalIndex == 1 and 0 or 1.1
+			local radius = crystalIndex == 1 and 0 or 0.95
 			local crystal = Instance.new("Part")
 			crystal.Name = "Crystal_" .. crystalIndex
-			crystal.Size = Vector3.new(0.7, height, 0.7)
+			crystal.Size = Vector3.new(0.65, height, 0.65)
 			setPartDefaults(crystal)
 			crystal.CanQuery = false
+			crystal.CastShadow = false
 			crystal.Material = Enum.Material.Neon
 			crystal.Color = config.COLORS.GlowPlant
-			crystal.CFrame = cf * CFrame.new(math.cos(angle) * radius, height * 0.65, math.sin(angle) * radius)
+			crystal.CFrame = cf * CFrame.new(math.cos(angle) * radius, height * 0.55, math.sin(angle) * radius)
 			crystal.Parent = detail
 			if crystalIndex == 1 then
 				local light = Instance.new("PointLight")
 				light.Color = config.COLORS.GlowPlant
-				light.Brightness = 0.9
-				light.Range = 9
+				light.Brightness = 0.8
+				light.Range = 8
 				light.Shadows = false
 				light.Parent = crystal
 			end
@@ -196,7 +215,8 @@ function PlanetFactory.createPlanetModel(player, position, cosmicSkin)
 	base.CFrame = CFrame.new(position)
 	setPartDefaults(base)
 	base.CanQuery = false
-	base.Material = Enum.Material.SmoothPlastic
+	base.CastShadow = true
+	base.Material = cosmicSkin and Enum.Material.SmoothPlastic or Enum.Material.Ground
 	base.Color = cosmicSkin and config.COLORS.CosmicBase or config.COLORS.Base
 	base.Parent = model
 	model.PrimaryPart = base
@@ -204,17 +224,21 @@ function PlanetFactory.createPlanetModel(player, position, cosmicSkin)
 	local tilesFolder = Instance.new("Folder")
 	tilesFolder.Name = "Tiles"
 	tilesFolder.Parent = model
+
 	local detailsFolder = Instance.new("Folder")
 	detailsFolder.Name = "Details"
 	detailsFolder.Parent = model
+
 	local objectsFolder = Instance.new("Folder")
 	objectsFolder.Name = "Objects"
 	objectsFolder.Parent = model
+
 	createAtmosphere(model, position)
 
 	for index = 0, PlanetMath.getTileCount() - 1 do
 		createTilePart(model, index)
 	end
+
 	model:SetAttribute("Ready", true)
 	return model
 end
@@ -256,21 +280,21 @@ function PlanetFactory.spawnAnimal(model, tileIndex, animalType)
 	local cf = PlanetFactory.getTileCFrame(model, tileIndex)
 	local part = Instance.new("Part")
 	part.Name = "Animal_" .. animalType .. "_" .. tostring(tileIndex) .. "_" .. tostring(math.random(1000, 9999))
-	part.Size = Vector3.new(2.4, 2.4, 2.4)
+	part.Size = Vector3.new(2.2, 2.2, 2.2)
 	setPartDefaults(part)
 	part.CanQuery = false
 	part.Shape = Enum.PartType.Ball
 	part.Material = Enum.Material.SmoothPlastic
 	part.Color = animalType == "Fish" and Color3.fromRGB(70, 190, 255) or Color3.fromRGB(222, 170, 102)
-	part.CFrame = cf * CFrame.new(0, 3.5, 0)
+	part.CFrame = cf * CFrame.new(0, 2.7, 0)
 	part:SetAttribute("AnimalType", animalType)
 	part:SetAttribute("TileIndex", tileIndex)
 	part:SetAttribute("Seed", math.random() * 100)
 	part.Parent = objects
 
 	local billboard = Instance.new("BillboardGui")
-	billboard.Size = UDim2.fromOffset(40, 40)
-	billboard.StudsOffset = Vector3.new(0, 3, 0)
+	billboard.Size = UDim2.fromOffset(34, 34)
+	billboard.StudsOffset = Vector3.new(0, 2.6, 0)
 	billboard.AlwaysOnTop = true
 	billboard.Parent = part
 	local icon = Instance.new("TextLabel")
@@ -297,27 +321,28 @@ function PlanetFactory.spawnSettlement(model, tileIndex)
 
 	local base = Instance.new("Part")
 	base.Name = "Base"
-	base.Size = Vector3.new(5, 3.2, 5)
+	base.Size = Vector3.new(4.2, 2.8, 4.2)
 	setPartDefaults(base)
 	base.CanQuery = false
 	base.Material = Enum.Material.WoodPlanks
 	base.Color = Color3.fromRGB(225, 196, 154)
-	base.CFrame = cf * CFrame.new(0, 2.4, 0)
+	base.CFrame = cf * CFrame.new(0, 1.65, 0)
 	base.Parent = settlement
 	settlement.PrimaryPart = base
 
 	local roof = Instance.new("Part")
 	roof.Name = "Roof"
-	roof.Size = Vector3.new(6, 1.5, 6)
+	roof.Size = Vector3.new(5, 1.2, 5)
 	setPartDefaults(roof)
 	roof.CanQuery = false
 	roof.Material = Enum.Material.Brick
 	roof.Color = Color3.fromRGB(205, 84, 70)
-	roof.CFrame = cf * CFrame.new(0, 4.8, 0)
+	roof.CFrame = cf * CFrame.new(0, 3.7, 0)
 	roof.Parent = settlement
+
 	local light = Instance.new("PointLight")
-	light.Brightness = 1.25
-	light.Range = 18
+	light.Brightness = 1.0
+	light.Range = 14
 	light.Color = Color3.fromRGB(255, 210, 130)
 	light.Parent = base
 	return settlement
