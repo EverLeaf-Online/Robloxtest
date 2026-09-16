@@ -32,6 +32,7 @@ local GameConfig = {
 			RequestProcess = { Capacity = 5, RefillPerSecond = 2 },
 			RequestAssemble = { Capacity = 4, RefillPerSecond = 1 },
 			RequestAssignRobot = { Capacity = 8, RefillPerSecond = 4 },
+			RequestUnassignRobot = { Capacity = 8, RefillPerSecond = 4 },
 			RequestSellRobot = { Capacity = 6, RefillPerSecond = 2 },
 			RequestUpgrade = { Capacity = 4, RefillPerSecond = 1 },
 			RequestUnlockZone = { Capacity = 3, RefillPerSecond = 0.5 },
