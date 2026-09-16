@@ -1,6 +1,3 @@
--- ServerScriptService/PlanetFactory.module.lua
--- Creates and updates the physical/visual planet model for each player.
-
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -23,20 +20,25 @@ end
 function PlanetFactory.getFreePlanetPosition()
 	local folder = PlanetFactory.getPlanetsFolder()
 	local usedSlots = {}
-
 	for _, model in ipairs(folder:GetChildren()) do
 		local slot = model:GetAttribute("Slot")
 		if typeof(slot) == "number" then
 			usedSlots[slot] = true
 		end
 	end
-
 	local slot = 0
 	while usedSlots[slot] do
 		slot += 1
 	end
-
 	return Vector3.new(slot * 350, 0, 0), slot
+end
+
+local function setPartDefaults(part)
+	part.Anchored = true
+	part.CanCollide = false
+	part.CanTouch = false
+	part.TopSurface = Enum.SurfaceType.Smooth
+	part.BottomSurface = Enum.SurfaceType.Smooth
 end
 
 local function createTilePart(model, index)
@@ -48,20 +50,35 @@ local function createTilePart(model, index)
 	local part = Instance.new("Part")
 	part.Name = "Tile_" .. tostring(index)
 	part.Size = config.TILE_SIZE
-	part.Anchored = true
-	part.CanCollide = false
-	part.CanTouch = false
-	part.TopSurface = Enum.SurfaceType.Smooth
-	part.BottomSurface = Enum.SurfaceType.Smooth
+	setPartDefaults(part)
+	part.CanQuery = true
 	part:SetAttribute("TileIndex", index)
 
-	local base = model.PrimaryPart
+	local center = Vector3.new(
+		model:GetAttribute("CenterX") or 0,
+		model:GetAttribute("CenterY") or 0,
+		model:GetAttribute("CenterZ") or 0
+	)
 	local normal = PlanetMath.getDirection(index)
-	local pos = base.Position + normal * config.TILE_RADIUS
+	local pos = center + normal * config.TILE_RADIUS
 	part.CFrame = PlanetMath.getCFrameFromNormal(pos, normal)
-
 	part.Parent = tilesFolder
 	return part
+end
+
+local function createAtmosphere(model, position)
+	local atmosphere = Instance.new("Part")
+	atmosphere.Name = "AtmosphereShell"
+	atmosphere.Shape = Enum.PartType.Ball
+	atmosphere.Size = Vector3.new(config.PLANET_RADIUS * 2 + 5, config.PLANET_RADIUS * 2 + 5, config.PLANET_RADIUS * 2 + 5)
+	atmosphere.CFrame = CFrame.new(position)
+	setPartDefaults(atmosphere)
+	atmosphere.CanQuery = false
+	atmosphere.CastShadow = false
+	atmosphere.Material = Enum.Material.ForceField
+	atmosphere.Color = Color3.fromRGB(84, 178, 255)
+	atmosphere.Transparency = 0.91
+	atmosphere.Parent = model
 end
 
 function PlanetFactory.applyTileVisual(tilePart, tileType, index, cosmicSkin)
@@ -69,12 +86,12 @@ function PlanetFactory.applyTileVisual(tilePart, tileType, index, cosmicSkin)
 	tilePart.Color = color
 	tilePart.Material = material
 	tilePart.Transparency = transparency
+	tilePart:SetAttribute("TileType", tileType)
 end
 
 function PlanetFactory.createPlanetModel(player, position, cosmicSkin)
 	local folder = PlanetFactory.getPlanetsFolder()
 	local modelName = "Planet_" .. player.UserId
-
 	local existing = folder:FindFirstChild(modelName)
 	if existing then
 		existing:Destroy()
@@ -84,19 +101,26 @@ function PlanetFactory.createPlanetModel(player, position, cosmicSkin)
 	model.Name = modelName
 	model:SetAttribute("PlayerId", player.UserId)
 	model:SetAttribute("CosmicSkin", cosmicSkin == true)
+	model:SetAttribute("CenterX", position.X)
+	model:SetAttribute("CenterY", position.Y)
+	model:SetAttribute("CenterZ", position.Z)
+	model:SetAttribute("PlanetRadius", config.PLANET_RADIUS)
+	model:SetAttribute("Ready", false)
+	pcall(function()
+		model.ModelStreamingMode = Enum.ModelStreamingMode.Persistent
+	end)
+	model.Parent = folder
 
 	local base = Instance.new("Part")
 	base.Name = "BaseSphere"
 	base.Shape = Enum.PartType.Ball
 	base.Size = Vector3.new(config.PLANET_RADIUS * 2, config.PLANET_RADIUS * 2, config.PLANET_RADIUS * 2)
 	base.CFrame = CFrame.new(position)
-	base.Anchored = true
-	base.CanCollide = false
-	base.CanTouch = false
+	setPartDefaults(base)
+	base.CanQuery = false
 	base.Material = Enum.Material.SmoothPlastic
 	base.Color = cosmicSkin and config.COLORS.CosmicBase or config.COLORS.Base
 	base.Parent = model
-
 	model.PrimaryPart = base
 
 	local tilesFolder = Instance.new("Folder")
@@ -107,31 +131,28 @@ function PlanetFactory.createPlanetModel(player, position, cosmicSkin)
 	objectsFolder.Name = "Objects"
 	objectsFolder.Parent = model
 
+	createAtmosphere(model, position)
+
 	for index = 0, PlanetMath.getTileCount() - 1 do
 		createTilePart(model, index)
 	end
 
-	model.Parent = folder
+	model:SetAttribute("Ready", true)
 	return model
 end
 
 function PlanetFactory.getTilePart(model, index)
 	local tilesFolder = model:FindFirstChild("Tiles")
-	if not tilesFolder then
-		return nil
-	end
-
-	return tilesFolder:FindFirstChild("Tile_" .. tostring(index))
+	return tilesFolder and tilesFolder:FindFirstChild("Tile_" .. tostring(index)) or nil
 end
 
 function PlanetFactory.setTile(model, index, tileType)
 	local tilePart = PlanetFactory.getTilePart(model, index)
 	if not tilePart then
-		return
+		return false
 	end
-
-	local cosmicSkin = model:GetAttribute("CosmicSkin") == true
-	PlanetFactory.applyTileVisual(tilePart, tileType, index, cosmicSkin)
+	PlanetFactory.applyTileVisual(tilePart, tileType, index, model:GetAttribute("CosmicSkin") == true)
+	return true
 end
 
 function PlanetFactory.createTiles(model, tiles, cosmicSkin)
@@ -140,12 +161,7 @@ function PlanetFactory.createTiles(model, tiles, cosmicSkin)
 		if typeof(tileType) ~= "number" then
 			tileType = config.TILE.Land
 		end
-
-		local tilePart = PlanetFactory.getTilePart(model, index)
-		if not tilePart then
-			tilePart = createTilePart(model, index)
-		end
-
+		local tilePart = PlanetFactory.getTilePart(model, index) or createTilePart(model, index)
 		if tilePart then
 			PlanetFactory.applyTileVisual(tilePart, tileType, index, cosmicSkin)
 		end
@@ -153,9 +169,13 @@ function PlanetFactory.createTiles(model, tiles, cosmicSkin)
 end
 
 function PlanetFactory.getTileCFrame(model, index)
-	local base = model.PrimaryPart
+	local center = Vector3.new(
+		model:GetAttribute("CenterX") or 0,
+		model:GetAttribute("CenterY") or 0,
+		model:GetAttribute("CenterZ") or 0
+	)
 	local normal = PlanetMath.getDirection(index)
-	local pos = base.Position + normal * config.TILE_RADIUS
+	local pos = center + normal * config.TILE_RADIUS
 	return PlanetMath.getCFrameFromNormal(pos, normal)
 end
 
@@ -164,28 +184,26 @@ function PlanetFactory.spawnAnimal(model, tileIndex, animalType)
 	if not objects then
 		return nil
 	end
-
 	local cf = PlanetFactory.getTileCFrame(model, tileIndex)
-
 	local part = Instance.new("Part")
 	part.Name = "Animal_" .. animalType .. "_" .. tostring(tileIndex) .. "_" .. tostring(math.random(1000, 9999))
 	part.Size = Vector3.new(2.4, 2.4, 2.4)
-	part.Anchored = true
-	part.CanCollide = false
-	part.CanTouch = false
-	part.Material = Enum.Material.Neon
-	part.Color = animalType == "Fish" and Color3.fromRGB(70, 220, 255) or Color3.fromRGB(190, 255, 120)
+	setPartDefaults(part)
+	part.CanQuery = false
+	part.Shape = Enum.PartType.Ball
+	part.Material = Enum.Material.SmoothPlastic
+	part.Color = animalType == "Fish" and Color3.fromRGB(70, 190, 255) or Color3.fromRGB(222, 170, 102)
 	part.CFrame = cf * CFrame.new(0, 3.5, 0)
 	part:SetAttribute("AnimalType", animalType)
 	part:SetAttribute("TileIndex", tileIndex)
 	part:SetAttribute("Seed", math.random() * 100)
+	part.Parent = objects
 
 	local billboard = Instance.new("BillboardGui")
-	billboard.Size = UDim2.fromOffset(42, 42)
-	billboard.StudsOffset = Vector3.new(0, 4, 0)
+	billboard.Size = UDim2.fromOffset(40, 40)
+	billboard.StudsOffset = Vector3.new(0, 3, 0)
 	billboard.AlwaysOnTop = true
 	billboard.Parent = part
-
 	local label = Instance.new("TextLabel")
 	label.BackgroundTransparency = 1
 	label.Size = UDim2.fromScale(1, 1)
@@ -194,8 +212,6 @@ function PlanetFactory.spawnAnimal(model, tileIndex, animalType)
 	label.TextColor3 = Color3.new(1, 1, 1)
 	label.Text = animalType == "Fish" and "🐟" or "🐇"
 	label.Parent = billboard
-
-	part.Parent = objects
 	return part
 end
 
@@ -204,67 +220,58 @@ function PlanetFactory.spawnSettlement(model, tileIndex)
 	if not objects then
 		return nil
 	end
-
 	local cf = PlanetFactory.getTileCFrame(model, tileIndex)
-
 	local settlement = Instance.new("Model")
 	settlement.Name = "Settlement_" .. tostring(tileIndex) .. "_" .. tostring(math.random(1000, 9999))
 	settlement:SetAttribute("TileIndex", tileIndex)
+	settlement.Parent = objects
 
 	local base = Instance.new("Part")
 	base.Name = "Base"
-	base.Size = Vector3.new(5, 3, 5)
-	base.Anchored = true
-	base.CanCollide = false
-	base.CanTouch = false
-	base.Material = Enum.Material.SmoothPlastic
+	base.Size = Vector3.new(5, 3.2, 5)
+	setPartDefaults(base)
+	base.CanQuery = false
+	base.Material = Enum.Material.WoodPlanks
 	base.Color = Color3.fromRGB(225, 196, 154)
-	base.CFrame = cf * CFrame.new(0, base.Size.Y / 2 + 0.8, 0)
+	base.CFrame = cf * CFrame.new(0, 2.4, 0)
 	base.Parent = settlement
-
 	settlement.PrimaryPart = base
 
 	local roof = Instance.new("Part")
 	roof.Name = "Roof"
-	roof.Size = Vector3.new(6, 1.6, 6)
-	roof.Anchored = true
-	roof.CanCollide = false
-	roof.CanTouch = false
-	roof.Material = Enum.Material.Neon
-	roof.Color = Color3.fromRGB(255, 110, 80)
-	roof.CFrame = cf * CFrame.new(0, base.Size.Y + roof.Size.Y / 2 + 0.8, 0)
+	roof.Size = Vector3.new(6, 1.5, 6)
+	setPartDefaults(roof)
+	roof.CanQuery = false
+	roof.Material = Enum.Material.Brick
+	roof.Color = Color3.fromRGB(205, 84, 70)
+	roof.CFrame = cf * CFrame.new(0, 4.8, 0)
 	roof.Parent = settlement
-
 	local light = Instance.new("PointLight")
 	light.Brightness = 1.25
-	light.Range = 22
+	light.Range = 18
 	light.Color = Color3.fromRGB(255, 210, 130)
 	light.Parent = base
-
-	settlement.Parent = objects
 	return settlement
 end
 
 function PlanetFactory.spawnMoon(model)
-	local base = model.PrimaryPart
-	if not base then
-		return nil
-	end
-
+	local center = Vector3.new(
+		model:GetAttribute("CenterX") or 0,
+		model:GetAttribute("CenterY") or 0,
+		model:GetAttribute("CenterZ") or 0
+	)
 	local moon = Instance.new("Part")
 	moon.Name = "Moon"
 	moon.Shape = Enum.PartType.Ball
 	moon.Size = Vector3.new(12, 12, 12)
-	moon.Anchored = true
-	moon.CanCollide = false
-	moon.CanTouch = false
-	moon.Material = Enum.Material.SmoothPlastic
+	setPartDefaults(moon)
+	moon.CanQuery = false
+	moon.Material = Enum.Material.Slate
 	moon.Color = Color3.fromRGB(205, 210, 225)
-	moon.CFrame = CFrame.new(base.Position + Vector3.new(80, 20, 0))
+	moon.CFrame = CFrame.new(center + Vector3.new(80, 20, 0))
 	moon:SetAttribute("OrbitRadius", 80)
 	moon:SetAttribute("OrbitSpeed", 0.25)
 	moon.Parent = model
-
 	return moon
 end
 
@@ -278,13 +285,11 @@ end
 function PlanetFactory.buildFromState(model, data, cosmicSkin)
 	PlanetFactory.createTiles(model, data.Tiles, cosmicSkin)
 	PlanetFactory.clearObjects(model)
-
 	for _, animal in ipairs(data.Animals) do
 		if typeof(animal) == "table" and typeof(animal.tile) == "number" and typeof(animal.type) == "string" then
 			PlanetFactory.spawnAnimal(model, animal.tile, animal.type)
 		end
 	end
-
 	for _, settlementTile in ipairs(data.Settlements) do
 		if typeof(settlementTile) == "number" then
 			PlanetFactory.spawnSettlement(model, settlementTile)
