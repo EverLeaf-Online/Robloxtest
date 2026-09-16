@@ -94,7 +94,6 @@ jobs:
           lute scripts/build "$ROCALE_TAG" "$ROCALE_COMMIT"
           popd >/dev/null
 
-          rm -f foreman.toml
           echo "ROCALE_WORKDIR=$SOURCE_DIR" >> "$GITHUB_ENV"
           echo "ROCALE_CLI=./build/rocale-cli" >> "$GITHUB_ENV"
 
