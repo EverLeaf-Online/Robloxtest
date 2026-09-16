@@ -8,15 +8,15 @@ local camera = Workspace.CurrentCamera
 local planet = Workspace:WaitForChild("Planets"):WaitForChild("Planet_" .. player.UserId)
 local core = planet:WaitForChild("Core")
 
-local MIN_DISTANCE = 92
-local MAX_DISTANCE = 230
+local MIN_DISTANCE = 78
+local MAX_DISTANCE = 205
 local ROTATE_SPEED = 0.0055
 local TOUCH_ROTATE_SPEED = 0.0065
 local ZOOM_STEP = 10
 
 local targetYaw = math.rad(30)
-local targetPitch = math.rad(-12)
-local targetDistance = 145
+local targetPitch = math.rad(-10)
+local targetDistance = 116
 local yaw = targetYaw
 local pitch = targetPitch
 local distance = targetDistance
@@ -25,6 +25,7 @@ local activeTouches = {}
 local lastPinchDistance
 
 camera.CameraType = Enum.CameraType.Scriptable
+camera.FieldOfView = 62
 
 local function clampPitch(value)
 	return math.clamp(value, math.rad(-72), math.rad(72))
