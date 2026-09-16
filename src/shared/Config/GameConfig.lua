@@ -11,8 +11,9 @@ local GameConfig = {
 	},
 
 	World = {
-		SalvageCollectDistance = 20,
-		InteractionDistance = 24,
+		PromptActivationDistance = 12,
+		SalvageCollectDistance = 14,
+		InteractionDistance = 14,
 		NodeRespawnSeconds = 8,
 		PlotCount = 8,
 	},
