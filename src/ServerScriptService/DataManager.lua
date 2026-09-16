@@ -205,7 +205,7 @@ function DataManager.loadPlayer(player)
 		return data
 	end
 
-	local chosen = nil
+	local chosen
 	if mainOk and typeof(mainResult) == "table" then
 		chosen = mainResult
 	end
@@ -232,8 +232,18 @@ end
 
 function DataManager.savePlayer(player)
 	local data = DataManager.cache[player]
-	if not data or data.SaveBlocked or saveLocks[player] then
+	if not data or data.SaveBlocked then
 		return false
+	end
+
+	if saveLocks[player] then
+		local deadline = os.clock() + 5
+		while saveLocks[player] and os.clock() < deadline do
+			task.wait(0.05)
+		end
+		if saveLocks[player] then
+			return false
+		end
 	end
 
 	saveLocks[player] = true
@@ -260,8 +270,10 @@ function DataManager.queueSave(player)
 	if saveQueues[player] then
 		return
 	end
+	-- Coalesce rapid Energy regeneration and multiple actions into one write.
+	-- Leaving/shutdown still calls savePlayer directly.
 	saveQueues[player] = true
-	task.delay(1, function()
+	task.delay(15, function()
 		saveQueues[player] = nil
 		if player.Parent then
 			DataManager.savePlayer(player)
