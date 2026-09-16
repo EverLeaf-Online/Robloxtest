@@ -1,7 +1,3 @@
--- ServerScriptService/GameService.module.lua
--- Core server gameplay: energy, actions, milestones, anti-exploit, planet state.
-
-local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ReplicatedFirst = game:GetService("ReplicatedFirst")
 local MarketplaceService = game:GetService("MarketplaceService")
@@ -15,20 +11,11 @@ local PlanetFactory = require(script.Parent:WaitForChild("PlanetFactory"))
 
 local GameService = {}
 local states = {}
-
-local remotes = nil
-
-local function getRemotes()
-	if not remotes then
-		remotes = ReplicatedFirst:WaitForChild("Remotes", 30)
-	end
-	return remotes
-end
+local remotes = ReplicatedFirst:WaitForChild("Remotes")
 
 local function notify(player, title, message)
-	local r = getRemotes()
-	if r and player and player.Parent then
-		r.Notify:FireClient(player, {
+	if player and player.Parent then
+		remotes.Notify:FireClient(player, {
 			Title = title,
 			Message = message,
 		})
@@ -39,7 +26,6 @@ local function getCounts(data)
 	local water = 0
 	local plants = 0
 	local glow = 0
-
 	for _, tileType in ipairs(data.Tiles) do
 		if tileType == config.TILE.Water then
 			water += 1
@@ -49,7 +35,6 @@ local function getCounts(data)
 			glow += 1
 		end
 	end
-
 	return {
 		Water = water,
 		Plants = plants,
@@ -60,15 +45,26 @@ local function getCounts(data)
 	}
 end
 
-local function fireStats(player)
-	local r = getRemotes()
-	if not r then
+local function syncAttributes(player)
+	local state = states[player]
+	if not state then
 		return
 	end
+	local counts = getCounts(state.data)
+	player:SetAttribute("PlanetEnergy", state.data.Energy)
+	player:SetAttribute("PlanetDeveloped", counts.Developed)
+	player:SetAttribute("PlanetWater", counts.Water)
+	player:SetAttribute("PlanetPlants", counts.Plants)
+	player:SetAttribute("PlanetGlow", counts.Glow)
+	player:SetAttribute("PlanetAnimals", counts.Animals)
+	player:SetAttribute("PlanetSettlements", counts.Settlements)
+end
 
+local function fireStats(player)
 	local stats = GameService.getStats(player)
 	if stats then
-		r.UpdateStats:FireClient(player, stats)
+		syncAttributes(player)
+		remotes.UpdateStats:FireClient(player, stats)
 	end
 end
 
@@ -77,41 +73,28 @@ local function checkMilestones(player)
 	if not state then
 		return
 	end
-
 	local counts = getCounts(state.data)
-
 	for _, milestone in ipairs(config.MILESTONES) do
 		local key = tostring(milestone.Tiles)
-
-		if counts.Developed >= milestone.Tiles and not state.data.Milestones[key] then
+		if counts.Developed >= milestone.Tiles and state.data.Milestones[key] ~= true then
 			state.data.Milestones[key] = true
-
-			local r = getRemotes()
-			if r then
-				r.MilestoneReached:FireClient(player, milestone)
-			end
-
+			remotes.MilestoneReached:FireClient(player, milestone)
 			DataManager.queueSave(player)
 		end
 	end
-
-	fireStats(player)
 end
 
 local function findRandomTile(data, predicate)
 	local candidates = {}
-
 	for index = 0, PlanetMath.getTileCount() - 1 do
 		local tileType = data.Tiles[index + 1]
 		if predicate(tileType, index) then
 			table.insert(candidates, index)
 		end
 	end
-
 	if #candidates == 0 then
 		return nil
 	end
-
 	return candidates[math.random(1, #candidates)]
 end
 
@@ -135,38 +118,25 @@ end
 
 local function developedInRadius(data, centerIndex, radius)
 	local count = 0
-
 	for index = 0, PlanetMath.getTileCount() - 1 do
-		local tileType = data.Tiles[index + 1]
-		if PlanetMath.isDeveloped(tileType) and PlanetMath.indexWithinRadius(centerIndex, index, radius) then
+		if PlanetMath.isDeveloped(data.Tiles[index + 1]) and PlanetMath.indexWithinRadius(centerIndex, index, radius) then
 			count += 1
 		end
 	end
-
 	return count
 end
 
 local function setTile(player, index, tileType)
 	local state = states[player]
-	if not state then
+	if not state or typeof(index) ~= "number" or index < 0 or index >= PlanetMath.getTileCount() then
 		return false
 	end
-
-	if typeof(index) ~= "number" or index < 0 or index >= PlanetMath.getTileCount() then
-		return false
-	end
-
 	state.data.Tiles[index + 1] = tileType
 	PlanetFactory.setTile(state.model, index, tileType)
-
-	local r = getRemotes()
-	if r then
-		r.UpdateTile:FireClient(player, {
-			tileIndex = index,
-			tileType = tileType,
-		})
-	end
-
+	remotes.UpdateTile:FireClient(player, {
+		tileIndex = index,
+		tileType = tileType,
+	})
 	DataManager.queueSave(player)
 	return true
 end
@@ -176,22 +146,9 @@ local function addEnergyInternal(player, amount)
 	if not state then
 		return
 	end
-
-	local newValue = state.data.Energy + amount
-	if newValue < 0 then
-		newValue = 0
-	end
-	if newValue > config.MAX_ENERGY then
-		newValue = config.MAX_ENERGY
-	end
-
-	state.data.Energy = math.floor(newValue)
-
-	local r = getRemotes()
-	if r then
-		r.UpdateEnergy:FireClient(player, state.data.Energy)
-	end
-
+	state.data.Energy = math.clamp(math.floor(state.data.Energy + amount), 0, config.MAX_ENERGY)
+	player:SetAttribute("PlanetEnergy", state.data.Energy)
+	remotes.UpdateEnergy:FireClient(player, state.data.Energy)
 	DataManager.queueSave(player)
 end
 
@@ -200,163 +157,105 @@ local function spendEnergyInternal(player, cost)
 	if not state then
 		return false
 	end
-
 	if state.data.Energy < cost then
 		notify(player, "Not Enough Energy", ("This action costs %d Energy."):format(cost))
 		return false
 	end
-
 	state.data.Energy -= cost
-
-	local r = getRemotes()
-	if r then
-		r.UpdateEnergy:FireClient(player, state.data.Energy)
-	end
-
+	player:SetAttribute("PlanetEnergy", state.data.Energy)
+	remotes.UpdateEnergy:FireClient(player, state.data.Energy)
 	DataManager.queueSave(player)
 	return true
 end
 
 local function addWater(player, targetIndex)
-	local state = states[player]
-	if not state then
-		return false
-	end
-
-	local data = state.data
+	local data = states[player].data
 	local index = targetIndex
-
-	if index < 0 then
+	if index == -1 then
 		index = findRandomTile(data, function(tileType)
 			return tileType == config.TILE.Land
 		end)
-	else
-		if data.Tiles[index + 1] ~= config.TILE.Land then
-			notify(player, "Invalid Tile", "Water can only be added to land tiles.")
-			return false
-		end
-	end
-
-	if not index then
-		notify(player, "No Land Left", "There is no land tile available for water.")
+	elseif data.Tiles[index + 1] ~= config.TILE.Land then
+		notify(player, "Invalid Tile", "Water can only be added to undeveloped land.")
 		return false
 	end
-
+	if index == nil then
+		notify(player, "No Land Left", "There are no undeveloped land tiles left.")
+		return false
+	end
 	return setTile(player, index, config.TILE.Water)
 end
 
 local function addPlant(player, targetIndex)
 	local state = states[player]
-	if not state then
-		return false
-	end
-
 	local data = state.data
 	local index = targetIndex
-
-	if index < 0 then
+	if index == -1 then
 		index = findRandomTile(data, function(tileType)
 			return tileType == config.TILE.Land
 		end)
-	else
-		if data.Tiles[index + 1] ~= config.TILE.Land then
-			notify(player, "Invalid Tile", "Plants can only be added to land tiles.")
-			return false
-		end
-	end
-
-	if not index then
-		notify(player, "No Land Left", "There is no land tile available for plants.")
+	elseif data.Tiles[index + 1] ~= config.TILE.Land then
+		notify(player, "Invalid Tile", "Plants can only be added to undeveloped land.")
 		return false
 	end
-
-	local tileType = config.TILE.Plant
-
-	-- Rare Seed product or 50-tile milestone can create glowing plants.
-	if data.RareSeedUnlocked or data.Milestones["50"] then
-		if math.random() < 0.25 then
-			tileType = config.TILE.GlowPlant
-		end
+	if index == nil then
+		notify(player, "No Land Left", "There are no undeveloped land tiles left.")
+		return false
 	end
-
+	local tileType = config.TILE.Plant
+	if (data.RareSeedUnlocked or data.Milestones["50"] == true) and math.random() < 0.25 then
+		tileType = config.TILE.GlowPlant
+	end
 	return setTile(player, index, tileType)
 end
 
 local function addAnimal(player, targetIndex)
 	local state = states[player]
-	if not state then
-		return false
-	end
-
 	local data = state.data
 	local counts = getCounts(data)
-
 	local canFish = counts.Water >= 3
 	local canLand = (counts.Plants + counts.Glow) >= 5
-
 	if not canFish and not canLand then
-		notify(player, "Animal Requirements Not Met", "Need 3 water tiles for fish or 5 plant tiles for land animals.")
+		notify(player, "Habitat Missing", "Create 3 water tiles for fish or 5 planted tiles for land animals.")
 		return false
 	end
 
 	local index = targetIndex
-	local animalType = nil
-
+	local animalType
 	if index >= 0 then
-		local tileType = data.Tiles[index + 1]
-
-		if tileType == config.TILE.Water then
-			if not canFish then
-				notify(player, "Need More Water", "Fish require at least 3 water tiles.")
-				return false
-			end
-			animalType = "Fish"
-		elseif tileType == config.TILE.Plant or tileType == config.TILE.GlowPlant or tileType == config.TILE.Land then
-			if not canLand then
-				notify(player, "Need More Plants", "Land animals require at least 5 plant tiles.")
-				return false
-			end
-			animalType = "Land"
-		else
-			notify(player, "Invalid Animal Tile", "Animals can only be placed on water, plants, or land.")
-			return false
-		end
-
 		if hasAnimalAt(data, index) then
 			notify(player, "Tile Occupied", "That tile already has an animal.")
 			return false
 		end
-	else
-		if canFish and (not canLand or math.random() < 0.5) then
+		local tileType = data.Tiles[index + 1]
+		if tileType == config.TILE.Water and canFish then
 			animalType = "Fish"
+		elseif (tileType == config.TILE.Plant or tileType == config.TILE.GlowPlant) and canLand then
+			animalType = "Land"
+		else
+			notify(player, "Invalid Habitat", "Fish need water. Land animals need planted habitat.")
+			return false
+		end
+	else
+		if canLand then
+			index = findRandomTile(data, function(tileType, i)
+				return (tileType == config.TILE.Plant or tileType == config.TILE.GlowPlant) and not hasAnimalAt(data, i)
+			end)
+			animalType = index and "Land" or nil
+		end
+		if not index and canFish then
 			index = findRandomTile(data, function(tileType, i)
 				return tileType == config.TILE.Water and not hasAnimalAt(data, i)
 			end)
-		else
-			animalType = "Land"
-			index = findRandomTile(data, function(tileType, i)
-				return (tileType == config.TILE.Plant or tileType == config.TILE.GlowPlant)
-					and not hasAnimalAt(data, i)
-			end)
-
-			if not index then
-				index = findRandomTile(data, function(tileType, i)
-					return tileType == config.TILE.Land and not hasAnimalAt(data, i)
-				end)
-			end
+			animalType = index and "Fish" or animalType
 		end
-
 		if not index then
-			notify(player, "No Animal Space", "No valid tile is available for an animal.")
+			notify(player, "No Animal Space", "No free valid habitat tile is available.")
 			return false
 		end
 	end
 
-	table.insert(data.Animals, {
-		tile = index,
-		type = animalType,
-	})
-
+	table.insert(data.Animals, { tile = index, type = animalType })
 	PlanetFactory.spawnAnimal(state.model, index, animalType)
 	DataManager.queueSave(player)
 	return true
@@ -364,53 +263,35 @@ end
 
 local function buildSettlement(player, targetIndex)
 	local state = states[player]
-	if not state then
-		return false
-	end
-
 	local data = state.data
-	local counts = getCounts(data)
-
-	if counts.Developed < 5 then
-		notify(player, "Not Enough Development", "Settlements require at least 5 developed tiles nearby.")
-		return false
-	end
-
 	local function isCandidate(index)
 		local tileType = data.Tiles[index + 1]
-
-		if tileType == config.TILE.Water then
+		if tileType ~= config.TILE.Plant and tileType ~= config.TILE.GlowPlant then
 			return false
 		end
-
 		if hasSettlementAt(data, index) then
 			return false
 		end
-
 		return developedInRadius(data, index, 2) >= 5
 	end
 
 	local index = targetIndex
-
 	if index >= 0 then
 		if not isCandidate(index) then
-			notify(player, "Invalid Settlement Location", "Build near a cluster of at least 5 developed land/plant/water tiles.")
+			notify(player, "Invalid Settlement Location", "Build on a planted tile inside a cluster of at least 5 developed tiles.")
 			return false
 		end
 	else
 		local candidates = {}
-
 		for i = 0, PlanetMath.getTileCount() - 1 do
 			if isCandidate(i) then
 				table.insert(candidates, i)
 			end
 		end
-
 		if #candidates == 0 then
-			notify(player, "No Settlement Space", "No valid settlement location was found. Develop more tiles.")
+			notify(player, "No Settlement Space", "Develop a connected planted region first.")
 			return false
 		end
-
 		index = candidates[math.random(1, #candidates)]
 	end
 
@@ -421,7 +302,7 @@ local function buildSettlement(player, targetIndex)
 end
 
 function GameService.isReady(player)
-	return states[player] ~= nil
+	return states[player] ~= nil and player:GetAttribute("PlanetReady") == true
 end
 
 function GameService.getData(player)
@@ -434,18 +315,15 @@ function GameService.getStats(player)
 	if not state then
 		return nil
 	end
-
 	local counts = getCounts(state.data)
 	counts.Energy = state.data.Energy
 	counts.Milestones = state.data.Milestones
 	counts.Ownership = state.ownership
-
 	counts.Unlocks = {
 		Animal = state.data.Milestones["10"] == true,
 		Settlement = state.data.Milestones["25"] == true,
 		Golden = state.data.Milestones["50"] == true,
 	}
-
 	return counts
 end
 
@@ -454,7 +332,6 @@ function GameService.getPlanetStateForClient(player)
 	if not state then
 		return nil
 	end
-
 	return {
 		Energy = state.data.Energy,
 		Tiles = state.data.Tiles,
@@ -463,6 +340,11 @@ function GameService.getPlanetStateForClient(player)
 		Milestones = state.data.Milestones,
 		Ownership = state.ownership,
 		Stats = GameService.getStats(player),
+		PlanetCenter = Vector3.new(
+			state.model:GetAttribute("CenterX") or 0,
+			state.model:GetAttribute("CenterY") or 0,
+			state.model:GetAttribute("CenterZ") or 0
+		),
 	}
 end
 
@@ -473,19 +355,16 @@ function GameService.getGamePassOwnership(player)
 		StarterPlanet = false,
 		MoonCompanion = false,
 	}
-
 	for passName, passId in pairs(config.GAME_PASSES) do
 		if typeof(passId) == "number" and passId > 0 then
 			local ok, result = pcall(function()
 				return MarketplaceService:UserOwnsGamePassAsync(player.UserId, passId)
 			end)
-
 			if ok then
 				ownership[passName] = result == true
 			end
 		end
 	end
-
 	return ownership
 end
 
@@ -494,9 +373,8 @@ function GameService.notifyPlayer(player, title, message)
 end
 
 function GameService.firePurchaseConfirmed(player, productId)
-	local r = getRemotes()
-	if r then
-		r.PurchaseConfirmed:FireClient(player, productId)
+	if player and player.Parent then
+		remotes.PurchaseConfirmed:FireClient(player, productId)
 	end
 end
 
@@ -509,19 +387,15 @@ function GameService.addRareSeed(player)
 	if not state then
 		return false
 	end
-
 	state.data.RareSeedUnlocked = true
-
 	local index = findRandomTile(state.data, function(tileType)
 		return tileType == config.TILE.Land
 	end)
-
 	if index then
 		setTile(player, index, config.TILE.GlowPlant)
 	else
-		notify(player, "Rare Seed Stored", "No land was available, but glowing plants are now unlocked.")
+		notify(player, "Rare Seed Stored", "No undeveloped land is available, but rare plants are unlocked.")
 	end
-
 	checkMilestones(player)
 	fireStats(player)
 	DataManager.queueSave(player)
@@ -533,24 +407,15 @@ function GameService.addRandomDevelopedTiles(player, count)
 	if not state then
 		return
 	end
-
-	for _ = 1, count do
+	for _ = 1, math.clamp(math.floor(count or 0), 0, 20) do
 		local index = findRandomTile(state.data, function(tileType)
 			return tileType == config.TILE.Land
 		end)
-
 		if not index then
 			break
 		end
-
-		local tileType = config.TILE.Plant
-		if math.random() < 0.5 then
-			tileType = config.TILE.Water
-		end
-
-		setTile(player, index, tileType)
+		setTile(player, index, math.random() < 0.5 and config.TILE.Water or config.TILE.Plant)
 	end
-
 	checkMilestones(player)
 	fireStats(player)
 	DataManager.queueSave(player)
@@ -558,52 +423,47 @@ end
 
 function GameService.tryAction(player, actionType, tileIndex)
 	local state = states[player]
-	if not state then
+	if not state or player:GetAttribute("PlanetReady") ~= true then
 		return
 	end
-
 	if typeof(actionType) ~= "string" or typeof(tileIndex) ~= "number" then
 		return
 	end
-
 	tileIndex = math.floor(tileIndex)
-	if tileIndex < -1 then
-		tileIndex = -1
+	if tileIndex ~= -1 and (tileIndex < 0 or tileIndex >= PlanetMath.getTileCount()) then
+		return
 	end
 
-	if tileIndex >= PlanetMath.getTileCount() then
-		tileIndex = -1
+	local validAction = actionType == config.ACTIONS.AddWater
+		or actionType == config.ACTIONS.AddPlant
+		or actionType == config.ACTIONS.AddAnimal
+		or actionType == config.ACTIONS.BuildSettlement
+	if not validAction then
+		return
 	end
 
-	-- Rate limiting.
 	local now = os.clock()
 	if now - state.lastAction < config.ACTION_COOLDOWN then
+		notify(player, "Slow Down", "Please wait a moment before using another growth action.")
 		return
 	end
 	state.lastAction = now
 
-	-- Milestone locks.
-	if actionType == config.ACTIONS.AddAnimal and not state.data.Milestones["10"] then
+	if actionType == config.ACTIONS.AddAnimal and state.data.Milestones["10"] ~= true then
 		notify(player, "Locked", "Animals unlock at 10 developed tiles.")
 		return
 	end
-
-	if actionType == config.ACTIONS.BuildSettlement and not state.data.Milestones["25"] then
+	if actionType == config.ACTIONS.BuildSettlement and state.data.Milestones["25"] ~= true then
 		notify(player, "Locked", "Settlements unlock at 25 developed tiles.")
 		return
 	end
 
 	local cost = config.COSTS[actionType]
-	if typeof(cost) ~= "number" then
-		return
-	end
-
-	if not spendEnergyInternal(player, cost) then
+	if not cost or not spendEnergyInternal(player, cost) then
 		return
 	end
 
 	local success = false
-
 	if actionType == config.ACTIONS.AddWater then
 		success = addWater(player, tileIndex)
 	elseif actionType == config.ACTIONS.AddPlant then
@@ -614,14 +474,14 @@ function GameService.tryAction(player, actionType, tileIndex)
 		success = buildSettlement(player, tileIndex)
 	end
 
-	if success then
-		checkMilestones(player)
-		fireStats(player)
-		DataManager.queueSave(player)
-	else
-		-- Refund failed action.
+	if not success then
 		addEnergyInternal(player, cost)
+		return
 	end
+
+	checkMilestones(player)
+	fireStats(player)
+	DataManager.queueSave(player)
 end
 
 function GameService.startEnergyRegen(player)
@@ -631,14 +491,11 @@ function GameService.startEnergyRegen(player)
 			if not state or not state.active then
 				break
 			end
-
 			local interval = config.ENERGY_REGEN_INTERVAL
-			if state.ownership and state.ownership.FastGrowth then
-				interval = interval / 2
+			if state.ownership.FastGrowth then
+				interval /= 2
 			end
-
 			task.wait(interval)
-
 			state = states[player]
 			if state and state.active then
 				addEnergyInternal(player, config.ENERGY_REGEN_AMOUNT)
@@ -652,6 +509,7 @@ function GameService.initPlayer(player, data, ownership)
 		GameService.cleanup(player)
 	end
 
+	player:SetAttribute("PlanetReady", false)
 	local position, slot = PlanetFactory.getFreePlanetPosition()
 	local model = PlanetFactory.createPlanetModel(player, position, ownership.CosmicSkin)
 	model:SetAttribute("Slot", slot)
@@ -660,11 +518,10 @@ function GameService.initPlayer(player, data, ownership)
 		data = data,
 		model = model,
 		ownership = ownership,
-		lastAction = 0,
+		lastAction = -math.huge,
 		active = true,
 	}
 
-	-- Starter Planet game pass effect.
 	if ownership.StarterPlanet and not data.StarterPlanetApplied then
 		for _ = 1, 5 do
 			local index = findRandomTile(data, function(tileType)
@@ -674,7 +531,6 @@ function GameService.initPlayer(player, data, ownership)
 				data.Tiles[index + 1] = config.TILE.Water
 			end
 		end
-
 		for _ = 1, 5 do
 			local index = findRandomTile(data, function(tileType)
 				return tileType == config.TILE.Land
@@ -683,51 +539,49 @@ function GameService.initPlayer(player, data, ownership)
 				data.Tiles[index + 1] = config.TILE.Plant
 			end
 		end
-
 		data.StarterPlanetApplied = true
 	end
 
 	PlanetFactory.buildFromState(model, data, ownership.CosmicSkin)
-
-	if ownership.MoonCompanion and not model:FindFirstChild("Moon") then
+	if ownership.MoonCompanion then
 		PlanetFactory.spawnMoon(model)
 	end
 
-	local r = getRemotes()
-	if r then
-		r.UpdateEnergy:FireClient(player, data.Energy)
-	end
+	checkMilestones(player)
+	player:SetAttribute("PlanetModelName", model.Name)
+	player:SetAttribute("PlanetCenterX", position.X)
+	player:SetAttribute("PlanetCenterY", position.Y)
+	player:SetAttribute("PlanetCenterZ", position.Z)
+	player:SetAttribute("PlanetRadius", config.PLANET_RADIUS)
+	syncAttributes(player)
+	player:SetAttribute("PlanetReady", true)
 
+	remotes.UpdateEnergy:FireClient(player, data.Energy)
 	fireStats(player)
 	GameService.startEnergyRegen(player)
 
 	if data.SaveBlocked then
-		task.delay(2, function()
+		task.delay(1, function()
 			if states[player] then
-				notify(
-					player,
-					"Cloud Saves Unavailable",
-					"DataStore is not accessible in this session. Progress will not be saved."
-				)
+				notify(player, "Cloud Saves Unavailable", "Progress in this test session will not be saved.")
 			end
 		end)
 	end
 
 	DataManager.queueSave(player)
+	print(string.format("[Grow a Tiny Planet] Server initialized %s planet at %s", player.Name, tostring(position)))
 end
 
 function GameService.cleanup(player)
 	local state = states[player]
+	player:SetAttribute("PlanetReady", false)
 	if not state then
 		return
 	end
-
 	state.active = false
-
 	if state.model then
 		state.model:Destroy()
 	end
-
 	states[player] = nil
 end
 
