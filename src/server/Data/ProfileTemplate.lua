@@ -68,6 +68,7 @@ local ProfileTemplate = {
 		CachedPassFlags = {},
 		StarterPackClaimed = false,
 		PersonalOverclockUntil = 0,
+		FactoryClubActiveCached = false,
 		FactoryClubLastGrantedCycle = "",
 		FactoryClubCosmetics = {},
 		EquippedFactoryClubCosmetic = "",
