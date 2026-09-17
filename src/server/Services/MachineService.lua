@@ -321,9 +321,7 @@ function MachineService.Init()
 	RemoteService.BindRequest(RemoteNames.RequestProcess, function(player, recipeId) MachineService.StartProcessor(player, recipeId) end)
 	RemoteService.BindRequest(RemoteNames.RequestAssemble, function(player) MachineService.StartAssembler(player) end)
 	RemoteService.BindRequest(RemoteNames.RequestUseInstantProcessToken, function(player)
-		if RateLimiter.Consume(player, RemoteNames.RequestUseInstantProcessToken) then
-			MachineService.UseInstantProcessToken(player)
-		end
+		MachineService.UseInstantProcessToken(player)
 	end)
 	bindWorldPrompts()
 	DataService.ProfileLoaded:Connect(function(player) MachineService.PollPlayer(player) end)
