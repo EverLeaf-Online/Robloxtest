@@ -13,6 +13,7 @@ local NotificationOptInController = require(script.Parent.Controllers.Notificati
 local PlotController = require(script.Parent.Controllers.PlotController)
 local StudioMonetizationTestController =
 	require(script.Parent.Controllers.StudioMonetizationTestController)
+local StudioSecurityTestController = require(script.Parent.Controllers.StudioSecurityTestController)
 local UIController = require(script.Parent.Controllers.UIController)
 local WorldInteractionController = require(script.Parent.Controllers.WorldInteractionController)
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
@@ -40,5 +41,6 @@ MonetizationShopController.Init()
 NotificationOptInController.Init()
 CreatorAdminController.Init()
 StudioMonetizationTestController.Init()
+StudioSecurityTestController.Init()
 
 print("[ScrapToBotFactory] Client foundation initialized")
