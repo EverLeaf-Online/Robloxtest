@@ -8,6 +8,7 @@ local Materials = require(ReplicatedStorage.Shared.Config.Materials)
 local Recipes = require(ReplicatedStorage.Shared.Config.Recipes)
 
 local EconomyService = {}
+local runtimeStorageMultiplierByData = setmetatable({}, { __mode = "k" })
 
 local function isValidAmount(amount: any): boolean
 	return typeof(amount) == "number"
@@ -37,12 +38,22 @@ function EconomyService.ValidateMaterialAmounts(amounts: any): boolean
 	return true
 end
 
+function EconomyService.SetRuntimeStorageMultiplier(data: any, multiplier: number)
+	assert(typeof(data) == "table", "profile data must be a table")
+	assert(
+		typeof(multiplier) == "number" and multiplier >= 1 and multiplier <= 10,
+		"storage multiplier out of bounds"
+	)
+	runtimeStorageMultiplierByData[data] = multiplier
+end
+
 function EconomyService.GetStorageCapacity(data: any): number
 	local capacity = FactoryRules.GetStorageCapacity(data.Machines.StorageLevel)
 	local cachedFlags = data.Entitlements and data.Entitlements.CachedPassFlags
 	if cachedFlags and cachedFlags.ExpandedStorage == true then
 		capacity *= 2
 	end
+	capacity *= runtimeStorageMultiplierByData[data] or 1
 	return math.floor(capacity)
 end
 
