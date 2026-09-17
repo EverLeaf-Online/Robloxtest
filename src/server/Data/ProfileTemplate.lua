@@ -77,6 +77,7 @@ local ProfileTemplate = {
 	Referrals = {
 		PendingInviterUserId = 0,
 		PendingStartedAt = 0,
+		PendingPlaySeconds = 0,
 		QualifiedRewardCount = 0,
 	},
 
