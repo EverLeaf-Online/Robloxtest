@@ -8,6 +8,8 @@ local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
 local RobloxIds = require(ReplicatedStorage.Shared.Config.RobloxIds)
 
 local DataService = require(script.Parent.DataService)
+local EconomyService = require(script.Parent.EconomyService)
+local StateService = require(script.Parent.StateService)
 
 local MonetizationService = {}
 local initialized = false
@@ -61,6 +63,10 @@ local function setPresentationAttributes(player: Player)
 
 	local data = DataService.GetData(player)
 	if data ~= nil then
+		EconomyService.SetRuntimeStorageMultiplier(
+			data,
+			if clubActive then GameConfig.Factory.FactoryClubStorageMultiplier else 1
+		)
 		player:SetAttribute("InstantProcessTokens", data.Consumables.InstantProcessTokens)
 		player:SetAttribute("StarterPackClaimed", data.Entitlements.StarterPackClaimed)
 		player:SetAttribute("PersonalOverclockUntil", data.Entitlements.PersonalOverclockUntil)
@@ -208,6 +214,7 @@ local function processReceipt(receiptInfo: { [string]: any }): Enum.ProductPurch
 	end
 
 	setPresentationAttributes(player)
+	StateService.PushSnapshot(player)
 	productGrantedEvent:Fire(player, productName, receiptInfo.ProductId)
 	return Enum.ProductPurchaseDecision.PurchaseGranted
 end
@@ -387,6 +394,7 @@ function MonetizationService.RefreshSubscription(player: Player)
 	if executed and granted then
 		if DataService.SaveNow(player) then
 			factoryClubRewardEvent:Fire(player, cycleId, cosmeticId)
+			StateService.PushSnapshot(player)
 		else
 			warn(("[MonetizationService] Failed to persist Factory Club grant for %d"):format(player.UserId))
 		end
