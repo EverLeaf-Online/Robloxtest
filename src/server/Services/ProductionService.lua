@@ -51,10 +51,8 @@ local function productionRate(player: Player, data: any): number
 end
 
 local function restoreGrantToCarry(userId: number, amount: number)
-	creditCarryByUser[userId] = math.min(
-		GameConfig.Economy.MaxCredits,
-		(creditCarryByUser[userId] or 0) + amount
-	)
+	creditCarryByUser[userId] =
+		math.min(GameConfig.Economy.MaxCredits, (creditCarryByUser[userId] or 0) + amount)
 end
 
 function ProductionService.TickPlayer(player: Player)
