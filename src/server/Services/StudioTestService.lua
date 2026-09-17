@@ -10,6 +10,7 @@ local RobloxIds = require(ReplicatedStorage.Shared.Config.RobloxIds)
 local DataService = require(script.Parent.DataService)
 local EconomyService = require(script.Parent.EconomyService)
 local MonetizationService = require(script.Parent.MonetizationService)
+local ReferralService = require(script.Parent.ReferralService)
 local StateService = require(script.Parent.StateService)
 
 local StudioTestService = {}
@@ -207,6 +208,8 @@ function StudioTestService.Init()
 			success, code = setFactoryClub(player, true)
 		elseif action == "FactoryClubOff" then
 			success, code = setFactoryClub(player, false)
+		elseif action == "ReferralReward" then
+			success, code = ReferralService.StudioGrantQualifiedReferral(player)
 		end
 
 		remote:FireClient(player, "Result", action, success, code)
