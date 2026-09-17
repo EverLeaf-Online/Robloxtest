@@ -7,9 +7,11 @@ local RunService = game:GetService("RunService")
 
 local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
 local RobloxIds = require(ReplicatedStorage.Shared.Config.RobloxIds)
+local RemoteNames = require(ReplicatedStorage.Shared.Networking.RemoteNames)
 
 local DataService = require(script.Parent.DataService)
 local EconomyService = require(script.Parent.EconomyService)
+local RemoteService = require(script.Parent.RemoteService)
 local StateService = require(script.Parent.StateService)
 
 local MonetizationService = {}
@@ -349,6 +351,85 @@ local function subscriptionCycleId(player: Player): string
 	return os.date("!%Y-%m", os.time())
 end
 
+local function applyFactoryClubState(
+	player: Player,
+	isSubscribed: boolean,
+	cycleId: string?
+): (boolean, string)
+	if not DataService.IsReady(player) then
+		return false, "PROFILE_NOT_READY"
+	end
+
+	subscriptionActive[player] = isSubscribed
+	local granted = false
+	local cosmeticId = ""
+
+	if isSubscribed and cycleId ~= nil and cycleId ~= "" then
+		cosmeticId = "Club_" .. cycleId
+		local executed = DataService.Transaction(player, function(data)
+			if data.Entitlements.FactoryClubLastGrantedCycle == cycleId then
+				return true, false
+			end
+
+			addMaterialBundle(data)
+			addTokens(data, 3)
+			data.Entitlements.FactoryClubLastGrantedCycle = cycleId
+			data.Entitlements.FactoryClubCosmetics[cosmeticId] = true
+			if data.Entitlements.EquippedFactoryClubCosmetic == "" then
+				data.Entitlements.EquippedFactoryClubCosmetic = cosmeticId
+			end
+			granted = true
+			return true, true
+		end)
+		if not executed then
+			return false, "FACTORY_CLUB_TRANSACTION_FAILED"
+		end
+	end
+
+	setPresentationAttributes(player)
+	StateService.PushSnapshot(player)
+
+	if granted then
+		if not DataService.SaveNow(player) then
+			warn(("[MonetizationService] Failed to persist Factory Club grant for %d"):format(player.UserId))
+			return false, "FACTORY_CLUB_SAVE_FAILED"
+		end
+		factoryClubRewardEvent:Fire(player, cycleId, cosmeticId)
+		return true, "FACTORY_CLUB_ENABLED_AND_GRANTED"
+	end
+
+	return true, if isSubscribed then "FACTORY_CLUB_ENABLED_NO_DUPLICATE" else "FACTORY_CLUB_DISABLED"
+end
+
+function MonetizationService.SetFactoryClubForStudio(player: Player, active: boolean): (boolean, string)
+	assert(RunService:IsStudio(), "SetFactoryClubForStudio may only be used in Studio")
+	return applyFactoryClubState(player, active, if active then "StudioTestCycle" else nil)
+end
+
+function MonetizationService.EquipFactoryClubCosmetic(player: Player, cosmeticId: string): (boolean, string)
+	if #cosmeticId > 80 then
+		return false, "INVALID_COSMETIC"
+	end
+
+	local executed, code = DataService.Transaction(player, function(data)
+		if cosmeticId ~= "" and data.Entitlements.FactoryClubCosmetics[cosmeticId] ~= true then
+			return false, "COSMETIC_NOT_OWNED"
+		end
+		data.Entitlements.EquippedFactoryClubCosmetic = cosmeticId
+		return true, "COSMETIC_EQUIPPED"
+	end)
+	if not executed then
+		return false, tostring(code)
+	end
+	if not DataService.SaveNow(player) then
+		return false, "SAVE_FAILED"
+	end
+
+	setPresentationAttributes(player)
+	StateService.PushSnapshot(player)
+	return true, "COSMETIC_EQUIPPED"
+end
+
 function MonetizationService.RefreshSubscription(player: Player)
 	if not DataService.IsReady(player) then
 		return
@@ -371,39 +452,8 @@ function MonetizationService.RefreshSubscription(player: Player)
 	end
 
 	local isSubscribed = (statusOrError :: any).IsSubscribed == true
-	subscriptionActive[player] = isSubscribed
-	if not isSubscribed then
-		setPresentationAttributes(player)
-		return
-	end
-
-	local cycleId = subscriptionCycleId(player)
-	local cosmeticId = "Club_" .. cycleId
-	local granted = false
-	local executed = DataService.Transaction(player, function(data)
-		if data.Entitlements.FactoryClubLastGrantedCycle == cycleId then
-			return true, false
-		end
-		addMaterialBundle(data)
-		addTokens(data, 3)
-		data.Entitlements.FactoryClubLastGrantedCycle = cycleId
-		data.Entitlements.FactoryClubCosmetics[cosmeticId] = true
-		if data.Entitlements.EquippedFactoryClubCosmetic == "" then
-			data.Entitlements.EquippedFactoryClubCosmetic = cosmeticId
-		end
-		granted = true
-		return true, true
-	end)
-
-	if executed and granted then
-		if DataService.SaveNow(player) then
-			factoryClubRewardEvent:Fire(player, cycleId, cosmeticId)
-			StateService.PushSnapshot(player)
-		else
-			warn(("[MonetizationService] Failed to persist Factory Club grant for %d"):format(player.UserId))
-		end
-	end
-	setPresentationAttributes(player)
+	local cycleId = if isSubscribed then subscriptionCycleId(player) else nil
+	applyFactoryClubState(player, isSubscribed, cycleId)
 end
 
 function MonetizationService.RefreshPlayer(player: Player)
@@ -419,6 +469,15 @@ function MonetizationService.Init()
 
 	MarketplaceService.ProcessReceipt = processReceipt
 	refreshServerOverclockAttributes()
+
+	RemoteService.BindRequest(RemoteNames.RequestEquipClubCosmetic, function(player, cosmeticId)
+		if typeof(cosmeticId) ~= "string" then
+			StateService.ActionResult(player, "EquipClubCosmetic", false, "INVALID_COSMETIC")
+			return
+		end
+		local success, code = MonetizationService.EquipFactoryClubCosmetic(player, cosmeticId)
+		StateService.ActionResult(player, "EquipClubCosmetic", success, code)
+	end)
 
 	MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(
 		player: Player,
