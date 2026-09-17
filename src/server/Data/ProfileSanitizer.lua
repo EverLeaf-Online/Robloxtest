@@ -48,7 +48,12 @@ local function clampInteger(value: any, minimum: number, maximum: number, fallba
 	return value :: number
 end
 
-local function clampFiniteNumber(value: any, minimum: number, maximum: number, fallback: number): number
+local function clampFiniteNumber(
+	value: any,
+	minimum: number,
+	maximum: number,
+	fallback: number
+): number
 	if
 		typeof(value) ~= "number"
 		or value ~= value
