@@ -1,5 +1,6 @@
 --!strict
 
+local DataStoreService = game:GetService("DataStoreService")
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -20,7 +21,8 @@ local initialized = false
 local PRODUCT = RobloxIds.DeveloperProducts
 local PASSES = RobloxIds.Passes
 local FACTORY_CLUB = RobloxIds.Subscription.FactoryClub
-local RECEIPT_CAP = 500
+local RECEIPT_CAP = GameConfig.Economy.MaxReceiptHistory
+local ReceiptLedgerStore = DataStoreService:GetDataStore("ScrapToBot_ReceiptLedger_v1")
 local PASS_NAMES = table.freeze({
 	"Production2x",
 	"ExpandedStorage",
@@ -40,6 +42,74 @@ local passUpdatedEvent = Instance.new("BindableEvent")
 MonetizationService.ProductGranted = productGrantedEvent.Event
 MonetizationService.FactoryClubRewardGranted = factoryClubRewardEvent.Event
 MonetizationService.PassUpdated = passUpdatedEvent.Event
+
+local function receiptLedgerKey(userId: number): string
+	return ("Player_%d"):format(userId)
+end
+
+local function receiptLedgerContains(userId: number, purchaseId: string): boolean?
+	if RunService:IsStudio() then
+		return false
+	end
+	local ok, ledgerOrError = pcall(ReceiptLedgerStore.GetAsync, ReceiptLedgerStore, receiptLedgerKey(userId))
+	if not ok then
+		warn(
+			("[MonetizationService] Receipt ledger read failed for %d: %s"):format(
+				userId,
+				tostring(ledgerOrError)
+			)
+		)
+		return nil
+	end
+	return typeof(ledgerOrError) == "table" and (ledgerOrError :: any)[purchaseId] == true
+end
+
+local function markReceiptInLedger(userId: number, purchaseId: string): boolean
+	if RunService:IsStudio() then
+		return true
+	end
+	local ok, err = pcall(function()
+		ReceiptLedgerStore:UpdateAsync(receiptLedgerKey(userId), function(current)
+			local ledger = if typeof(current) == "table" then current else {}
+			ledger[purchaseId] = true
+			return ledger
+		end)
+	end)
+	if not ok then
+		warn(
+			("[MonetizationService] Receipt ledger write failed for %d/%s: %s"):format(
+				userId,
+				purchaseId,
+				tostring(err)
+			)
+		)
+		return false
+	end
+	return true
+end
+
+local function refreshServerOverclockAttributes()
+	local active = serverOverclockUntil > os.time()
+	workspace:SetAttribute("ServerOverclockUntil", serverOverclockUntil)
+	workspace:SetAttribute("ServerOverclockActive", active)
+end
+
+local function scheduleServerOverclockExpiry(expectedUntil: number)
+	task.delay(math.max(0, expectedUntil - os.time()) + 0.1, function()
+		if serverOverclockUntil == expectedUntil and serverOverclockUntil <= os.time() then
+			refreshServerOverclockAttributes()
+		end
+	end)
+end
+
+local function adoptServerOverclock(untilTimestamp: number)
+	if untilTimestamp <= serverOverclockUntil or untilTimestamp <= os.time() then
+		return
+	end
+	serverOverclockUntil = untilTimestamp
+	refreshServerOverclockAttributes()
+	scheduleServerOverclockExpiry(serverOverclockUntil)
+end
 
 local function setPresentationAttributes(player: Player)
 	local flags = passFlags[player] or {}
@@ -66,13 +136,10 @@ local function setPresentationAttributes(player: Player)
 
 	local data = DataService.GetData(player)
 	if data ~= nil then
-		EconomyService.SetRuntimeStorageMultiplier(
-			data,
-			if clubActive then GameConfig.Factory.FactoryClubStorageMultiplier else 1
-		)
 		player:SetAttribute("InstantProcessTokens", data.Consumables.InstantProcessTokens)
 		player:SetAttribute("StarterPackClaimed", data.Entitlements.StarterPackClaimed)
 		player:SetAttribute("PersonalOverclockUntil", data.Entitlements.PersonalOverclockUntil)
+		player:SetAttribute("PurchasedServerOverclockUntil", data.Entitlements.ServerOverclockUntil)
 		player:SetAttribute(
 			"FactoryClubLastGrantedCycle",
 			data.Entitlements.FactoryClubLastGrantedCycle
@@ -125,20 +192,6 @@ local function recordReceipt(data: any, purchaseId: string)
 	end
 end
 
-local function refreshServerOverclockAttributes()
-	local active = serverOverclockUntil > os.time()
-	workspace:SetAttribute("ServerOverclockUntil", serverOverclockUntil)
-	workspace:SetAttribute("ServerOverclockActive", active)
-end
-
-local function scheduleServerOverclockExpiry(expectedUntil: number)
-	task.delay(math.max(0, expectedUntil - os.time()) + 0.1, function()
-		if serverOverclockUntil == expectedUntil and serverOverclockUntil <= os.time() then
-			refreshServerOverclockAttributes()
-		end
-	end)
-end
-
 local function grantProduct(data: any, productId: number): (boolean, string)
 	if productId == PRODUCT.MaterialSupplyCrate then
 		if not addMaterialBundle(data) then
@@ -171,10 +224,32 @@ local function grantProduct(data: any, productId: number): (boolean, string)
 		data.Entitlements.StarterPackClaimed = true
 		return true, if repeatPurchase then "StarterPackRepeatPurchase" else "StarterPack"
 	elseif productId == PRODUCT.ServerOverclock then
-		-- External server state is applied only after the receipt transaction is durably saved.
+		local now = os.time()
+		data.Entitlements.ServerOverclockUntil = math.max(
+			data.Entitlements.ServerOverclockUntil,
+			now
+		) + 15 * 60
 		return true, "ServerOverclock"
 	end
 	return false, "UnknownProduct"
+end
+
+local function acknowledgeRecordedReceipt(
+	player: Player,
+	purchaseId: string,
+	productId: number
+): Enum.ProductPurchaseDecision
+	if not DataService.SaveNow(player) then
+		return Enum.ProductPurchaseDecision.NotProcessedYet
+	end
+	local data = DataService.GetData(player)
+	if data ~= nil and productId == PRODUCT.ServerOverclock then
+		adoptServerOverclock(data.Entitlements.ServerOverclockUntil)
+	end
+	if not markReceiptInLedger(player.UserId, purchaseId) then
+		return Enum.ProductPurchaseDecision.NotProcessedYet
+	end
+	return Enum.ProductPurchaseDecision.PurchaseGranted
 end
 
 local function processReceipt(receiptInfo: { [string]: any }): Enum.ProductPurchaseDecision
@@ -189,9 +264,15 @@ local function processReceipt(receiptInfo: { [string]: any }): Enum.ProductPurch
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 	if receiptExists(existing, purchaseId) then
-		return if DataService.SaveNow(player)
-			then Enum.ProductPurchaseDecision.PurchaseGranted
-			else Enum.ProductPurchaseDecision.NotProcessedYet
+		return acknowledgeRecordedReceipt(player, purchaseId, receiptInfo.ProductId)
+	end
+
+	local ledgerContains = receiptLedgerContains(player.UserId, purchaseId)
+	if ledgerContains == nil then
+		return Enum.ProductPurchaseDecision.NotProcessedYet
+	end
+	if ledgerContains then
+		return Enum.ProductPurchaseDecision.PurchaseGranted
 	end
 
 	local productName = ""
@@ -213,9 +294,7 @@ local function processReceipt(receiptInfo: { [string]: any }): Enum.ProductPurch
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 	if result == "AlreadyGranted" then
-		return if DataService.SaveNow(player)
-			then Enum.ProductPurchaseDecision.PurchaseGranted
-			else Enum.ProductPurchaseDecision.NotProcessedYet
+		return acknowledgeRecordedReceipt(player, purchaseId, receiptInfo.ProductId)
 	end
 	if productName == "" then
 		if result == "UnknownProduct" then
@@ -232,10 +311,12 @@ local function processReceipt(receiptInfo: { [string]: any }): Enum.ProductPurch
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 
-	if productName == "ServerOverclock" then
-		serverOverclockUntil = math.max(serverOverclockUntil, os.time()) + 15 * 60
-		refreshServerOverclockAttributes()
-		scheduleServerOverclockExpiry(serverOverclockUntil)
+	local data = DataService.GetData(player)
+	if data ~= nil and productName == "ServerOverclock" then
+		adoptServerOverclock(data.Entitlements.ServerOverclockUntil)
+	end
+	if not markReceiptInLedger(player.UserId, purchaseId) then
+		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 
 	setPresentationAttributes(player)
@@ -351,26 +432,33 @@ function MonetizationService.IsFactoryClubActive(player: Player): boolean
 	return subscriptionActive[player] == true
 end
 
-local function subscriptionCycleId(player: Player): string
+local function subscriptionCycleId(player: Player): string?
 	local ok, historyOrError = pcall(
 		MarketplaceService.GetUserSubscriptionPaymentHistoryAsync,
 		MarketplaceService,
 		player,
 		FACTORY_CLUB
 	)
-	if ok and typeof(historyOrError) == "table" then
-		local newest = 0
-		for _, entry in historyOrError do
-			local cycleStart = (entry :: any).CycleStartTime
-			if typeof(cycleStart) == "DateTime" then
-				newest = math.max(newest, cycleStart.UnixTimestamp)
-			end
-		end
-		if newest > 0 then
-			return tostring(newest)
+	if not ok then
+		warn(
+			("[MonetizationService] Subscription payment history failed for %d: %s"):format(
+				player.UserId,
+				tostring(historyOrError)
+			)
+		)
+		return nil
+	end
+	if typeof(historyOrError) ~= "table" then
+		return nil
+	end
+	local newest = 0
+	for _, entry in historyOrError do
+		local cycleStart = (entry :: any).CycleStartTime
+		if typeof(cycleStart) == "DateTime" then
+			newest = math.max(newest, cycleStart.UnixTimestamp)
 		end
 	end
-	return os.date("!%Y-%m", os.time())
+	return if newest > 0 then tostring(newest) else nil
 end
 
 local function applyFactoryClubState(
@@ -384,34 +472,33 @@ local function applyFactoryClubState(
 
 	subscriptionActive[player] = isSubscribed
 	local granted = false
-	local cosmeticId = ""
-
-	if isSubscribed and cycleId ~= nil and cycleId ~= "" then
-		cosmeticId = "Club_" .. cycleId
-		local executed, transactionResult = DataService.Transaction(player, function(data)
-			if data.Entitlements.FactoryClubLastGrantedCycle == cycleId then
-				return true, false
-			end
-
-			if not addMaterialBundle(data) or not addTokens(data, 3) then
-				return false, "FACTORY_CLUB_REWARD_CAPACITY"
-			end
-			data.Entitlements.FactoryClubLastGrantedCycle = cycleId
-			data.Entitlements.FactoryClubCosmetics[cosmeticId] = true
-			if data.Entitlements.EquippedFactoryClubCosmetic == "" then
-				data.Entitlements.EquippedFactoryClubCosmetic = cosmeticId
-			end
-			granted = true
-			return true, true
-		end)
-		if not executed then
-			return false, "FACTORY_CLUB_TRANSACTION_FAILED"
+	local cosmeticId = if cycleId ~= nil and cycleId ~= "" then "Club_" .. cycleId else ""
+	local executed, transactionResult = DataService.Transaction(player, function(data)
+		data.Entitlements.FactoryClubActiveCached = isSubscribed
+		if not isSubscribed or cycleId == nil or cycleId == "" then
+			return true, false
 		end
-		if transactionResult == "FACTORY_CLUB_REWARD_CAPACITY" then
-			setPresentationAttributes(player)
-			StateService.PushSnapshot(player)
+		if data.Entitlements.FactoryClubLastGrantedCycle == cycleId then
+			return true, false
+		end
+		if not addMaterialBundle(data) or not addTokens(data, 3) then
 			return false, "FACTORY_CLUB_REWARD_CAPACITY"
 		end
+		data.Entitlements.FactoryClubLastGrantedCycle = cycleId
+		data.Entitlements.FactoryClubCosmetics[cosmeticId] = true
+		if data.Entitlements.EquippedFactoryClubCosmetic == "" then
+			data.Entitlements.EquippedFactoryClubCosmetic = cosmeticId
+		end
+		granted = true
+		return true, true
+	end)
+	if not executed then
+		setPresentationAttributes(player)
+		StateService.PushSnapshot(player)
+		if transactionResult == "FACTORY_CLUB_REWARD_CAPACITY" then
+			return false, "FACTORY_CLUB_REWARD_CAPACITY"
+		end
+		return false, "FACTORY_CLUB_TRANSACTION_FAILED"
 	end
 
 	setPresentationAttributes(player)
@@ -430,6 +517,9 @@ local function applyFactoryClubState(
 		return true, "FACTORY_CLUB_ENABLED_AND_GRANTED"
 	end
 
+	if isSubscribed and cycleId == nil then
+		return true, "FACTORY_CLUB_ENABLED_REWARD_PENDING"
+	end
 	return true,
 		if isSubscribed then "FACTORY_CLUB_ENABLED_NO_DUPLICATE" else "FACTORY_CLUB_DISABLED"
 end
@@ -446,7 +536,7 @@ function MonetizationService.EquipFactoryClubCosmetic(
 	player: Player,
 	cosmeticId: string
 ): (boolean, string)
-	if #cosmeticId > 80 then
+	if #cosmeticId > 32 then
 		return false, "INVALID_COSMETIC"
 	end
 
@@ -528,14 +618,20 @@ function MonetizationService.Init()
 			end
 			for _, passName in PASS_NAMES do
 				if PASSES[passName] == gamePassId then
-					passFlags[player] = passFlags[player] or {}
-					passFlags[player][passName] = true
-					DataService.Transaction(player, function(data)
-						data.Entitlements.CachedPassFlags[passName] = true
-						return true, nil
+					task.spawn(function()
+						local owns = refreshPass(player, passName, gamePassId)
+						if owns ~= true or player.Parent ~= Players then
+							return
+						end
+						passFlags[player] = passFlags[player] or {}
+						passFlags[player][passName] = true
+						DataService.Transaction(player, function(data)
+							data.Entitlements.CachedPassFlags[passName] = true
+							return true, nil
+						end)
+						setPresentationAttributes(player)
+						passUpdatedEvent:Fire(player, passName, true)
 					end)
-					setPresentationAttributes(player)
-					passUpdatedEvent:Fire(player, passName, true)
 					break
 				end
 			end
@@ -556,6 +652,10 @@ function MonetizationService.Init()
 	)
 
 	DataService.ProfileLoaded:Connect(function(player)
+		local data = DataService.GetData(player)
+		if data ~= nil then
+			adoptServerOverclock(data.Entitlements.ServerOverclockUntil)
+		end
 		task.spawn(MonetizationService.RefreshPlayer, player)
 	end)
 
