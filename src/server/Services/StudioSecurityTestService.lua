@@ -30,7 +30,8 @@ local pendingByToken: {
 		Player: Player,
 		Response: any?,
 	},
-} = {}
+} =
+	{}
 local tokenSequence = 0
 local testRemote: RemoteEvent? = nil
 
@@ -317,7 +318,7 @@ local function runForgedRobotCase(player: Player)
 	mutateProfile(victim, function(data)
 		data.Robots.OwnedByUid[tempUid] = nil
 	end)
-	cleanupCharacterState(characterState)
+	restoreCharacter(characterState)
 
 	local passed = sameFingerprint(attackerBefore, attackerAfter)
 		and victimStillOwns
@@ -326,7 +327,9 @@ local function runForgedRobotCase(player: Player)
 		player,
 		"Cross-player robot ownership",
 		passed,
-		if passed then "Forged assign/sell was rejected" else "Ownership boundary failed or timed out"
+		if passed
+			then "Forged assign/sell was rejected"
+			else "Ownership boundary failed or timed out"
 	)
 end
 
@@ -500,10 +503,7 @@ local function runRateLimitCase(player: Player)
 		player,
 		"RemoteEvent collect spam",
 		passed,
-		("Observed %d responses for 32 requests; burst capacity %d"):format(
-			responseCount,
-			capacity
-		)
+		("Observed %d responses for 32 requests; burst capacity %d"):format(responseCount, capacity)
 	)
 end
 
