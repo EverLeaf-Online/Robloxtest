@@ -1,11 +1,10 @@
 --!strict
 
-local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local StudioMonetizationTestController = {}
-local initialized = false
+local mountedPage: Frame? = nil
 
 local REMOTE_NAME = "StudioMonetizationTest"
 local REMOTE_WAIT_TIMEOUT_SECONDS = 10
@@ -24,9 +23,9 @@ local ACTIONS = {
 
 local function makeButton(parent: Instance, label: string, order: number, callback: () -> ())
 	local button = Instance.new("TextButton")
-	button.Name = ("Action%d"):format(order)
+	button.Name = ("MonetizationAction%d"):format(order)
 	button.LayoutOrder = order
-	button.Size = UDim2.new(1, 0, 0, 34)
+	button.Size = UDim2.new(1, 0, 0, 36)
 	button.BackgroundColor3 = Color3.fromRGB(48, 132, 88)
 	button.BorderSizePixel = 0
 	button.Font = Enum.Font.GothamBold
@@ -43,21 +42,18 @@ local function makeButton(parent: Instance, label: string, order: number, callba
 	button.Activated:Connect(callback)
 end
 
-function StudioMonetizationTestController.Init()
-	if initialized then
-		return
-	end
-	initialized = true
-
+function StudioMonetizationTestController.Mount(parent: Instance): Frame?
 	if not RunService:IsStudio() then
-		return
+		return nil
+	end
+	if mountedPage ~= nil and mountedPage.Parent ~= nil then
+		return mountedPage
 	end
 
-	local player = Players.LocalPlayer
 	local remotes = ReplicatedStorage:WaitForChild("Remotes", REMOTE_WAIT_TIMEOUT_SECONDS)
-	if remotes == nil then
+	if remotes == nil or not remotes:IsA("Folder") then
 		warn("[StudioMonetizationTestController] Remotes folder was not created by the server")
-		return
+		return nil
 	end
 
 	local remoteInstance = remotes:WaitForChild(REMOTE_NAME, REMOTE_WAIT_TIMEOUT_SECONDS)
@@ -67,64 +63,52 @@ function StudioMonetizationTestController.Init()
 				REMOTE_NAME
 			)
 		)
-		return
+		return nil
 	end
 	local remote = remoteInstance
 
-	local gui = Instance.new("ScreenGui")
-	gui.Name = "StudioMonetizationTestUI"
-	gui.ResetOnSpawn = false
-	gui.DisplayOrder = 1000
-	gui.Parent = player:WaitForChild("PlayerGui")
+	local page = Instance.new("Frame")
+	page.Name = "MonetizationPage"
+	page.Size = UDim2.fromScale(1, 1)
+	page.BackgroundTransparency = 1
+	page.Parent = parent
+	mountedPage = page
 
-	local panel = Instance.new("Frame")
-	panel.Name = "Panel"
-	panel.AnchorPoint = Vector2.new(1, 0)
-	panel.Position = UDim2.new(1, -340, 0, 72)
-	panel.Size = UDim2.fromOffset(210, 412)
-	panel.BackgroundColor3 = Color3.fromRGB(24, 27, 34)
-	panel.BorderSizePixel = 0
-	panel.Parent = gui
-
-	local panelCorner = Instance.new("UICorner")
-	panelCorner.CornerRadius = UDim.new(0, 10)
-	panelCorner.Parent = panel
+	local scroll = Instance.new("ScrollingFrame")
+	scroll.Name = "Scroll"
+	scroll.Size = UDim2.fromScale(1, 1)
+	scroll.BackgroundTransparency = 1
+	scroll.BorderSizePixel = 0
+	scroll.ScrollBarThickness = 6
+	scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	scroll.CanvasSize = UDim2.new()
+	scroll.Parent = page
 
 	local padding = Instance.new("UIPadding")
-	padding.PaddingTop = UDim.new(0, 10)
-	padding.PaddingBottom = UDim.new(0, 10)
-	padding.PaddingLeft = UDim.new(0, 10)
-	padding.PaddingRight = UDim.new(0, 10)
-	padding.Parent = panel
+	padding.PaddingTop = UDim.new(0, 4)
+	padding.PaddingBottom = UDim.new(0, 8)
+	padding.PaddingLeft = UDim.new(0, 4)
+	padding.PaddingRight = UDim.new(0, 8)
+	padding.Parent = scroll
 
 	local layout = Instance.new("UIListLayout")
-	layout.Padding = UDim.new(0, 6)
+	layout.Padding = UDim.new(0, 8)
 	layout.SortOrder = Enum.SortOrder.LayoutOrder
-	layout.Parent = panel
-
-	local title = Instance.new("TextLabel")
-	title.LayoutOrder = 0
-	title.Size = UDim2.new(1, 0, 0, 24)
-	title.BackgroundTransparency = 1
-	title.Font = Enum.Font.GothamBold
-	title.Text = "STUDIO MONETIZATION TEST"
-	title.TextColor3 = Color3.fromRGB(245, 247, 250)
-	title.TextSize = 12
-	title.Parent = panel
+	layout.Parent = scroll
 
 	local status = Instance.new("TextLabel")
 	status.LayoutOrder = 1
-	status.Size = UDim2.new(1, 0, 0, 28)
+	status.Size = UDim2.new(1, 0, 0, 36)
 	status.BackgroundTransparency = 1
 	status.Font = Enum.Font.Gotham
 	status.Text = "Ready"
 	status.TextColor3 = Color3.fromRGB(170, 178, 190)
 	status.TextSize = 11
 	status.TextWrapped = true
-	status.Parent = panel
+	status.Parent = scroll
 
 	for index, item in ACTIONS do
-		makeButton(panel, item.Label, index + 1, function()
+		makeButton(scroll, item.Label, index + 1, function()
 			status.Text = ("Running %s..."):format(item.Label)
 			status.TextColor3 = Color3.fromRGB(170, 178, 190)
 			remote:FireServer(item.Action)
@@ -149,6 +133,8 @@ function StudioMonetizationTestController.Init()
 			then Color3.fromRGB(104, 214, 156)
 			else Color3.fromRGB(228, 101, 101)
 	end)
+
+	return page
 end
 
 return StudioMonetizationTestController
