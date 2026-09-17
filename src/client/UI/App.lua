@@ -308,7 +308,10 @@ local function machineStatus(snapshot: any, now: number): string
 	)
 	if processor.Active then
 		local remaining = math.max(0, processor.CompletesAt - now)
-		table.insert(lines, ("Processor: %s (%ds)"):format(processor.RecipeId, math.ceil(remaining)))
+		table.insert(
+			lines,
+			("Processor: %s (%ds)"):format(processor.RecipeId, math.ceil(remaining))
+		)
 	else
 		table.insert(lines, "Processor: Ready")
 	end
