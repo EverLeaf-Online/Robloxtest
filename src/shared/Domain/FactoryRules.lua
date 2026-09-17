@@ -46,9 +46,9 @@ end
 
 function FactoryRules.GetAssemblerDuration(level: number, timeMultiplier: number): number
 	local multiplier = if typeof(timeMultiplier) == "number"
-		and timeMultiplier == timeMultiplier
-		and timeMultiplier > 0
-		and timeMultiplier < math.huge
+			and timeMultiplier == timeMultiplier
+			and timeMultiplier > 0
+			and timeMultiplier < math.huge
 		then timeMultiplier
 		else 1
 	return math.max(0.001, FactoryRules.GetAssemblerSeconds(level) * multiplier)
