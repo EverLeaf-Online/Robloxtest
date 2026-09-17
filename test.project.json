@@ -8,6 +8,9 @@
       },
       "ServerUnderTest": {
         "$className": "Folder",
+        "jest.config": {
+          "$path": "src/shared/jest.config.lua"
+        },
         "Data": {
           "$path": "src/server/Data"
         },
