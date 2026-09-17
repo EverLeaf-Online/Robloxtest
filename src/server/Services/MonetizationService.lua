@@ -3,6 +3,7 @@
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
 local RobloxIds = require(ReplicatedStorage.Shared.Config.RobloxIds)
@@ -217,6 +218,11 @@ local function processReceipt(receiptInfo: { [string]: any }): Enum.ProductPurch
 	StateService.PushSnapshot(player)
 	productGrantedEvent:Fire(player, productName, receiptInfo.ProductId)
 	return Enum.ProductPurchaseDecision.PurchaseGranted
+end
+
+function MonetizationService.ProcessReceiptForStudio(receiptInfo: { [string]: any }): Enum.ProductPurchaseDecision
+	assert(RunService:IsStudio(), "ProcessReceiptForStudio may only be used in Studio")
+	return processReceipt(receiptInfo)
 end
 
 local function refreshPass(player: Player, passName: string, passId: number): boolean?
