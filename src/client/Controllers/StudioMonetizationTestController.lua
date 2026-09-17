@@ -18,6 +18,7 @@ local ACTIONS = {
 	{ Label = "Factory Club ON", Action = "FactoryClubOn" },
 	{ Label = "Factory Club OFF", Action = "FactoryClubOff" },
 	{ Label = "Referral Reward", Action = "ReferralReward" },
+	{ Label = "Replay Last Receipt", Action = "ReplayLastReceipt" },
 }
 
 local function makeButton(parent: Instance, label: string, order: number, callback: () -> ())
@@ -64,7 +65,7 @@ function StudioMonetizationTestController.Init()
 	panel.Name = "Panel"
 	panel.AnchorPoint = Vector2.new(1, 0)
 	panel.Position = UDim2.new(1, -16, 0, 72)
-	panel.Size = UDim2.fromOffset(210, 372)
+	panel.Size = UDim2.fromOffset(210, 412)
 	panel.BackgroundColor3 = Color3.fromRGB(24, 27, 34)
 	panel.BorderSizePixel = 0
 	panel.Parent = gui
