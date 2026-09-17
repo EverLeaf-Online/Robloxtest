@@ -1,11 +1,13 @@
 --!strict
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
 local React = require(ReplicatedStorage.Packages.React)
 
 local FactoryRules = require(ReplicatedStorage.Shared.Domain.FactoryRules)
+local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
 local RemoteNames = require(ReplicatedStorage.Shared.Networking.RemoteNames)
 local Robots = require(ReplicatedStorage.Shared.Config.Robots)
 local Upgrades = require(ReplicatedStorage.Shared.Config.Upgrades)
@@ -13,6 +15,7 @@ local Zones = require(ReplicatedStorage.Shared.Config.Zones)
 
 local UIBus = require(script.Parent.UIBus)
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
+local LocalPlayer = Players.LocalPlayer
 
 local COLORS = {
 	Panel = Color3.fromRGB(24, 27, 34),
@@ -71,6 +74,51 @@ end
 local function readableCode(code: string): string
 	local text = string.gsub(code, "_", " ")
 	return string.lower(text):gsub("^%l", string.upper)
+end
+
+local function mergeProductionDelta(currentSnapshot: any, delta: any): any
+	if typeof(currentSnapshot) ~= "table" or typeof(delta) ~= "table" then
+		return currentSnapshot
+	end
+
+	local currentRevision = currentSnapshot.Revision
+	local deltaRevision = delta.Revision
+	if
+		typeof(currentRevision) == "number"
+		and typeof(deltaRevision) == "number"
+		and deltaRevision < currentRevision
+	then
+		return currentSnapshot
+	end
+
+	local nextSnapshot = table.clone(currentSnapshot)
+	if typeof(deltaRevision) == "number" then
+		nextSnapshot.Revision = deltaRevision
+	end
+
+	if typeof(delta.Currencies) == "table" and typeof(delta.Currencies.Credits) == "number" then
+		local currencies = table.clone(currentSnapshot.Currencies)
+		currencies.Credits = delta.Currencies.Credits
+		nextSnapshot.Currencies = currencies
+	end
+
+	if typeof(delta.Stats) == "table" and typeof(delta.Stats.LifetimeCredits) == "number" then
+		local stats = table.clone(currentSnapshot.Stats)
+		stats.LifetimeCredits = delta.Stats.LifetimeCredits
+		nextSnapshot.Stats = stats
+	end
+
+	if typeof(delta.Tutorial) == "table" and typeof(delta.Tutorial.Milestones) == "table" then
+		local tutorial = table.clone(currentSnapshot.Tutorial)
+		local milestones = table.clone(currentSnapshot.Tutorial.Milestones)
+		if typeof(delta.Tutorial.Milestones.FirstIncomeEarned) == "boolean" then
+			milestones.FirstIncomeEarned = delta.Tutorial.Milestones.FirstIncomeEarned
+		end
+		tutorial.Milestones = milestones
+		nextSnapshot.Tutorial = tutorial
+	end
+
+	return nextSnapshot
 end
 
 local function corner(radius: number): any
@@ -198,8 +246,11 @@ local function getAssignedPad(snapshot: any, robotUid: string): string?
 	return nil
 end
 
-local function firstFreePad(snapshot: any): string?
-	local slots = FactoryRules.GetWorkSlots(snapshot.Machines.WorkSlotsLevel)
+local function firstFreePad(snapshot: any, extraWorkSlots: number): string?
+	local slots = math.min(
+		GameConfig.Factory.MaxWorkSlots + 2,
+		FactoryRules.GetWorkSlots(snapshot.Machines.WorkSlotsLevel) + extraWorkSlots
+	)
 	for index = 1, slots do
 		local padId = ("Pad%d"):format(index)
 		if snapshot.Assignments.WorkPads[padId] == nil then
@@ -270,7 +321,7 @@ local function machineStatus(snapshot: any, now: number): string
 	return table.concat(lines, "\n")
 end
 
-local function buildRobotRows(snapshot: any): any
+local function buildRobotRows(snapshot: any, extraWorkSlots: number): any
 	local rows: { [string]: any } = {
 		Layout = React.createElement("UIListLayout", {
 			Padding = UDim.new(0, 8),
@@ -292,7 +343,7 @@ local function buildRobotRows(snapshot: any): any
 		local definition = Robots.Definitions[owned.RobotId]
 		if definition ~= nil then
 			local assignedPad = getAssignedPad(snapshot, uid)
-			local freePad = firstFreePad(snapshot)
+			local freePad = firstFreePad(snapshot, extraWorkSlots)
 			local canRecycle = assignedPad == nil
 			local assignmentText = "No Slot"
 			local assignmentCallback: (() -> ())? = nil
@@ -525,9 +576,9 @@ local function panelHint(panelName: string): string
 	return "Discover robot outcomes by assembling them. Undiscovered names remain hidden."
 end
 
-local function panelContent(panelName: string, snapshot: any): any
+local function panelContent(panelName: string, snapshot: any, extraWorkSlots: number): any
 	if panelName == "Bots" then
-		return buildRobotRows(snapshot)
+		return buildRobotRows(snapshot, extraWorkSlots)
 	elseif panelName == "Upgrades" then
 		return buildUpgradeRows(snapshot)
 	end
@@ -541,13 +592,22 @@ local function App()
 	local actionSuccess, setActionSuccess = React.useState(true)
 	local now, setNow = React.useState(os.time())
 	local compact, setCompact = React.useState(false)
+	local extraWorkSlots, setExtraWorkSlots = React.useState(
+		if LocalPlayer:GetAttribute("PassBotWorkSlots2") == true then 2 else 0
+	)
 
 	React.useEffect(function()
 		local stateRemote = getRemote(RemoteNames.StateSnapshot)
+		local deltaRemote = getRemote(RemoteNames.StateDelta)
 		local actionRemote = getRemote(RemoteNames.ActionResult)
 		local requestState = getRemote(RemoteNames.RequestState)
 		local stateConnection = stateRemote.OnClientEvent:Connect(function(nextSnapshot)
 			setSnapshot(nextSnapshot)
+		end)
+		local deltaConnection = deltaRemote.OnClientEvent:Connect(function(delta)
+			setSnapshot(function(currentSnapshot)
+				return mergeProductionDelta(currentSnapshot, delta)
+			end)
 		end)
 		local actionConnection = actionRemote.OnClientEvent:Connect(function(actionResult)
 			if typeof(actionResult) ~= "table" then
@@ -559,7 +619,21 @@ local function App()
 		requestState:FireServer()
 		return function()
 			stateConnection:Disconnect()
+			deltaConnection:Disconnect()
 			actionConnection:Disconnect()
+		end
+	end, {})
+
+	React.useEffect(function()
+		local function refreshExtraWorkSlots()
+			setExtraWorkSlots(if LocalPlayer:GetAttribute("PassBotWorkSlots2") == true then 2 else 0)
+		end
+		refreshExtraWorkSlots()
+		local connection = LocalPlayer:GetAttributeChangedSignal("PassBotWorkSlots2"):Connect(
+			refreshExtraWorkSlots
+		)
+		return function()
+			connection:Disconnect()
 		end
 	end, {})
 
@@ -764,7 +838,7 @@ local function App()
 						ScrollBarThickness = 4,
 						Size = UDim2.new(1, -32, 1, -104),
 						ZIndex = 22,
-					}, panelContent(openPanel :: string, snapshot)),
+					}, panelContent(openPanel :: string, snapshot, extraWorkSlots)),
 				}),
 			})
 			else nil,
