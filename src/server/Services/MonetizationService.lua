@@ -154,14 +154,12 @@ local function grantProduct(data: any, productId: number): (boolean, string)
 		addTokens(data, 5)
 		return true, "InstantProcessTokens"
 	elseif productId == PRODUCT.StarterPack then
-		if data.Entitlements.StarterPackClaimed then
-			return true, "StarterPackRepeatBlocked"
-		end
+		local repeatPurchase = data.Entitlements.StarterPackClaimed == true
 		addMaterialBundle(data)
 		addTokens(data, 3)
 		addCredits(data, 1_000)
 		data.Entitlements.StarterPackClaimed = true
-		return true, "StarterPack"
+		return true, if repeatPurchase then "StarterPackRepeatPurchase" else "StarterPack"
 	elseif productId == PRODUCT.ServerOverclock then
 		serverOverclockUntil = math.max(serverOverclockUntil, os.time()) + 15 * 60
 		refreshServerOverclockAttributes()
