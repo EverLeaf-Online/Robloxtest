@@ -3,6 +3,8 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local RemoteNames = require(ReplicatedStorage.Shared.Networking.RemoteNames)
+local AnnouncementController = require(script.Parent.Controllers.AnnouncementController)
+local CreatorAdminController = require(script.Parent.Controllers.CreatorAdminController)
 local FactoryClubCosmeticController =
 	require(script.Parent.Controllers.FactoryClubCosmeticController)
 local InstantProcessController = require(script.Parent.Controllers.InstantProcessController)
@@ -19,6 +21,7 @@ for _, remoteName in
 	{
 		RemoteNames.StateSnapshot,
 		RemoteNames.ActionResult,
+		RemoteNames.Announcement,
 	}
 do
 	assert(
@@ -30,10 +33,12 @@ end
 PlotController.Init()
 WorldInteractionController.Init()
 UIController.Init()
+AnnouncementController.Init()
 FactoryClubCosmeticController.Init()
 InstantProcessController.Init()
 MonetizationShopController.Init()
 NotificationOptInController.Init()
+CreatorAdminController.Init()
 StudioMonetizationTestController.Init()
 
 print("[ScrapToBotFactory] Client foundation initialized")
