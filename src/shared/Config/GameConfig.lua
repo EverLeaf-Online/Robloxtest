@@ -37,7 +37,7 @@ local GameConfig = {
 		ReferralPersistIntervalSeconds = 30,
 		ReferralRewardCredits = 500,
 		ReferralRewardTokens = 1,
-		FactoryReadyDelaySeconds = 2 * 60,
+		FactoryReadyDelaySeconds = 30 * 60,
 		NotificationOptInDelaySeconds = 3 * 60,
 	},
 
