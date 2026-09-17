@@ -39,9 +39,7 @@ function ServerOverclockLeaseRules.CanClaim(
 	sessionId: string,
 	now: number
 ): boolean
-	return record.OwnerJobId == ""
-		or record.OwnerJobId == sessionId
-		or record.LeaseUntil <= now
+	return record.OwnerJobId == "" or record.OwnerJobId == sessionId or record.LeaseUntil <= now
 end
 
 function ServerOverclockLeaseRules.ApplyPurchase(
