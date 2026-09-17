@@ -68,6 +68,15 @@ local function rejectWithoutPlot(player: Player)
 	end)
 end
 
+local function getOwnedStation(player: Player, stationName: string): BasePart?
+	local plot = PlotService.GetPlot(player)
+	if plot == nil then
+		return nil
+	end
+	local station = plot:FindFirstChild(stationName)
+	return if station ~= nil and station:IsA("BasePart") then station else nil
+end
+
 function PlotService.Assign(player: Player): number?
 	local existing = plotByPlayer[player]
 	if existing ~= nil then
@@ -121,6 +130,14 @@ end
 function PlotService.GetEntry(player: Player): BasePart?
 	local plotId = plotByPlayer[player]
 	return if plotId then WorldService.GetPlotEntry(plotId) else nil
+end
+
+function PlotService.GetBotConsole(player: Player): BasePart?
+	return getOwnedStation(player, "BotConsole")
+end
+
+function PlotService.GetUpgradeConsole(player: Player): BasePart?
+	return getOwnedStation(player, "UpgradeConsole")
 end
 
 function PlotService.Init()
