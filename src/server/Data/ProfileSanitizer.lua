@@ -48,6 +48,20 @@ local function clampInteger(value: any, minimum: number, maximum: number, fallba
 	return value :: number
 end
 
+local function clampFiniteNumber(value: any, minimum: number, maximum: number, fallback: number): number
+	if
+		typeof(value) ~= "number"
+		or value ~= value
+		or value == math.huge
+		or value == -math.huge
+		or value < minimum
+		or value > maximum
+	then
+		return fallback
+	end
+	return value :: number
+end
+
 local function sanitizeBoolean(value: any, fallback: boolean): boolean
 	if typeof(value) == "boolean" then
 		return value
@@ -78,8 +92,8 @@ local function sanitizeProcessorJob(machines: any)
 		)
 		then job.RecipeId
 		else ""
-	job.StartedAt = clampInteger(job.StartedAt, 0, 4_102_444_800, 0)
-	job.CompletesAt = clampInteger(job.CompletesAt, 0, 4_102_444_800, 0)
+	job.StartedAt = clampFiniteNumber(job.StartedAt, 0, 4_102_444_800, 0)
+	job.CompletesAt = clampFiniteNumber(job.CompletesAt, 0, 4_102_444_800, 0)
 
 	if
 		not job.Active
@@ -100,8 +114,8 @@ end
 local function sanitizeAssemblerJob(machines: any)
 	local job = ensureTable(machines, "AssemblerJob")
 	job.Active = sanitizeBoolean(job.Active, false)
-	job.StartedAt = clampInteger(job.StartedAt, 0, 4_102_444_800, 0)
-	job.CompletesAt = clampInteger(job.CompletesAt, 0, 4_102_444_800, 0)
+	job.StartedAt = clampFiniteNumber(job.StartedAt, 0, 4_102_444_800, 0)
+	job.CompletesAt = clampFiniteNumber(job.CompletesAt, 0, 4_102_444_800, 0)
 
 	if not job.Active or job.StartedAt == 0 or job.CompletesAt < job.StartedAt then
 		resetAssemblerJob(job)
@@ -216,6 +230,10 @@ function ProfileSanitizer.Sanitize(data: any)
 	entitlements.StarterPackClaimed = sanitizeBoolean(entitlements.StarterPackClaimed, false)
 	entitlements.PersonalOverclockUntil =
 		clampInteger(entitlements.PersonalOverclockUntil, 0, 4_102_444_800, 0)
+	entitlements.ServerOverclockUntil =
+		clampInteger(entitlements.ServerOverclockUntil, 0, 4_102_444_800, 0)
+	entitlements.FactoryClubActiveCached =
+		sanitizeBoolean(entitlements.FactoryClubActiveCached, false)
 	entitlements.FactoryClubLastGrantedCycle =
 		sanitizeBoundedString(entitlements.FactoryClubLastGrantedCycle, 32, "")
 	sanitizeClubCosmetics(entitlements)
