@@ -72,6 +72,16 @@ function StateService.BuildSnapshot(data: any): any
 		Tutorial = {
 			Milestones = cloneDictionary(data.Tutorial.Milestones),
 		},
+		Consumables = {
+			InstantProcessTokens = data.Consumables.InstantProcessTokens,
+		},
+		Entitlements = {
+			StarterPackClaimed = data.Entitlements.StarterPackClaimed,
+			PersonalOverclockUntil = data.Entitlements.PersonalOverclockUntil,
+			FactoryClubLastGrantedCycle = data.Entitlements.FactoryClubLastGrantedCycle,
+			FactoryClubCosmetics = cloneDictionary(data.Entitlements.FactoryClubCosmetics),
+			EquippedFactoryClubCosmetic = data.Entitlements.EquippedFactoryClubCosmetic,
+		},
 	}
 end
 
