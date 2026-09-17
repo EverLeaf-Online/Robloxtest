@@ -20,6 +20,7 @@ local MIN_REQUEST_INTERVAL = 0.15
 
 local lastRequestAt: { [Player]: number } = {}
 local receiptSequence = 0
+local lastReceiptByPlayer: { [Player]: { [string]: any } } = {}
 
 local PRODUCT_IDS: { [string]: number } = {
 	MaterialSupplyCrate = RobloxIds.DeveloperProducts.MaterialSupplyCrate,
@@ -65,11 +66,13 @@ local function testDeveloperProduct(player: Player, productName: string): (boole
 		return false, "UNKNOWN_TEST_PRODUCT"
 	end
 
-	local ok, decisionOrError = pcall(MonetizationService.ProcessReceiptForStudio, {
+	local receipt = {
 		PlayerId = player.UserId,
 		PurchaseId = nextPurchaseId(player, productName),
 		ProductId = productId,
-	})
+	}
+	lastReceiptByPlayer[player] = receipt
+	local ok, decisionOrError = pcall(MonetizationService.ProcessReceiptForStudio, receipt)
 	if not ok then
 		warn(("[StudioTestService] Receipt simulation failed: %s"):format(tostring(decisionOrError)))
 		return false, "RECEIPT_SIMULATION_FAILED"
@@ -84,6 +87,18 @@ end
 
 local function setFactoryClub(player: Player, active: boolean): (boolean, string)
 	return MonetizationService.SetFactoryClubForStudio(player, active)
+end
+
+local function replayLastReceipt(player: Player): (boolean, string)
+	local receipt = lastReceiptByPlayer[player]
+	if receipt == nil then
+		return false, "NO_RECEIPT_TO_REPLAY"
+	end
+	local ok, decisionOrError = pcall(MonetizationService.ProcessReceiptForStudio, receipt)
+	if not ok then
+		return false, "RECEIPT_REPLAY_FAILED"
+	end
+	return decisionOrError == Enum.ProductPurchaseDecision.PurchaseGranted, "RECEIPT_REPLAY_IDEMPOTENT"
 end
 
 local function canHandleRequest(player: Player): boolean
@@ -136,6 +151,8 @@ function StudioTestService.Init()
 			success, code = setFactoryClub(player, false)
 		elseif action == "ReferralReward" then
 			success, code = ReferralService.StudioGrantQualifiedReferral(player)
+		elseif action == "ReplayLastReceipt" then
+			success, code = replayLastReceipt(player)
 		end
 
 		remote:FireClient(player, "Result", action, success, code)
@@ -147,6 +164,7 @@ function StudioTestService.Init()
 
 	Players.PlayerRemoving:Connect(function(player)
 		lastRequestAt[player] = nil
+		lastReceiptByPlayer[player] = nil
 	end)
 end
 
