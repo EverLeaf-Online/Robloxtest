@@ -9,7 +9,6 @@ local RobloxIds = require(ReplicatedStorage.Shared.Config.RobloxIds)
 local DataService = require(script.Parent.DataService)
 local MonetizationService = require(script.Parent.MonetizationService)
 local ReferralService = require(script.Parent.ReferralService)
-local StateService = require(script.Parent.StateService)
 
 local StudioTestService = {}
 local initialized = false
