@@ -38,7 +38,8 @@ local function buildRobotRows(snapshot: any, extraWorkSlots: number): any
 	end
 	table.sort(ids)
 	if #ids == 0 then
-		rows.Empty = Components.TextLabel("No bots yet. Build one at the assembler.", 13, COLORS.Muted)
+		rows.Empty =
+			Components.TextLabel("No bots yet. Build one at the assembler.", 13, COLORS.Muted)
 		return rows
 	end
 
@@ -99,7 +100,11 @@ local function buildRobotRows(snapshot: any, extraWorkSlots: number): any
 					Position = UDim2.new(1, -198, 0.5, -16),
 					Size = UDim2.fromOffset(92, 32),
 				}, {
-					Button = Components.Button(assignmentText, assignmentCallback ~= nil, assignmentCallback),
+					Button = Components.Button(
+						assignmentText,
+						assignmentCallback ~= nil,
+						assignmentCallback
+					),
 				}),
 				Recycle = React.createElement("Frame", {
 					BackgroundTransparency = 1,
