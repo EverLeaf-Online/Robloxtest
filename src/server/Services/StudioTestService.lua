@@ -4,11 +4,9 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
-local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
 local RobloxIds = require(ReplicatedStorage.Shared.Config.RobloxIds)
 
 local DataService = require(script.Parent.DataService)
-local EconomyService = require(script.Parent.EconomyService)
 local MonetizationService = require(script.Parent.MonetizationService)
 local ReferralService = require(script.Parent.ReferralService)
 local StateService = require(script.Parent.StateService)
@@ -18,8 +16,6 @@ local initialized = false
 
 local REMOTE_NAME = "StudioMonetizationTest"
 local TEST_TOKEN_GRANT = 3
-local TEST_FACTORY_CLUB_CYCLE = "StudioTestCycle"
-local TEST_FACTORY_CLUB_COSMETIC = "Club_StudioTestCycle"
 local MIN_REQUEST_INTERVAL = 0.15
 
 local lastRequestAt: { [Player]: number } = {}
@@ -32,22 +28,6 @@ local PRODUCT_IDS: { [string]: number } = {
 	StarterPack = RobloxIds.DeveloperProducts.StarterPack,
 	ServerOverclock = RobloxIds.DeveloperProducts.ServerOverclock,
 }
-
-local function addMaterialBundle(data: any)
-	data.Materials.ScrapMetal = math.min(GameConfig.Economy.MaxMaterialCount, data.Materials.ScrapMetal + 250)
-	data.Materials.Wiring = math.min(GameConfig.Economy.MaxMaterialCount, data.Materials.Wiring + 75)
-	data.Materials.PowerCoreFragments = math.min(
-		GameConfig.Economy.MaxMaterialCount,
-		data.Materials.PowerCoreFragments + 10
-	)
-end
-
-local function addTokens(data: any, amount: number)
-	data.Consumables.InstantProcessTokens = math.min(
-		GameConfig.Economy.MaxInstantProcessTokens,
-		data.Consumables.InstantProcessTokens + amount
-	)
-end
 
 local function grantTestTokens(player: Player)
 	local executed = DataService.Transaction(player, function(data)
@@ -102,62 +82,8 @@ local function testDeveloperProduct(player: Player, productName: string): (boole
 	return true, productName
 end
 
-local function setFactoryClubAttributes(player: Player, active: boolean, data: any)
-	player:SetAttribute("FactoryClubActive", active)
-	player:SetAttribute("FactoryClubNameplateEnabled", active)
-	player:SetAttribute("FactoryClubNameplateText", if active then "FACTORY CLUB" else "")
-	player:SetAttribute(
-		"FactoryClubStorageMultiplier",
-		if active then GameConfig.Factory.FactoryClubStorageMultiplier else 1
-	)
-	player:SetAttribute("InstantProcessTokens", data.Consumables.InstantProcessTokens)
-	player:SetAttribute("FactoryClubLastGrantedCycle", data.Entitlements.FactoryClubLastGrantedCycle)
-	player:SetAttribute("FactoryClubEquippedCosmetic", data.Entitlements.EquippedFactoryClubCosmetic)
-
-	local cosmeticCount = 0
-	for _ in data.Entitlements.FactoryClubCosmetics do
-		cosmeticCount += 1
-	end
-	player:SetAttribute("FactoryClubCosmeticCount", cosmeticCount)
-end
-
 local function setFactoryClub(player: Player, active: boolean): (boolean, string)
-	local granted = false
-	local executed = DataService.Transaction(player, function(data)
-		EconomyService.SetRuntimeStorageMultiplier(
-			data,
-			if active then GameConfig.Factory.FactoryClubStorageMultiplier else 1
-		)
-
-		if active and data.Entitlements.FactoryClubLastGrantedCycle ~= TEST_FACTORY_CLUB_CYCLE then
-			addMaterialBundle(data)
-			addTokens(data, 3)
-			data.Entitlements.FactoryClubLastGrantedCycle = TEST_FACTORY_CLUB_CYCLE
-			data.Entitlements.FactoryClubCosmetics[TEST_FACTORY_CLUB_COSMETIC] = true
-			if data.Entitlements.EquippedFactoryClubCosmetic == "" then
-				data.Entitlements.EquippedFactoryClubCosmetic = TEST_FACTORY_CLUB_COSMETIC
-			end
-			granted = true
-		end
-
-		return true, nil
-	end)
-	if not executed then
-		return false, "FACTORY_CLUB_TRANSACTION_FAILED"
-	end
-
-	local data = DataService.GetData(player)
-	if data == nil then
-		return false, "PROFILE_NOT_READY"
-	end
-
-	setFactoryClubAttributes(player, active, data)
-	StateService.PushSnapshot(player)
-
-	if active then
-		return true, if granted then "FACTORY_CLUB_ENABLED_AND_GRANTED" else "FACTORY_CLUB_ENABLED_NO_DUPLICATE"
-	end
-	return true, "FACTORY_CLUB_DISABLED"
+	return MonetizationService.SetFactoryClubForStudio(player, active)
 end
 
 local function canHandleRequest(player: Player): boolean
