@@ -16,6 +16,9 @@
       },
       "ServerPackages": {
         "$path": "ServerPackages"
+      },
+      "OpenCloud": {
+        "$path": "vendor/OpenCloud"
       }
     },
     "StarterPlayer": {
