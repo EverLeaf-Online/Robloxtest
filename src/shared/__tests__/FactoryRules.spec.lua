@@ -78,10 +78,16 @@ describe("FactoryRules", function()
 		expect(FactoryRules.NormalizeUpgradeLevel("MissingUpgrade", 3)).toBe(1)
 	end)
 
-	it("caps work slots to configured progression", function()
+	it("keeps work-slot progression pure and pass-independent", function()
 		expect(FactoryRules.GetWorkSlots(1)).toBe(1)
 		expect(FactoryRules.GetWorkSlots(4)).toBe(4)
 		expect(FactoryRules.GetWorkSlots(999)).toBe(1)
+	end)
+
+	it("preserves exact fractional VIP assembler timing", function()
+		expect(FactoryRules.GetAssemblerDuration(1, 0.85)).toBe(6.8)
+		expect(FactoryRules.GetAssemblerDuration(3, 0.85)).toBe(4.25)
+		expect(FactoryRules.GetAssemblerDuration(4, 0.85)).toBe(3.4)
 	end)
 
 	it("returns the next upgrade and stops at max level", function()
