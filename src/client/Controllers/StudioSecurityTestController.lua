@@ -44,6 +44,7 @@ function StudioSecurityTestController.Init()
 		return
 	end
 	initialized = true
+
 	if not RunService:IsStudio() then
 		return
 	end
@@ -57,7 +58,9 @@ function StudioSecurityTestController.Init()
 	local remotes = remotesInstance
 	local remoteInstance = remotes:WaitForChild(REMOTE_NAME, REMOTE_WAIT_TIMEOUT_SECONDS)
 	if remoteInstance == nil or not remoteInstance:IsA("RemoteEvent") then
-		warn(("[StudioSecurityTestController] %s was not created by the server"):format(REMOTE_NAME))
+		warn(
+			("[StudioSecurityTestController] %s was not created by the server"):format(REMOTE_NAME)
+		)
 		return
 	end
 	local testRemote = remoteInstance
@@ -256,7 +259,10 @@ function StudioSecurityTestController.Init()
 				end
 				local responseCount = 0
 				local connection = actionResult.OnClientEvent:Connect(function(result)
-					if typeof(result) == "table" and result.Action == RemoteNames.RequestCollect then
+					if
+						typeof(result) == "table"
+						and result.Action == RemoteNames.RequestCollect
+					then
 						responseCount += 1
 					end
 				end)
