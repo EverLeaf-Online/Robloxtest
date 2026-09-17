@@ -20,6 +20,12 @@ local RateLimiter = require(script.Parent.RateLimiter)
 local RemoteService = require(script.Parent.RemoteService)
 local StateService = require(script.Parent.StateService)
 local WorldService = require(script.Parent.WorldService)
+local PlayerCharacter = require(script.Parent.Parent.Util.PlayerCharacter)
+local ProfileTypes = require(script.Parent.Parent.Data.ProfileTypes)
+
+type AssemblerJob = ProfileTypes.AssemblerJob
+type ProcessorJob = ProfileTypes.ProcessorJob
+type ProfileData = ProfileTypes.ProfileData
 
 local MachineService = {}
 local initialized = false
@@ -29,20 +35,20 @@ local function serverNow(): number
 	return Workspace:GetServerTimeNow()
 end
 
-local function resetProcessorJob(job: any)
+local function resetProcessorJob(job: ProcessorJob)
 	job.Active = false
 	job.RecipeId = ""
 	job.StartedAt = 0
 	job.CompletesAt = 0
 end
 
-local function resetAssemblerJob(job: any)
+local function resetAssemblerJob(job: AssemblerJob)
 	job.Active = false
 	job.StartedAt = 0
 	job.CompletesAt = 0
 end
 
-local function ownedRobotCount(data: any): number
+local function ownedRobotCount(data: ProfileData): number
 	local count = 0
 	for _ in data.Robots.OwnedByUid do
 		count += 1
@@ -58,22 +64,8 @@ local function result(success: boolean, code: string, payload: any?): any
 	}
 end
 
-local function playerPosition(player: Player): Vector3?
-	local character = player.Character
-	if character == nil then
-		return nil
-	end
-	local root = character:FindFirstChild("HumanoidRootPart")
-	if root == nil or not root:IsA("BasePart") then
-		return nil
-	end
-	return root.Position
-end
-
 local function isNear(player: Player, part: BasePart): boolean
-	local position = playerPosition(player)
-	return position ~= nil
-		and (position - part.Position).Magnitude <= GameConfig.World.InteractionDistance
+	return PlayerCharacter.IsNear(player, part, GameConfig.World.InteractionDistance)
 end
 
 local function sendTransactionResult(
