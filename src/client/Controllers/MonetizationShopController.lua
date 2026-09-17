@@ -18,8 +18,6 @@ local stateRemote = remotes:WaitForChild(RemoteNames.StateSnapshot) :: RemoteEve
 local productButtons: { [string]: TextButton } = {}
 local starterPackClaimed = false
 local statusLabel: TextLabel? = nil
-local panel: Frame? = nil
-local shopButton: TextButton? = nil
 
 local PRODUCT_ROWS = {
 	{ Key = "MaterialSupplyCrate", Label = "Material Supply Crate", Id = RobloxIds.DeveloperProducts.MaterialSupplyCrate },
@@ -216,8 +214,6 @@ local function createUi()
 	clubButton.BackgroundColor3 = Color3.fromRGB(112, 77, 154)
 	clubButton.Activated:Connect(promptFactoryClub)
 
-	shopButton = toggle
-	panel = shopPanel
 	toggle.Activated:Connect(function()
 		shopPanel.Visible = not shopPanel.Visible
 	end)
