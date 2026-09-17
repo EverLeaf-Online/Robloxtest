@@ -266,10 +266,7 @@ function DataService.Transaction(
 	return true, result
 end
 
-function DataService.Mutate(
-	player: Player,
-	mutator: (ProfileData) -> any?
-): (boolean, any?)
+function DataService.Mutate(player: Player, mutator: (ProfileData) -> any?): (boolean, any?)
 	return DataService.Transaction(player, function(data)
 		return true, mutator(data)
 	end)
