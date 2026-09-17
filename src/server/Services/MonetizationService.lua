@@ -159,9 +159,7 @@ local function grantProduct(data: any, productId: number): (boolean, string)
 		data.Entitlements.StarterPackClaimed = true
 		return true, if repeatPurchase then "StarterPackRepeatPurchase" else "StarterPack"
 	elseif productId == PRODUCT.ServerOverclock then
-		serverOverclockUntil = math.max(serverOverclockUntil, os.time()) + 15 * 60
-		refreshServerOverclockAttributes()
-		scheduleServerOverclockExpiry(serverOverclockUntil)
+		-- External server state is applied only after the receipt transaction is durably saved.
 		return true, "ServerOverclock"
 	end
 	return false, "UnknownProduct"
@@ -216,6 +214,12 @@ local function processReceipt(receiptInfo: { [string]: any }): Enum.ProductPurch
 
 	if not DataService.SaveNow(player) then
 		return Enum.ProductPurchaseDecision.NotProcessedYet
+	end
+
+	if productName == "ServerOverclock" then
+		serverOverclockUntil = math.max(serverOverclockUntil, os.time()) + 15 * 60
+		refreshServerOverclockAttributes()
+		scheduleServerOverclockExpiry(serverOverclockUntil)
 	end
 
 	setPresentationAttributes(player)
