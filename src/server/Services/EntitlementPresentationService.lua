@@ -19,13 +19,46 @@ local function disconnectPlayer(player: Player)
 	connectionsByPlayer[player] = nil
 end
 
+local function cosmeticLabel(cosmeticId: string): string
+	if cosmeticId == "" then
+		return ""
+	end
+	local cycle = string.match(cosmeticId, "^Club_(.+)$") or cosmeticId
+	local timestamp = tonumber(cycle)
+	if timestamp ~= nil and timestamp > 0 then
+		return string.upper(os.date("!%b %Y", timestamp))
+	end
+	local year, month = string.match(cycle, "^(%d%d%d%d)%-(%d%d)$")
+	if year ~= nil and month ~= nil then
+		return ("%s/%s"):format(month, year)
+	end
+	if cycle == "StudioTestCycle" then
+		return "TEST"
+	end
+	return string.upper(string.sub(cycle, 1, 12))
+end
+
+local function cosmeticColor(cosmeticId: string): Color3
+	if cosmeticId == "" then
+		return Color3.fromRGB(255, 214, 92)
+	end
+	local hash = 0
+	for index = 1, #cosmeticId do
+		hash = (hash * 31 + string.byte(cosmeticId, index)) % 360
+	end
+	return Color3.fromHSV(hash / 360, 0.55, 1)
+end
+
 local function entitlementText(player: Player): string
 	local club = player:GetAttribute("FactoryClubNameplateEnabled") == true
 	local vip = player:GetAttribute("VIPNameplateEnabled") == true
+	local cosmeticId = tostring(player:GetAttribute("FactoryClubEquippedCosmetic") or "")
+	local cosmetic = if club then cosmeticLabel(cosmeticId) else ""
+	local suffix = if cosmetic ~= "" then ("  [%s]"):format(cosmetic) else ""
 	if club and vip then
-		return "FACTORY CLUB  •  VIP"
+		return "FACTORY CLUB  •  VIP" .. suffix
 	elseif club then
-		return "FACTORY CLUB"
+		return "FACTORY CLUB" .. suffix
 	elseif vip then
 		return "FACTORY VIP"
 	end
@@ -91,6 +124,8 @@ local function applyNameplate(player: Player)
 	end
 
 	label.Text = text
+	local cosmeticId = tostring(player:GetAttribute("FactoryClubEquippedCosmetic") or "")
+	label.TextColor3 = cosmeticColor(if player:GetAttribute("FactoryClubNameplateEnabled") == true then cosmeticId else "")
 end
 
 local function bindPlayer(player: Player)
@@ -105,6 +140,9 @@ local function bindPlayer(player: Player)
 		applyNameplate(player)
 	end))
 	table.insert(connections, player:GetAttributeChangedSignal("FactoryClubNameplateEnabled"):Connect(function()
+		applyNameplate(player)
+	end))
+	table.insert(connections, player:GetAttributeChangedSignal("FactoryClubEquippedCosmetic"):Connect(function()
 		applyNameplate(player)
 	end))
 
