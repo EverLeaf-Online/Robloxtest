@@ -160,9 +160,9 @@ local function createUi()
 
 	local toggle = Instance.new("TextButton")
 	toggle.Name = "ShopButton"
-	toggle.AnchorPoint = Vector2.new(1, 0)
-	toggle.Position = UDim2.new(1, -14, 0, 66)
-	toggle.Size = UDim2.fromOffset(92, 34)
+	toggle.AnchorPoint = Vector2.new(0, 1)
+	toggle.Position = UDim2.new(0, 202, 1, -178)
+	toggle.Size = UDim2.fromOffset(174, 36)
 	toggle.BackgroundColor3 = Color3.fromRGB(38, 126, 91)
 	toggle.BorderSizePixel = 0
 	toggle.Font = Enum.Font.GothamBold
