@@ -5,6 +5,22 @@
     "ServerScriptService": {
       "$properties": {
         "LoadStringEnabled": true
+      },
+      "ServerUnderTest": {
+        "Data": {
+          "$path": "src/server/Data"
+        },
+        "Domain": {
+          "$path": "src/server/Domain"
+        },
+        "Services": {
+          "EconomyService": {
+            "$path": "src/server/Services/EconomyService.lua"
+          }
+        },
+        "Tests": {
+          "$path": "src/server/__tests__"
+        }
       }
     },
     "ReplicatedStorage": {
