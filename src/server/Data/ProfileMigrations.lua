@@ -92,6 +92,14 @@ local migrations: { [number]: (any) -> () } = {
 			data.Referrals.PendingPlaySeconds = 0
 		end
 	end,
+	[5] = function(data)
+		if typeof(data.Entitlements) ~= "table" then
+			data.Entitlements = {}
+		end
+		if typeof(data.Entitlements.ServerOverclockUntil) ~= "number" then
+			data.Entitlements.ServerOverclockUntil = 0
+		end
+	end,
 }
 
 local function readVersion(data: any): number

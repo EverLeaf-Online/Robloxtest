@@ -2,6 +2,7 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
 
 local FactoryRules = require(ReplicatedStorage.Shared.Domain.FactoryRules)
 local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
@@ -23,6 +24,10 @@ local WorldService = require(script.Parent.WorldService)
 local MachineService = {}
 local initialized = false
 local random = Random.new()
+
+local function serverNow(): number
+	return Workspace:GetServerTimeNow()
+end
 
 local function resetProcessorJob(job: any)
 	job.Active = false
@@ -128,6 +133,7 @@ function MachineService.StartProcessor(player: Player, recipeId: any)
 		return
 	end
 
+	local storageMultiplier = MonetizationService.GetStorageMultiplier(player)
 	local executed, transactionResult = DataService.Transaction(player, function(data)
 		local job = data.Machines.ProcessorJob
 		if job.Active then
@@ -136,7 +142,14 @@ function MachineService.StartProcessor(player: Player, recipeId: any)
 		if not EconomyService.CanAffordMaterials(data, recipe.Input) then
 			return false, result(false, "MISSING_MATERIALS", nil)
 		end
-		if not EconomyService.CanFitTransaction(data, recipe.Input, recipe.Output) then
+		if
+			not EconomyService.CanFitTransaction(
+				data,
+				recipe.Input,
+				recipe.Output,
+				storageMultiplier
+			)
+		then
 			return false, result(false, "STORAGE_FULL", nil)
 		end
 
@@ -144,9 +157,9 @@ function MachineService.StartProcessor(player: Player, recipeId: any)
 			EconomyService.SpendMaterials(data, recipe.Input),
 			"validated processor cost must be spendable"
 		)
-		local startedAt = os.time()
+		local startedAt = serverNow()
 		local duration =
-			math.max(1, math.ceil(FactoryRules.GetProcessorSeconds(data.Machines.ProcessorLevel)))
+			math.max(0.001, FactoryRules.GetProcessorSeconds(data.Machines.ProcessorLevel))
 		job.Active = true
 		job.RecipeId = recipe.Id
 		job.StartedAt = startedAt
@@ -176,6 +189,7 @@ function MachineService.StartAssembler(player: Player)
 		return
 	end
 
+	local assemblerTimeMultiplier = MonetizationService.GetAssemblerTimeMultiplier(player)
 	local executed, transactionResult = DataService.Transaction(player, function(data)
 		local job = data.Machines.AssemblerJob
 		if job.Active then
@@ -194,12 +208,9 @@ function MachineService.StartAssembler(player: Player)
 			EconomyService.SpendMaterials(data, cost),
 			"validated assembler cost must be spendable"
 		)
-		local startedAt = os.time()
-		local baseDuration = FactoryRules.GetAssemblerSeconds(data.Machines.AssemblerLevel)
-		local duration = math.max(
-			1,
-			math.ceil(baseDuration * MonetizationService.GetAssemblerTimeMultiplier(player))
-		)
+		local startedAt = serverNow()
+		local duration =
+			FactoryRules.GetAssemblerDuration(data.Machines.AssemblerLevel, assemblerTimeMultiplier)
 		job.Active = true
 		job.StartedAt = startedAt
 		job.CompletesAt = startedAt + duration
@@ -211,6 +222,7 @@ function MachineService.StartAssembler(player: Player)
 end
 
 local function completeProcessor(player: Player, now: number): boolean
+	local storageMultiplier = MonetizationService.GetStorageMultiplier(player)
 	local executed, transactionResult = DataService.Transaction(player, function(data)
 		local job = data.Machines.ProcessorJob
 		if not job.Active or job.CompletesAt > now then
@@ -221,7 +233,7 @@ local function completeProcessor(player: Player, now: number): boolean
 			resetProcessorJob(job)
 			return true, result(false, "PROCESS_RECIPE_REMOVED", nil)
 		end
-		if not EconomyService.GrantProcessorOutput(data, recipe.Output) then
+		if not EconomyService.GrantProcessorOutput(data, recipe.Output, storageMultiplier) then
 			return false, result(false, "PROCESS_WAITING_FOR_STORAGE", nil)
 		end
 		local recipeId = job.RecipeId
@@ -269,7 +281,7 @@ local function completeAssembler(player: Player, now: number): boolean
 		end
 		local uid = RobotInventoryRules.FormatUid(uidNumber)
 		data.Robots.NextUid = RobotInventoryRules.AdvanceUidNumber(uidNumber)
-		data.Robots.OwnedByUid[uid] = { RobotId = robotId, AcquiredAt = now }
+		data.Robots.OwnedByUid[uid] = { RobotId = robotId, AcquiredAt = math.floor(now) }
 		data.Stats.LifetimeRobotsBuilt += 1
 		data.Collection.RobotSeen[robotId] = true
 		data.Collection.RobotOwned[robotId] = true
@@ -295,7 +307,7 @@ local function completeAssembler(player: Player, now: number): boolean
 end
 
 function MachineService.UseInstantProcessToken(player: Player)
-	local now = os.time()
+	local now = serverNow()
 	local executed, transactionResult = DataService.Transaction(player, function(data)
 		if data.Consumables.InstantProcessTokens <= 0 then
 			return false, result(false, "NO_INSTANT_PROCESS_TOKENS", nil)
@@ -360,7 +372,7 @@ function MachineService.PollPlayer(player: Player)
 	if data == nil then
 		return
 	end
-	local now = os.time()
+	local now = serverNow()
 	local processorJob = data.Machines.ProcessorJob
 	if processorJob.Active and processorJob.CompletesAt <= now then
 		completeProcessor(player, now)

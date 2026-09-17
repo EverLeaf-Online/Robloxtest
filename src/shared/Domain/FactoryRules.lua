@@ -1,8 +1,6 @@
 --!strict
 
-local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
 
 local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
 local Recipes = require(ReplicatedStorage.Shared.Config.Recipes)
@@ -46,6 +44,16 @@ function FactoryRules.GetAssemblerSeconds(level: number): number
 	return if upgradeLevel then upgradeLevel.Value else Upgrades.AssemblerSpeed.Levels[1].Value
 end
 
+function FactoryRules.GetAssemblerDuration(level: number, timeMultiplier: number): number
+	local multiplier = if typeof(timeMultiplier) == "number"
+			and timeMultiplier == timeMultiplier
+			and timeMultiplier > 0
+			and timeMultiplier < math.huge
+		then timeMultiplier
+		else 1
+	return math.max(0.001, FactoryRules.GetAssemblerSeconds(level) * multiplier)
+end
+
 function FactoryRules.GetStorageCapacity(level: number): number
 	local upgradeLevel = getUpgradeLevel("Storage", level)
 	return if upgradeLevel then upgradeLevel.Value else Upgrades.Storage.Levels[1].Value
@@ -54,24 +62,11 @@ end
 function FactoryRules.GetWorkSlots(level: number): number
 	local upgradeLevel = getUpgradeLevel("WorkSlots", level)
 	local value = if upgradeLevel then upgradeLevel.Value else GameConfig.Factory.BaseWorkSlots
-	local slots = math.clamp(
+	return math.clamp(
 		math.floor(value),
 		GameConfig.Factory.BaseWorkSlots,
 		GameConfig.Factory.MaxWorkSlots
 	)
-
-	-- The React client uses this shared rule to decide whether an Assign button
-	-- should be offered. Pass ownership is authoritative on the server, but the
-	-- replicated Player attribute lets the client present the same effective slot
-	-- count without trusting the client for assignment validation.
-	if RunService:IsClient() then
-		local player = Players.LocalPlayer
-		if player ~= nil and player:GetAttribute("PassBotWorkSlots2") == true then
-			slots += 2
-		end
-	end
-
-	return math.min(slots, GameConfig.Factory.MaxWorkSlots + 2)
 end
 
 function FactoryRules.GetAssemblerCost(lifetimeRobotsBuilt: number): { [string]: number }
