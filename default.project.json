@@ -24,6 +24,12 @@
           "$path": "src/client"
         }
       }
+    },
+    "TextChatService": {
+      "$className": "TextChatService",
+      "$properties": {
+        "ChatVersion": "TextChatService"
+      }
     }
   }
 }
