@@ -57,8 +57,9 @@ function StudioToolsController.Init()
 
 	local launcher = Instance.new("TextButton")
 	launcher.Name = "Launcher"
-	launcher.Position = UDim2.fromOffset(16, 78)
-	launcher.Size = UDim2.fromOffset(150, 36)
+	launcher.AnchorPoint = Vector2.new(0, 1)
+	launcher.Position = UDim2.new(0, 16, 1, -178)
+	launcher.Size = UDim2.fromOffset(174, 36)
 	launcher.BackgroundColor3 = Color3.fromRGB(45, 52, 64)
 	launcher.BorderSizePixel = 0
 	launcher.Font = Enum.Font.GothamBold
