@@ -190,8 +190,14 @@ local function App()
 				"CREDITS",
 				StateHelpers.FormatNumber(snapshot.Currencies.Credits)
 			),
-			Scrap = Components.StatCard("SCRAP", StateHelpers.FormatNumber(snapshot.Materials.ScrapMetal)),
-			Wiring = Components.StatCard("WIRING", StateHelpers.FormatNumber(snapshot.Materials.Wiring)),
+			Scrap = Components.StatCard(
+				"SCRAP",
+				StateHelpers.FormatNumber(snapshot.Materials.ScrapMetal)
+			),
+			Wiring = Components.StatCard(
+				"WIRING",
+				StateHelpers.FormatNumber(snapshot.Materials.Wiring)
+			),
 			Cores = Components.StatCard(
 				"CORES",
 				StateHelpers.FormatNumber(snapshot.Materials.PowerCoreFragments)
