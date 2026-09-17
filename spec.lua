@@ -1,6 +1,7 @@
 --# selene: allow(incorrect_standard_library_use)
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerScriptService = game:GetService("ServerScriptService")
 
 local DevPackages = ReplicatedStorage:WaitForChild("DevPackages")
 local Jest = require(DevPackages:WaitForChild("Jest"))
@@ -72,26 +73,43 @@ local function buildFailureSummary(results)
 	return summary
 end
 
-local status, result = runCLI(ReplicatedStorage.Shared, {
-	ci = true,
-	verbose = true,
-}, { ReplicatedStorage.Shared }):awaitStatus()
+local function runSuite(name, projectRoot, roots)
+	local status, result = runCLI(projectRoot, {
+		ci = true,
+		verbose = true,
+	}, roots):awaitStatus()
 
-if status == "Rejected" then
-	warn(result)
-	if processServiceExists then
-		ProcessService:ExitAsync(1)
+	if status == "Rejected" then
+		return false, name .. " Jest runner rejected: " .. tostring(result)
 	end
-	error("Jest runner rejected: " .. tostring(result))
+	if result.results.success ~= true then
+		return false, name .. "\n" .. buildFailureSummary(result.results)
+	end
+	return true, nil
 end
 
-local success = result.results.success == true
+local failures = {}
+local sharedSuccess, sharedFailure =
+	runSuite("Shared domain suite", ReplicatedStorage.Shared, { ReplicatedStorage.Shared })
+if not sharedSuccess then
+	table.insert(failures, sharedFailure)
+end
+
+local serverRoot = ServerScriptService:WaitForChild("ServerUnderTest")
+local serverTests = serverRoot:WaitForChild("Tests")
+local serverSuccess, serverFailure =
+	runSuite("Server integration suite", serverRoot, { serverTests })
+if not serverSuccess then
+	table.insert(failures, serverFailure)
+end
+
+local success = #failures == 0
 if processServiceExists then
 	ProcessService:ExitAsync(if success then 0 else 1)
 end
 
 if not success then
-	local summary = buildFailureSummary(result.results)
+	local summary = table.concat(failures, "\n\n")
 	warn(summary)
 	error(summary)
 end

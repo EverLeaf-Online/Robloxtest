@@ -8,8 +8,11 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local TransactionRules = require(ReplicatedStorage.Shared.Domain.TransactionRules)
 
 local ProfileMigrations = require(script.Parent.Parent.Data.ProfileMigrations)
-local ProfileTemplate = require(script.Parent.Parent.Data.ProfileTemplate)
 local ProfileSanitizer = require(script.Parent.Parent.Data.ProfileSanitizer)
+local ProfileTemplate = require(script.Parent.Parent.Data.ProfileTemplate)
+local ProfileTypes = require(script.Parent.Parent.Data.ProfileTypes)
+
+type ProfileData = ProfileTypes.ProfileData
 
 local ServerPackages = ServerScriptService:WaitForChild("ServerPackages")
 local ProfileStore = require(ServerPackages:WaitForChild("ProfileStore"))
@@ -66,9 +69,10 @@ local function releaseProfile(player: Player)
 	end
 
 	if profile:IsActive() == true then
+		local data = profile.Data :: ProfileData
 		local now = os.time()
-		profile.Data.Timestamps.LastLeave = now
-		profile.Data.Timestamps.LastProductionTick = now
+		data.Timestamps.LastLeave = now
+		data.Timestamps.LastProductionTick = now
 	end
 
 	endSessionSafely(player, profile)
@@ -168,14 +172,15 @@ function DataService.LoadPlayer(player: Player): boolean
 		return false
 	end
 
+	local data = profile.Data :: ProfileData
 	local now = os.time()
-	profile.Data.Timestamps.LastJoin = now
-	if profile.Data.Timestamps.LastProductionTick == 0 then
-		profile.Data.Timestamps.LastProductionTick = now
+	data.Timestamps.LastJoin = now
+	if data.Timestamps.LastProductionTick == 0 then
+		data.Timestamps.LastProductionTick = now
 	end
 
 	profiles[player] = profile
-	profileLoadedEvent:Fire(player, profile.Data)
+	profileLoadedEvent:Fire(player, data)
 	return true
 end
 
@@ -184,12 +189,12 @@ function DataService.IsReady(player: Player): boolean
 	return profile ~= nil and profile:IsActive() == true
 end
 
-function DataService.GetData(player: Player): any?
+function DataService.GetData(player: Player): ProfileData?
 	local profile = profiles[player]
 	if profile == nil or profile:IsActive() ~= true then
 		return nil
 	end
-	return profile.Data
+	return profile.Data :: ProfileData
 end
 
 function DataService.SaveNow(player: Player): boolean
@@ -199,7 +204,8 @@ function DataService.SaveNow(player: Player): boolean
 	end
 
 	local ok, err = pcall(function()
-		profile.Data.Timestamps.LastSave = os.time()
+		local data = profile.Data :: ProfileData
+		data.Timestamps.LastSave = os.time()
 		profile:Save()
 	end)
 	if not ok then
@@ -213,7 +219,7 @@ end
 
 function DataService.Transaction(
 	player: Player,
-	transaction: (any) -> (boolean, any?)
+	transaction: (ProfileData) -> (boolean, any?)
 ): (boolean, any?)
 	local profile = profiles[player]
 	if profile == nil or profile:IsActive() ~= true then
@@ -228,7 +234,7 @@ function DataService.Transaction(
 		TransactionRules.Execute,
 		profile.Data,
 		transaction,
-		function(draft)
+		function(draft: ProfileData)
 			if profiles[player] ~= profile or profile:IsActive() ~= true then
 				error("profile session ended during transaction")
 			end
@@ -260,7 +266,7 @@ function DataService.Transaction(
 	return true, result
 end
 
-function DataService.Mutate(player: Player, mutator: (any) -> any?): (boolean, any?)
+function DataService.Mutate(player: Player, mutator: (ProfileData) -> any?): (boolean, any?)
 	return DataService.Transaction(player, function(data)
 		return true, mutator(data)
 	end)

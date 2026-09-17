@@ -6,6 +6,9 @@ local FactoryRules = require(ReplicatedStorage.Shared.Domain.FactoryRules)
 local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
 local Materials = require(ReplicatedStorage.Shared.Config.Materials)
 local Recipes = require(ReplicatedStorage.Shared.Config.Recipes)
+local ProfileTypes = require(script.Parent.Parent.Data.ProfileTypes)
+
+type ProfileData = ProfileTypes.ProfileData
 
 local EconomyService = {}
 
@@ -50,13 +53,13 @@ function EconomyService.ValidateMaterialAmounts(amounts: any): boolean
 	return true
 end
 
-function EconomyService.GetStorageCapacity(data: any, storageMultiplier: number?): number
+function EconomyService.GetStorageCapacity(data: ProfileData, storageMultiplier: number?): number
 	local capacity = FactoryRules.GetStorageCapacity(data.Machines.StorageLevel)
 	capacity *= normalizeStorageMultiplier(storageMultiplier)
 	return math.floor(capacity)
 end
 
-function EconomyService.GetReservedProcessorStorage(data: any): number
+function EconomyService.GetReservedProcessorStorage(data: ProfileData): number
 	local job = data.Machines.ProcessorJob
 	if not job.Active then
 		return 0
@@ -69,13 +72,13 @@ function EconomyService.GetReservedProcessorStorage(data: any): number
 	return totalAmounts(recipe.Output)
 end
 
-function EconomyService.CanAffordMaterials(data: any, cost: { [string]: number }): boolean
+function EconomyService.CanAffordMaterials(data: ProfileData, cost: { [string]: number }): boolean
 	return EconomyService.ValidateMaterialAmounts(cost)
 		and FactoryRules.CanAfford(data.Materials, cost)
 end
 
 function EconomyService.CanFitTransaction(
-	data: any,
+	data: ProfileData,
 	cost: { [string]: number },
 	output: { [string]: number },
 	storageMultiplier: number?
@@ -95,7 +98,7 @@ function EconomyService.CanFitTransaction(
 	)
 end
 
-function EconomyService.SpendMaterials(data: any, cost: { [string]: number }): boolean
+function EconomyService.SpendMaterials(data: ProfileData, cost: { [string]: number }): boolean
 	if not EconomyService.CanAffordMaterials(data, cost) then
 		return false
 	end
@@ -106,7 +109,10 @@ function EconomyService.SpendMaterials(data: any, cost: { [string]: number }): b
 	return true
 end
 
-function EconomyService.GrantPaidMaterials(data: any, amounts: { [string]: number }): boolean
+function EconomyService.GrantPaidMaterials(
+	data: ProfileData,
+	amounts: { [string]: number }
+): boolean
 	if not EconomyService.ValidateMaterialAmounts(amounts) then
 		return false
 	end
@@ -127,7 +133,7 @@ function EconomyService.GrantPaidMaterials(data: any, amounts: { [string]: numbe
 end
 
 function EconomyService.GrantMaterials(
-	data: any,
+	data: ProfileData,
 	amounts: { [string]: number },
 	storageMultiplier: number?
 ): boolean
@@ -156,7 +162,7 @@ function EconomyService.GrantMaterials(
 end
 
 function EconomyService.GrantProcessorOutput(
-	data: any,
+	data: ProfileData,
 	amounts: { [string]: number },
 	storageMultiplier: number?
 ): boolean
@@ -184,7 +190,7 @@ function EconomyService.GrantProcessorOutput(
 	return true
 end
 
-function EconomyService.SpendCredits(data: any, amount: number): boolean
+function EconomyService.SpendCredits(data: ProfileData, amount: number): boolean
 	if not isValidAmount(amount) or data.Currencies.Credits < amount then
 		return false
 	end
@@ -192,13 +198,13 @@ function EconomyService.SpendCredits(data: any, amount: number): boolean
 	return true
 end
 
-function EconomyService.CanGrantCreditsExact(data: any, amount: number): boolean
+function EconomyService.CanGrantCreditsExact(data: ProfileData, amount: number): boolean
 	return isValidAmount(amount)
 		and amount > 0
 		and data.Currencies.Credits <= GameConfig.Economy.MaxCredits - amount
 end
 
-function EconomyService.GrantCredits(data: any, amount: number): number
+function EconomyService.GrantCredits(data: ProfileData, amount: number): number
 	if not isValidAmount(amount) or amount == 0 then
 		return 0
 	end
@@ -211,7 +217,7 @@ function EconomyService.GrantCredits(data: any, amount: number): number
 	return granted
 end
 
-function EconomyService.GrantCreditsExact(data: any, amount: number): boolean
+function EconomyService.GrantCreditsExact(data: ProfileData, amount: number): boolean
 	if not EconomyService.CanGrantCreditsExact(data, amount) then
 		return false
 	end

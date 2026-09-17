@@ -5,6 +5,27 @@
     "ServerScriptService": {
       "$properties": {
         "LoadStringEnabled": true
+      },
+      "ServerUnderTest": {
+        "$className": "Folder",
+        "jest.config": {
+          "$path": "src/shared/jest.config.lua"
+        },
+        "Data": {
+          "$path": "src/server/Data"
+        },
+        "Domain": {
+          "$path": "src/server/Domain"
+        },
+        "Services": {
+          "$className": "Folder",
+          "EconomyService": {
+            "$path": "src/server/Services/EconomyService.lua"
+          }
+        },
+        "Tests": {
+          "$path": "src/server/__tests__"
+        }
       }
     },
     "ReplicatedStorage": {
