@@ -33,7 +33,7 @@ local RobloxIds = {
 
 	Notifications = {
 		FactoryReady = "3e45ef59-0f23-ee44-9365-5c4402e5e3cd",
-		ReferralReward = "80e403da-e0cf-494e-9cb7-974fab0ff1a4",
+		ReferralReward = "806403da-e0cf-494e-9cb7-974fab0ff1a4",
 		FactoryClubReward = "9de31ecb-88a8-4645-843a-b90c1952419d",
 		NewContent = "e1abb235-8da6-814a-a388-a99aefb23213",
 	},
