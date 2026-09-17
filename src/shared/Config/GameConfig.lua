@@ -1,13 +1,16 @@
 --!strict
 
 local GameConfig = {
-	ProfileSchemaVersion = 2,
+	ProfileSchemaVersion = 3,
 
 	Economy = {
 		MaxCredits = 1_000_000_000_000,
 		MaxMaterialCount = 10_000_000,
 		MaxOwnedRobots = 500,
 		MaxTransactionQuantity = 10_000,
+		MaxInstantProcessTokens = 10_000,
+		MaxFactoryClubCosmetics = 24,
+		MaxReferralRewards = 5,
 	},
 
 	World = {
@@ -23,6 +26,16 @@ local GameConfig = {
 		MaxWorkSlots = 4,
 		ProductionTickSeconds = 1,
 		MachinePollSeconds = 0.25,
+		FactoryVIPAssemblerTimeMultiplier = 0.85,
+		FactoryClubStorageMultiplier = 1.10,
+		OfflineProductionMaxSeconds = 8 * 60 * 60,
+		OfflineProductionEfficiency = 0.50,
+	},
+
+	Engagement = {
+		ReferralQualificationSeconds = 10 * 60,
+		FactoryReadyDelaySeconds = 30 * 60,
+		NotificationOptInDelaySeconds = 3 * 60,
 	},
 
 	Networking = {
@@ -37,6 +50,9 @@ local GameConfig = {
 			RequestSellRobot = { Capacity = 6, RefillPerSecond = 2 },
 			RequestUpgrade = { Capacity = 4, RefillPerSecond = 1 },
 			RequestUnlockZone = { Capacity = 3, RefillPerSecond = 0.5 },
+			RequestUseInstantProcessToken = { Capacity = 3, RefillPerSecond = 0.5 },
+			RequestEquipClubCosmetic = { Capacity = 4, RefillPerSecond = 1 },
+			RequestAdminBroadcast = { Capacity = 1, RefillPerSecond = 0.1 },
 		},
 	},
 }
