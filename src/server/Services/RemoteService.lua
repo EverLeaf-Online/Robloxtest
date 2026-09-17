@@ -20,12 +20,16 @@ local requestNames = {
 	RemoteNames.RequestUpgrade,
 	RemoteNames.RequestUnlockZone,
 	RemoteNames.RequestPrestige,
+	RemoteNames.RequestUseInstantProcessToken,
+	RemoteNames.RequestEquipClubCosmetic,
+	RemoteNames.RequestAdminBroadcast,
 }
 
 local outboundNames = {
 	RemoteNames.StateSnapshot,
 	RemoteNames.StateDelta,
 	RemoteNames.ActionResult,
+	RemoteNames.Announcement,
 }
 
 local RemoteService = {}
