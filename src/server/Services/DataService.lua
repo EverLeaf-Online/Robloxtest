@@ -66,7 +66,9 @@ local function releaseProfile(player: Player)
 	end
 
 	if profile:IsActive() == true then
-		profile.Data.Timestamps.LastLeave = os.time()
+		local now = os.time()
+		profile.Data.Timestamps.LastLeave = now
+		profile.Data.Timestamps.LastProductionTick = now
 	end
 
 	endSessionSafely(player, profile)
