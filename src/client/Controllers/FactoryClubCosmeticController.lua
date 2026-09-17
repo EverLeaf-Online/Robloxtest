@@ -38,7 +38,7 @@ local function refreshUi()
 	if gui == nil or button == nil or label == nil then
 		return
 	end
-	gui.Enabled = #cosmetics > 0
+	gui.Enabled = #cosmetics > 1
 	label.Text = ("CLUB COSMETIC: %s"):format(displayName(equipped))
 	button.Text = if #cosmetics > 1 then "NEXT COSMETIC" else "EQUIP COSMETIC"
 end
