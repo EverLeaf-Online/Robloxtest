@@ -9,6 +9,14 @@ This repository contains the current Scrap-to-Bot Factory prototype and supporti
 
 **Implementation follows `docs/MASTER_PRODUCTION_PLAN.md`, while the newest execution/test truth is tracked in `docs/LIVE_VALIDATION_STATUS_2026-09-17.md`. Research findings, playtest data, or platform changes may justify deliberate revisions, but gameplay should not drift ad hoc.**
 
+## Git / Rojo runtime source of truth
+
+For normal Roblox Studio development and playtesting, use **Git branch `main` with `default.project.json`**. Rojo serves one checked-out working tree; historical feature branches are not simultaneously layered into Studio. The architecture, graybox, monetization/engagement, hardening, and security-audit work were reconciled into `main`.
+
+`test.project.json` is reserved for the dedicated Jest/OCALE test project. Backup branches remain safety/history references and are not normal runtime layers. The divergent `backup/main-parallel-implementation-2026-09-17` branch is an older alternative implementation and must not be overlaid or merged wholesale into the canonical runtime.
+
+See `docs/BRANCH_RUNTIME_RECONCILIATION_2026-09-17.md` for the full branch-by-branch reconciliation and branch-switch safety rules.
+
 The active production candidate is **Scrap-to-Bot Factory**: collect salvage, process it through a visibly growing personal factory, assemble collectible robots, assign those robots to automate production, expand into better zones, and eventually progress into higher factory tiers.
 
 We are optimizing for:
@@ -40,6 +48,7 @@ See `docs/LIVE_VALIDATION_STATUS_2026-09-17.md` for the exact verified/pending m
 
 ## Planning and research documents
 
+- `docs/BRANCH_RUNTIME_RECONCILIATION_2026-09-17.md` — **Git/Rojo runtime source of truth**, including branch roles, the canonical Studio checkout, and the divergent parallel-backup rule.
 - `docs/LIVE_VALIDATION_STATUS_2026-09-17.md` — **current authoritative execution status** for published persistence, monetization, receipt, Factory Club, and notification validation.
 - `docs/MASTER_PRODUCTION_PLAN.md` — **implementation blueprint**: locked v1 scope, first-session/30-minute progression, economy rules, profile model, service architecture, networking contract, security gates, UI/art plan, analytics, monetization, testing, production phases, exit criteria, and implementation order.
 - `docs/FIRST_PLAYABLE_STATUS_2026-09-16.md` — historical first-playable implementation/static-validation snapshot; use the 2026-09-17 live status for newer runtime results.
