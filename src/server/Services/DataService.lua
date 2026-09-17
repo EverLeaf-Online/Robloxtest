@@ -65,6 +65,10 @@ local function releaseProfile(player: Player)
 		return
 	end
 
+	if profile:IsActive() == true then
+		profile.Data.Timestamps.LastLeave = os.time()
+	end
+
 	endSessionSafely(player, profile)
 	transactionActive[player] = nil
 	if profiles[player] == profile then
@@ -184,6 +188,23 @@ function DataService.GetData(player: Player): any?
 		return nil
 	end
 	return profile.Data
+end
+
+function DataService.SaveNow(player: Player): boolean
+	local profile = profiles[player]
+	if profile == nil or profile:IsActive() ~= true then
+		return false
+	end
+
+	local ok, err = pcall(function()
+		profile.Data.Timestamps.LastSave = os.time()
+		profile:Save()
+	end)
+	if not ok then
+		warn(("[DataService] Immediate save failed for %d: %s"):format(player.UserId, tostring(err)))
+		return false
+	end
+	return profile:IsActive() == true
 end
 
 function DataService.Transaction(
