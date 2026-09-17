@@ -1,6 +1,5 @@
 --!strict
 
-local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
@@ -8,7 +7,7 @@ local Workspace = game:GetService("Workspace")
 local RemoteNames = require(ReplicatedStorage.Shared.Networking.RemoteNames)
 
 local StudioSecurityTestController = {}
-local initialized = false
+local mountedPage: Frame? = nil
 
 local REMOTE_NAME = "StudioSecurityTest"
 local REMOTE_WAIT_TIMEOUT_SECONDS = 10
@@ -18,7 +17,7 @@ local function makeButton(parent: Instance, label: string, order: number, callba
 	local button = Instance.new("TextButton")
 	button.Name = ("SecurityAction%d"):format(order)
 	button.LayoutOrder = order
-	button.Size = UDim2.new(1, 0, 0, 34)
+	button.Size = UDim2.new(1, 0, 0, 36)
 	button.BackgroundColor3 = Color3.fromRGB(124, 76, 170)
 	button.BorderSizePixel = 0
 	button.Font = Enum.Font.GothamBold
@@ -39,21 +38,18 @@ local function fireClientDone(remote: RemoteEvent, token: string, response: any?
 	remote:FireServer("ClientDone", token, response)
 end
 
-function StudioSecurityTestController.Init()
-	if initialized then
-		return
-	end
-	initialized = true
-
+function StudioSecurityTestController.Mount(parent: Instance): Frame?
 	if not RunService:IsStudio() then
-		return
+		return nil
+	end
+	if mountedPage ~= nil and mountedPage.Parent ~= nil then
+		return mountedPage
 	end
 
-	local player = Players.LocalPlayer
 	local remotesInstance = ReplicatedStorage:WaitForChild("Remotes", REMOTE_WAIT_TIMEOUT_SECONDS)
 	if remotesInstance == nil or not remotesInstance:IsA("Folder") then
 		warn("[StudioSecurityTestController] Remotes folder was not created by the server")
-		return
+		return nil
 	end
 	local remotes = remotesInstance
 	local remoteInstance = remotes:WaitForChild(REMOTE_NAME, REMOTE_WAIT_TIMEOUT_SECONDS)
@@ -61,7 +57,7 @@ function StudioSecurityTestController.Init()
 		warn(
 			("[StudioSecurityTestController] %s was not created by the server"):format(REMOTE_NAME)
 		)
-		return
+		return nil
 	end
 	local testRemote = remoteInstance
 
@@ -72,67 +68,55 @@ function StudioSecurityTestController.Init()
 	local requestUnlockZone = remotes:WaitForChild(RemoteNames.RequestUnlockZone) :: RemoteEvent
 	local actionResult = remotes:WaitForChild(RemoteNames.ActionResult) :: RemoteEvent
 
-	local gui = Instance.new("ScreenGui")
-	gui.Name = "StudioSecurityTestUI"
-	gui.ResetOnSpawn = false
-	gui.DisplayOrder = 1001
-	gui.Parent = player:WaitForChild("PlayerGui")
+	local page = Instance.new("Frame")
+	page.Name = "SecurityPage"
+	page.Size = UDim2.fromScale(1, 1)
+	page.BackgroundTransparency = 1
+	page.Parent = parent
+	mountedPage = page
 
-	local panel = Instance.new("Frame")
-	panel.Name = "Panel"
-	panel.AnchorPoint = Vector2.new(1, 0)
-	panel.Position = UDim2.new(1, -565, 0, 72)
-	panel.Size = UDim2.fromOffset(255, 405)
-	panel.BackgroundColor3 = Color3.fromRGB(24, 27, 34)
-	panel.BorderSizePixel = 0
-	panel.Parent = gui
-
-	local panelCorner = Instance.new("UICorner")
-	panelCorner.CornerRadius = UDim.new(0, 10)
-	panelCorner.Parent = panel
+	local scroll = Instance.new("ScrollingFrame")
+	scroll.Name = "Scroll"
+	scroll.Size = UDim2.fromScale(1, 1)
+	scroll.BackgroundTransparency = 1
+	scroll.BorderSizePixel = 0
+	scroll.ScrollBarThickness = 6
+	scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	scroll.CanvasSize = UDim2.new()
+	scroll.Parent = page
 
 	local padding = Instance.new("UIPadding")
-	padding.PaddingTop = UDim.new(0, 10)
-	padding.PaddingBottom = UDim.new(0, 10)
-	padding.PaddingLeft = UDim.new(0, 10)
-	padding.PaddingRight = UDim.new(0, 10)
-	padding.Parent = panel
+	padding.PaddingTop = UDim.new(0, 4)
+	padding.PaddingBottom = UDim.new(0, 8)
+	padding.PaddingLeft = UDim.new(0, 4)
+	padding.PaddingRight = UDim.new(0, 8)
+	padding.Parent = scroll
 
 	local layout = Instance.new("UIListLayout")
-	layout.Padding = UDim.new(0, 6)
+	layout.Padding = UDim.new(0, 8)
 	layout.SortOrder = Enum.SortOrder.LayoutOrder
-	layout.Parent = panel
-
-	local title = Instance.new("TextLabel")
-	title.LayoutOrder = 0
-	title.Size = UDim2.new(1, 0, 0, 24)
-	title.BackgroundTransparency = 1
-	title.Font = Enum.Font.GothamBold
-	title.Text = "STUDIO SECURITY QA"
-	title.TextColor3 = Color3.fromRGB(245, 247, 250)
-	title.TextSize = 12
-	title.Parent = panel
+	layout.Parent = scroll
 
 	local status = Instance.new("TextLabel")
 	status.LayoutOrder = 1
-	status.Size = UDim2.new(1, 0, 0, 24)
+	status.Size = UDim2.new(1, 0, 0, 28)
 	status.BackgroundTransparency = 1
 	status.Font = Enum.Font.Gotham
 	status.Text = "Ready — use 2 local clients for Run All"
 	status.TextColor3 = Color3.fromRGB(170, 178, 190)
-	status.TextSize = 10
+	status.TextSize = 11
 	status.TextWrapped = true
-	status.Parent = panel
+	status.Parent = scroll
 
-	makeButton(panel, "RUN ALL SECURITY QA", 2, function()
+	makeButton(scroll, "RUN ALL SECURITY QA", 2, function()
 		status.Text = "Running full security QA..."
 		testRemote:FireServer("RunAll")
 	end)
-	makeButton(panel, "RUN HOSTILE CLIENT", 3, function()
+	makeButton(scroll, "RUN HOSTILE CLIENT", 3, function()
 		status.Text = "Running hostile-client suite..."
 		testRemote:FireServer("RunHostileSuite")
 	end)
-	makeButton(panel, "RUN SALVAGE RACE", 4, function()
+	makeButton(scroll, "RUN SALVAGE RACE", 4, function()
 		status.Text = "Running synchronized salvage race..."
 		testRemote:FireServer("RunSalvageRace")
 	end)
@@ -140,7 +124,7 @@ function StudioSecurityTestController.Init()
 	local output = Instance.new("TextLabel")
 	output.Name = "Results"
 	output.LayoutOrder = 5
-	output.Size = UDim2.new(1, 0, 0, 235)
+	output.Size = UDim2.new(1, 0, 0, 300)
 	output.BackgroundColor3 = Color3.fromRGB(18, 20, 26)
 	output.BorderSizePixel = 0
 	output.Font = Enum.Font.Code
@@ -150,7 +134,7 @@ function StudioSecurityTestController.Init()
 	output.TextWrapped = true
 	output.TextXAlignment = Enum.TextXAlignment.Left
 	output.TextYAlignment = Enum.TextYAlignment.Top
-	output.Parent = panel
+	output.Parent = scroll
 
 	local outputCorner = Instance.new("UICorner")
 	outputCorner.CornerRadius = UDim.new(0, 7)
@@ -277,6 +261,8 @@ function StudioSecurityTestController.Init()
 			end
 		end)
 	end)
+
+	return page
 end
 
 return StudioSecurityTestController
