@@ -110,11 +110,17 @@ function StudioMonetizationTestController.Init()
 	for index, item in ACTIONS do
 		makeButton(panel, item.Label, index + 1, function()
 			status.Text = ("Running %s..."):format(item.Label)
+			status.TextColor3 = Color3.fromRGB(170, 178, 190)
 			remote:FireServer(item.Action)
 		end)
 	end
 
 	remote.OnClientEvent:Connect(function(kind, action, success, code)
+		if kind == "ReceiptReady" then
+			status.Text = ("%s: RECEIPT READY"):format(tostring(action))
+			status.TextColor3 = Color3.fromRGB(104, 214, 156)
+			return
+		end
 		if kind ~= "Result" then
 			return
 		end
