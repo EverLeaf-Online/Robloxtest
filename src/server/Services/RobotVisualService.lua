@@ -11,6 +11,9 @@ local DataService = require(script.Parent.DataService)
 local MonetizationService = require(script.Parent.MonetizationService)
 local PlotService = require(script.Parent.PlotService)
 local WorldService = require(script.Parent.WorldService)
+local ProfileTypes = require(script.Parent.Parent.Data.ProfileTypes)
+
+type ProfileData = ProfileTypes.ProfileData
 
 local RobotVisualService = {}
 local initialized = false
@@ -262,7 +265,7 @@ local function clearVisuals(plot: Model)
 	folder:ClearAllChildren()
 end
 
-local function syncPad(folder: Folder, pad: BasePart, robotUid: string?, data: any)
+local function syncPad(folder: Folder, pad: BasePart, robotUid: string?, data: ProfileData)
 	local padId = pad:GetAttribute("WorkPadId")
 	if typeof(padId) ~= "string" then
 		return
