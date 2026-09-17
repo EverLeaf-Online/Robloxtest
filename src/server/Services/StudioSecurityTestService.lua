@@ -527,11 +527,7 @@ local function runHostileSuite(player: Player)
 end
 
 local function copyMaterials(data: ProfileData): { [string]: number }
-	local result: { [string]: number } = {}
-	for materialId, amount in data.Materials do
-		result[materialId] = amount
-	end
-	return result
+	return table.clone(data.Materials)
 end
 
 local function restoreMaterials(data: ProfileData, values: { [string]: number })
