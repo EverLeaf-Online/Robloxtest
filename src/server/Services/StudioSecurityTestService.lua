@@ -9,10 +9,10 @@ local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
 local Robots = require(ReplicatedStorage.Shared.Config.Robots)
 local Upgrades = require(ReplicatedStorage.Shared.Config.Upgrades)
 
+local ProfileTypes = require(script.Parent.Parent.Data.ProfileTypes)
 local DataService = require(script.Parent.DataService)
 local PlotService = require(script.Parent.PlotService)
 local RateLimiter = require(script.Parent.RateLimiter)
-local StateService = require(script.Parent.StateService)
 local WorldService = require(script.Parent.WorldService)
 
 local StudioSecurityTestService = {}
@@ -22,16 +22,39 @@ local REMOTE_NAME = "StudioSecurityTest"
 local CLIENT_TIMEOUT_SECONDS = 4
 local RACE_SETTLE_SECONDS = 1.25
 local TEMP_ROBOT_ID = "TinScout"
+
 local suiteRunning: { [Player]: boolean } = {}
-local pendingByToken: { [string]: { Event: BindableEvent, Player: Player, Response: any? } } = {}
+local pendingByToken: {
+	[string]: {
+		Event: BindableEvent,
+		Player: Player,
+		Response: any?,
+	},
+} = {}
 local tokenSequence = 0
 local testRemote: RemoteEvent? = nil
 
-type ProfileData = any
+type ProfileData = ProfileTypes.ProfileData
 
 type CharacterState = {
 	Character: Model,
 	Pivot: CFrame,
+}
+
+type Fingerprint = {
+	Credits: number,
+	MaterialTotal: number,
+	RobotCount: number,
+	AssignmentCount: number,
+	StorageLevel: number,
+	Zone: number,
+	Tokens: number,
+	ReceiptCount: number,
+	StarterPackClaimed: boolean,
+	PersonalOverclockUntil: number,
+	ServerOverclockUntil: number,
+	ServerOverclockLeaseId: string,
+	FirstScrap: boolean,
 }
 
 local function getRemote(): RemoteEvent
@@ -47,51 +70,61 @@ local function suiteStatus(player: Player, text: string)
 	getRemote():FireClient(player, "SuiteStatus", text)
 end
 
-local function deepEqual(left: any, right: any): boolean
-	if typeof(left) ~= typeof(right) then
-		return false
+local function countEntries(dictionary: { [any]: any }): number
+	local count = 0
+	for _ in dictionary do
+		count += 1
 	end
-	if typeof(left) ~= "table" then
-		if typeof(left) == "number" and left ~= left and right ~= right then
-			return true
-		end
-		return left == right
-	end
-	for key, value in left do
-		if not deepEqual(value, right[key]) then
-			return false
-		end
-	end
-	for key in right do
-		if left[key] == nil then
-			return false
-		end
-	end
-	return true
+	return count
 end
 
-local function profileSnapshot(player: Player): any?
+local function materialTotal(data: ProfileData): number
+	local total = 0
+	for _, amount in data.Materials do
+		total += amount
+	end
+	return total
+end
+
+local function fingerprint(player: Player): Fingerprint?
 	local data = DataService.GetData(player)
 	if data == nil then
 		return nil
 	end
-	local snapshot = StateService.BuildSnapshot(data)
-	snapshot.Security = {
-		RecentPurchaseIds = table.clone(data.Receipts.RecentPurchaseIds),
+	return {
+		Credits = data.Currencies.Credits,
+		MaterialTotal = materialTotal(data),
+		RobotCount = countEntries(data.Robots.OwnedByUid),
+		AssignmentCount = countEntries(data.Assignments.WorkPads),
+		StorageLevel = data.Machines.StorageLevel,
+		Zone = data.Progression.Zone,
+		Tokens = data.Consumables.InstantProcessTokens,
+		ReceiptCount = #data.Receipts.RecentPurchaseIds,
+		StarterPackClaimed = data.Entitlements.StarterPackClaimed,
+		PersonalOverclockUntil = data.Entitlements.PersonalOverclockUntil,
 		ServerOverclockUntil = data.Entitlements.ServerOverclockUntil,
 		ServerOverclockLeaseId = data.Entitlements.ServerOverclockLeaseId,
+		FirstScrap = data.Tutorial.Milestones.FirstScrap,
 	}
-	return snapshot
 end
 
-local function totalMaterials(data: ProfileData): number
-	local total = 0
-	for _, amount in data.Materials do
-		if typeof(amount) == "number" then
-			total += amount
-		end
+local function sameFingerprint(left: Fingerprint?, right: Fingerprint?): boolean
+	if left == nil or right == nil then
+		return false
 	end
-	return total
+	return left.Credits == right.Credits
+		and left.MaterialTotal == right.MaterialTotal
+		and left.RobotCount == right.RobotCount
+		and left.AssignmentCount == right.AssignmentCount
+		and left.StorageLevel == right.StorageLevel
+		and left.Zone == right.Zone
+		and left.Tokens == right.Tokens
+		and left.ReceiptCount == right.ReceiptCount
+		and left.StarterPackClaimed == right.StarterPackClaimed
+		and left.PersonalOverclockUntil == right.PersonalOverclockUntil
+		and left.ServerOverclockUntil == right.ServerOverclockUntil
+		and left.ServerOverclockLeaseId == right.ServerOverclockLeaseId
+		and left.FirstScrap == right.FirstScrap
 end
 
 local function saveCharacter(player: Player): CharacterState?
@@ -112,7 +145,7 @@ local function restoreCharacter(state: CharacterState?)
 	state.Character:PivotTo(state.Pivot)
 end
 
-local function movePlayerNear(player: Player, part: BasePart): boolean
+local function moveNear(player: Player, part: BasePart): boolean
 	local character = player.Character
 	if character == nil then
 		return false
@@ -121,17 +154,13 @@ local function movePlayerNear(player: Player, part: BasePart): boolean
 	return true
 end
 
-local function movePlayerFar(player: Player, part: BasePart): boolean
+local function moveFar(player: Player, part: BasePart): boolean
 	local character = player.Character
 	if character == nil then
 		return false
 	end
-	character:PivotTo(
-		CFrame.new(
-			part.Position
-				+ Vector3.new(0, 4, GameConfig.World.SalvageCollectDistance + 80)
-		)
-	)
+	local offset = GameConfig.World.SalvageCollectDistance + 80
+	character:PivotTo(CFrame.new(part.Position + Vector3.new(0, 4, offset)))
 	return true
 end
 
@@ -142,6 +171,15 @@ local function findActiveSalvageNode(): (string?, BasePart?)
 		end
 	end
 	return nil, nil
+end
+
+local function findOtherReadyPlayer(player: Player): Player?
+	for _, candidate in Players:GetPlayers() do
+		if candidate ~= player and DataService.IsReady(candidate) then
+			return candidate
+		end
+	end
+	return nil
 end
 
 local function nextToken(player: Player, caseName: string): string
@@ -173,7 +211,11 @@ local function dispatchClient(player: Player, caseName: string, payload: any?): 
 	return pending.Response
 end
 
-local function restoreProfileFields(player: Player, callback: (ProfileData) -> ())
+local function responseTimedOut(response: any?): boolean
+	return typeof(response) == "table" and response.TimedOut == true
+end
+
+local function mutateProfile(player: Player, callback: (ProfileData) -> ())
 	DataService.Transaction(player, function(data)
 		callback(data)
 		return true, true
@@ -182,19 +224,17 @@ end
 
 local function runInvalidPayloadCase(player: Player)
 	RateLimiter.Forget(player)
-	local before = profileSnapshot(player)
+	local before = fingerprint(player)
 	local response = dispatchClient(player, "InvalidPayloads", nil)
 	task.wait(0.2)
-	local after = profileSnapshot(player)
-	local passed = before ~= nil
-		and after ~= nil
-		and deepEqual(before, after)
-		and not (typeof(response) == "table" and response.TimedOut == true)
+	local passed = sameFingerprint(before, fingerprint(player)) and not responseTimedOut(response)
 	report(
 		player,
 		"Malformed / forged payloads",
 		passed,
-		if passed then "No authoritative profile mutation" else "Profile changed or client timed out"
+		if passed
+			then "NaN/inf/huge IDs and fake purchase-like payloads were rejected"
+			else "Authoritative profile changed or client timed out"
 	)
 end
 
@@ -204,97 +244,89 @@ local function runDistantSalvageCase(player: Player)
 		report(player, "Distant salvage", false, "No active salvage node available")
 		return
 	end
+
 	local characterState = saveCharacter(player)
-	if not movePlayerFar(player, node) then
+	if not moveFar(player, node) then
 		report(player, "Distant salvage", false, "Character unavailable")
 		return
 	end
+
 	RateLimiter.Forget(player)
-	local before = profileSnapshot(player)
+	local before = fingerprint(player)
 	local response = dispatchClient(player, "CollectNode", { NodeId = nodeId })
 	task.wait(0.15)
-	local after = profileSnapshot(player)
+	local passed = sameFingerprint(before, fingerprint(player)) and not responseTimedOut(response)
 	restoreCharacter(characterState)
-	local passed = before ~= nil
-		and after ~= nil
-		and deepEqual(before, after)
-		and not (typeof(response) == "table" and response.TimedOut == true)
 	report(
 		player,
 		"Distant salvage",
 		passed,
-		if passed then "Server rejected out-of-range collection" else "Unexpected mutation or timeout"
+		if passed then "Out-of-range collection was rejected" else "Unexpected mutation or timeout"
 	)
-end
-
-local function findOtherReadyPlayer(player: Player): Player?
-	for _, candidate in Players:GetPlayers() do
-		if candidate ~= player and DataService.IsReady(candidate) then
-			return candidate
-		end
-	end
-	return nil
 end
 
 local function runForgedRobotCase(player: Player)
 	local victim = findOtherReadyPlayer(player)
+	local console = PlotService.GetBotConsole(player)
 	if victim == nil then
 		report(player, "Cross-player robot ownership", false, "Requires a second local client")
 		return
 	end
-	local console = PlotService.GetBotConsole(player)
 	if console == nil then
 		report(player, "Cross-player robot ownership", false, "Attacker plot is unavailable")
 		return
 	end
+
+	local attackerData = DataService.GetData(player)
+	local victimData = DataService.GetData(victim)
+	if attackerData == nil or victimData == nil then
+		report(player, "Cross-player robot ownership", false, "Profiles unavailable")
+		return
+	end
+
 	local characterState = saveCharacter(player)
-	if not movePlayerNear(player, console) then
-		report(player, "Cross-player robot ownership", false, "Attacker character unavailable")
+	if not moveNear(player, console) then
+		report(player, "Cross-player robot ownership", false, "Character unavailable")
 		return
 	end
 
 	local tempUid = ("StudioVictim%d"):format(victim.UserId)
-	local victimData = DataService.GetData(victim)
-	local attackerData = DataService.GetData(player)
-	if victimData == nil or attackerData == nil then
-		restoreCharacter(characterState)
-		report(player, "Cross-player robot ownership", false, "Profiles unavailable")
-		return
-	end
-	while victimData.Robots.OwnedByUid[tempUid] ~= nil or attackerData.Robots.OwnedByUid[tempUid] ~= nil do
+	while
+		attackerData.Robots.OwnedByUid[tempUid] ~= nil
+		or victimData.Robots.OwnedByUid[tempUid] ~= nil
+	do
 		tempUid ..= "X"
 	end
 
-	DataService.Transaction(victim, function(data)
+	mutateProfile(victim, function(data)
 		data.Robots.OwnedByUid[tempUid] = {
 			RobotId = TEMP_ROBOT_ID,
 			AcquiredAt = os.time(),
 		}
-		return true, true
 	end)
-	local attackerBefore = profileSnapshot(player)
+
 	RateLimiter.Forget(player)
+	local attackerBefore = fingerprint(player)
 	local response = dispatchClient(player, "ForgeVictimRobot", { RobotUid = tempUid })
 	task.wait(0.2)
-	local attackerAfter = profileSnapshot(player)
-	local victimAfter = DataService.GetData(victim)
-	local victimStillOwns = victimAfter ~= nil and victimAfter.Robots.OwnedByUid[tempUid] ~= nil
+	local attackerAfter = fingerprint(player)
+	local currentVictimData = DataService.GetData(victim)
+	local victimStillOwns = currentVictimData ~= nil
+		and currentVictimData.Robots.OwnedByUid[tempUid] ~= nil
 
-	restoreProfileFields(victim, function(data)
+	mutateProfile(victim, function(data)
 		data.Robots.OwnedByUid[tempUid] = nil
 	end)
-	restoreCharacter(characterState)
+	cleanupCharacterState(characterState)
 
-	local passed = attackerBefore ~= nil
-		and attackerAfter ~= nil
-		and deepEqual(attackerBefore, attackerAfter)
+	local passed = sameFingerprint(attackerBefore, attackerAfter)
 		and victimStillOwns
-		and not (typeof(response) == "table" and response.TimedOut == true)
+		and not responseTimedOut(response)
 	report(
 		player,
 		"Cross-player robot ownership",
 		passed,
-		if passed then "Forged assign/sell rejected" else "Ownership boundary failed or timed out"
+		if passed then "Forged assign/sell was rejected" else "Ownership boundary failed or timed out"
 	)
 end
 
@@ -306,24 +338,26 @@ local function runDuplicateSellCase(player: Player)
 		report(player, "Duplicate robot sell", false, "Required test state unavailable")
 		return
 	end
+
 	local characterState = saveCharacter(player)
-	if not movePlayerNear(player, console) then
+	if not moveNear(player, console) then
 		report(player, "Duplicate robot sell", false, "Character unavailable")
 		return
 	end
+
 	local originalCredits = data.Currencies.Credits
 	local originalLifetimeCredits = data.Stats.LifetimeCredits
 	local tempUid = ("StudioSell%d"):format(player.UserId)
 	local originalRobot = data.Robots.OwnedByUid[tempUid]
 
-	DataService.Transaction(player, function(profile)
+	mutateProfile(player, function(profile)
 		profile.Currencies.Credits = 0
 		profile.Robots.OwnedByUid[tempUid] = {
 			RobotId = TEMP_ROBOT_ID,
 			AcquiredAt = os.time(),
 		}
-		return true, true
 	end)
+
 	RateLimiter.Forget(player)
 	local response = dispatchClient(player, "DuplicateSell", { RobotUid = tempUid })
 	task.wait(0.25)
@@ -331,9 +365,9 @@ local function runDuplicateSellCase(player: Player)
 	local passed = after ~= nil
 		and after.Robots.OwnedByUid[tempUid] == nil
 		and after.Currencies.Credits == definition.RecycleCredits
-		and not (typeof(response) == "table" and response.TimedOut == true)
+		and not responseTimedOut(response)
 
-	restoreProfileFields(player, function(profile)
+	mutateProfile(player, function(profile)
 		profile.Currencies.Credits = originalCredits
 		profile.Stats.LifetimeCredits = originalLifetimeCredits
 		profile.Robots.OwnedByUid[tempUid] = originalRobot
@@ -343,11 +377,13 @@ local function runDuplicateSellCase(player: Player)
 		player,
 		"Duplicate robot sell",
 		passed,
-		if passed then "Exactly one recycle grant applied" else "Duplicate grant detected or timeout"
+		if passed
+			then "Exactly one recycle grant applied"
+			else "Duplicate grant detected or client timed out"
 	)
 end
 
-local function runConcurrentUpgradeCase(player: Player)
+local function runRepeatedUpgradeCase(player: Player)
 	local console = PlotService.GetUpgradeConsole(player)
 	local data = DataService.GetData(player)
 	local definition = Upgrades.Storage
@@ -355,11 +391,13 @@ local function runConcurrentUpgradeCase(player: Player)
 		report(player, "Repeated max-edge upgrade", false, "Required test state unavailable")
 		return
 	end
+
 	local characterState = saveCharacter(player)
-	if not movePlayerNear(player, console) then
+	if not moveNear(player, console) then
 		report(player, "Repeated max-edge upgrade", false, "Character unavailable")
 		return
 	end
+
 	local originalLevel = data.Machines.StorageLevel
 	local originalCredits = data.Currencies.Credits
 	local maxLevel = #definition.Levels
@@ -367,11 +405,11 @@ local function runConcurrentUpgradeCase(player: Player)
 	local finalCost = definition.Levels[maxLevel].CostCredits
 	local startingCredits = finalCost + 5_000
 
-	DataService.Transaction(player, function(profile)
+	mutateProfile(player, function(profile)
 		profile.Machines.StorageLevel = priorLevel
 		profile.Currencies.Credits = startingCredits
-		return true, true
 	end)
+
 	RateLimiter.Forget(player)
 	local response = dispatchClient(player, "DoubleUpgrade", { UpgradeId = "Storage" })
 	task.wait(0.25)
@@ -379,9 +417,9 @@ local function runConcurrentUpgradeCase(player: Player)
 	local passed = after ~= nil
 		and after.Machines.StorageLevel == maxLevel
 		and after.Currencies.Credits == startingCredits - finalCost
-		and not (typeof(response) == "table" and response.TimedOut == true)
+		and not responseTimedOut(response)
 
-	restoreProfileFields(player, function(profile)
+	mutateProfile(player, function(profile)
 		profile.Machines.StorageLevel = originalLevel
 		profile.Currencies.Credits = originalCredits
 	end)
@@ -390,7 +428,9 @@ local function runConcurrentUpgradeCase(player: Player)
 		player,
 		"Repeated max-edge upgrade",
 		passed,
-		if passed then "Level and cost applied exactly once" else "Upgrade duplicated or timed out"
+		if passed
+			then "Final level and cost applied exactly once"
+			else "Upgrade duplicated or client timed out"
 	)
 end
 
@@ -401,25 +441,27 @@ local function runZoneSkipCase(player: Player)
 		report(player, "Zone skip", false, "Zone 2 gate or profile unavailable")
 		return
 	end
+
 	local characterState = saveCharacter(player)
-	if not movePlayerNear(player, gate) then
+	if not moveNear(player, gate) then
 		report(player, "Zone skip", false, "Character unavailable")
 		return
 	end
+
 	local originalZone = data.Progression.Zone
 	local originalCredits = data.Currencies.Credits
 	local originalRobotsBuilt = data.Stats.LifetimeRobotsBuilt
 	local originalGoalSeen = data.Tutorial.Milestones.FirstZoneGoalSeen
 	local originalUnlocked = data.Tutorial.Milestones.FirstZoneUnlock
 
-	DataService.Transaction(player, function(profile)
+	mutateProfile(player, function(profile)
 		profile.Progression.Zone = 1
 		profile.Currencies.Credits = 0
 		profile.Stats.LifetimeRobotsBuilt = 0
 		profile.Tutorial.Milestones.FirstZoneGoalSeen = false
 		profile.Tutorial.Milestones.FirstZoneUnlock = false
-		return true, true
 	end)
+
 	RateLimiter.Forget(player)
 	local response = dispatchClient(player, "ZoneSkip", { TargetZone = 2 })
 	task.wait(0.2)
@@ -427,9 +469,9 @@ local function runZoneSkipCase(player: Player)
 	local passed = after ~= nil
 		and after.Progression.Zone == 1
 		and after.Currencies.Credits == 0
-		and not (typeof(response) == "table" and response.TimedOut == true)
+		and not responseTimedOut(response)
 
-	restoreProfileFields(player, function(profile)
+	mutateProfile(player, function(profile)
 		profile.Progression.Zone = originalZone
 		profile.Currencies.Credits = originalCredits
 		profile.Stats.LifetimeRobotsBuilt = originalRobotsBuilt
@@ -441,14 +483,15 @@ local function runZoneSkipCase(player: Player)
 		player,
 		"Zone skip",
 		passed,
-		if passed then "Unlock requirements enforced" else "Locked zone advanced or timed out"
+		if passed then "Unlock requirements were enforced" else "Locked zone advanced or timed out"
 	)
 end
 
 local function runRateLimitCase(player: Player)
 	RateLimiter.Forget(player)
 	local response = dispatchClient(player, "SpamCollect", { Count = 32 })
-	local responseCount = if typeof(response) == "table" and typeof(response.Count) == "number"
+	local responseCount = if typeof(response) == "table"
+			and typeof(response.Count) == "number"
 		then response.Count
 		else -1
 	local capacity = GameConfig.Networking.RateLimits.RequestCollect.Capacity
@@ -457,7 +500,7 @@ local function runRateLimitCase(player: Player)
 		player,
 		"RemoteEvent collect spam",
 		passed,
-		("Observed %d server responses for 32 requests; burst capacity %d"):format(
+		("Observed %d responses for 32 requests; burst capacity %d"):format(
 			responseCount,
 			capacity
 		)
@@ -475,7 +518,7 @@ local function runHostileSuite(player: Player)
 	runDistantSalvageCase(player)
 	runForgedRobotCase(player)
 	runDuplicateSellCase(player)
-	runConcurrentUpgradeCase(player)
+	runRepeatedUpgradeCase(player)
 	runZoneSkipCase(player)
 	runRateLimitCase(player)
 
@@ -483,7 +526,7 @@ local function runHostileSuite(player: Player)
 	suiteRunning[player] = nil
 end
 
-local function cloneMaterials(data: ProfileData): { [string]: number }
+local function copyMaterials(data: ProfileData): { [string]: number }
 	local result: { [string]: number } = {}
 	for materialId, amount in data.Materials do
 		result[materialId] = amount
@@ -491,12 +534,18 @@ local function cloneMaterials(data: ProfileData): { [string]: number }
 	return result
 end
 
-local function restoreMaterials(data: ProfileData, materials: { [string]: number })
+local function restoreMaterials(data: ProfileData, values: { [string]: number })
 	for materialId in data.Materials do
 		data.Materials[materialId] = nil
 	end
-	for materialId, amount in materials do
+	for materialId, amount in values do
 		data.Materials[materialId] = amount
+	end
+end
+
+local function zeroMaterials(data: ProfileData)
+	for materialId in data.Materials do
+		data.Materials[materialId] = 0
 	end
 end
 
@@ -504,16 +553,18 @@ local function runSalvageRace(player: Player)
 	if suiteRunning[player] then
 		return
 	end
+
 	local secondPlayer = findOtherReadyPlayer(player)
+	local nodeId, node = findActiveSalvageNode()
 	if secondPlayer == nil then
 		report(player, "Same-node salvage race", false, "Start a 2-player local server first")
 		return
 	end
-	local nodeId, node = findActiveSalvageNode()
 	if nodeId == nil or node == nil then
 		report(player, "Same-node salvage race", false, "No active salvage node available")
 		return
 	end
+
 	local firstData = DataService.GetData(player)
 	local secondData = DataService.GetData(secondPlayer)
 	if firstData == nil or secondData == nil then
@@ -523,27 +574,24 @@ local function runSalvageRace(player: Player)
 
 	suiteRunning[player] = true
 	suiteStatus(player, "Running synchronized salvage race...")
+
 	local firstCharacter = saveCharacter(player)
 	local secondCharacter = saveCharacter(secondPlayer)
-	local firstMaterials = cloneMaterials(firstData)
-	local secondMaterials = cloneMaterials(secondData)
+	local firstMaterials = copyMaterials(firstData)
+	local secondMaterials = copyMaterials(secondData)
 	local firstMilestone = firstData.Tutorial.Milestones.FirstScrap
 	local secondMilestone = secondData.Tutorial.Milestones.FirstScrap
 
-	restoreProfileFields(player, function(data)
-		for materialId in data.Materials do
-			data.Materials[materialId] = 0
-		end
+	mutateProfile(player, function(data)
+		zeroMaterials(data)
 		data.Tutorial.Milestones.FirstScrap = false
 	end)
-	restoreProfileFields(secondPlayer, function(data)
-		for materialId in data.Materials do
-			data.Materials[materialId] = 0
-		end
+	mutateProfile(secondPlayer, function(data)
+		zeroMaterials(data)
 		data.Tutorial.Milestones.FirstScrap = false
 	end)
-	movePlayerNear(player, node)
-	movePlayerNear(secondPlayer, node)
+	moveNear(player, node)
+	moveNear(secondPlayer, node)
 	RateLimiter.Forget(player)
 	RateLimiter.Forget(secondPlayer)
 
@@ -554,17 +602,17 @@ local function runSalvageRace(player: Player)
 
 	local firstAfter = DataService.GetData(player)
 	local secondAfter = DataService.GetData(secondPlayer)
-	local firstTotal = if firstAfter then totalMaterials(firstAfter) else 0
-	local secondTotal = if secondAfter then totalMaterials(secondAfter) else 0
+	local firstTotal = if firstAfter then materialTotal(firstAfter) else 0
+	local secondTotal = if secondAfter then materialTotal(secondAfter) else 0
 	local exactlyOneWinner = (firstTotal > 0) ~= (secondTotal > 0)
 	local nodeConsumed = not node.CanCollide
 	local passed = exactlyOneWinner and nodeConsumed
 
-	restoreProfileFields(player, function(data)
+	mutateProfile(player, function(data)
 		restoreMaterials(data, firstMaterials)
 		data.Tutorial.Milestones.FirstScrap = firstMilestone
 	end)
-	restoreProfileFields(secondPlayer, function(data)
+	mutateProfile(secondPlayer, function(data)
 		restoreMaterials(data, secondMaterials)
 		data.Tutorial.Milestones.FirstScrap = secondMilestone
 	end)
@@ -575,7 +623,7 @@ local function runSalvageRace(player: Player)
 		player,
 		"Same-node salvage race",
 		passed,
-		("P1 material delta=%d, P2 material delta=%d, nodeConsumed=%s"):format(
+		("P1 materials=%d, P2 materials=%d, nodeConsumed=%s"):format(
 			firstTotal,
 			secondTotal,
 			tostring(nodeConsumed)
@@ -634,9 +682,6 @@ function StudioSecurityTestService.Init()
 		elseif action == "RunAll" then
 			task.spawn(function()
 				runHostileSuite(player)
-				while suiteRunning[player] do
-					task.wait()
-				end
 				runSalvageRace(player)
 			end)
 		end
