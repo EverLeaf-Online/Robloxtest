@@ -54,5 +54,10 @@ jobs:
           mkdir -p build
           rojo build default.project.json --output build/ScrapToBotFactory.rbxlx
 
+      - name: Verify TextChatService is enabled in built place
+        shell: bash
+        run: |
+          grep -q '<token name="ChatVersion">1</token>' build/ScrapToBotFactory.rbxlx
+
       - name: Build test project
         run: rojo build test.project.json --output build/ScrapToBotTests.rbxm
