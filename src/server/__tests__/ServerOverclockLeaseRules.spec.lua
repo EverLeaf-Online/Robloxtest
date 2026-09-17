@@ -32,14 +32,8 @@ describe("ServerOverclockLeaseRules", function()
 			900,
 			75
 		)
-		local second, accepted = ServerOverclockLeaseRules.ApplyPurchase(
-			first,
-			"server-a",
-			"purchase-1",
-			1_010,
-			900,
-			75
-		)
+		local second, accepted =
+			ServerOverclockLeaseRules.ApplyPurchase(first, "server-a", "purchase-1", 1_010, 900, 75)
 		expect(accepted).toBe(true)
 		expect(second.BoostUntil).toBe(1_900)
 		expect(second.LeaseUntil).toBe(1_085)
@@ -54,14 +48,8 @@ describe("ServerOverclockLeaseRules", function()
 			900,
 			75
 		)
-		local second, accepted = ServerOverclockLeaseRules.ApplyPurchase(
-			first,
-			"server-a",
-			"purchase-2",
-			1_010,
-			900,
-			75
-		)
+		local second, accepted =
+			ServerOverclockLeaseRules.ApplyPurchase(first, "server-a", "purchase-2", 1_010, 900, 75)
 		expect(accepted).toBe(true)
 		expect(second.BoostUntil).toBe(2_800)
 	end)
@@ -75,14 +63,8 @@ describe("ServerOverclockLeaseRules", function()
 			900,
 			75
 		)
-		local second, accepted = ServerOverclockLeaseRules.ApplyPurchase(
-			first,
-			"server-b",
-			"purchase-2",
-			1_020,
-			900,
-			75
-		)
+		local second, accepted =
+			ServerOverclockLeaseRules.ApplyPurchase(first, "server-b", "purchase-2", 1_020, 900, 75)
 		expect(accepted).toBe(false)
 		expect(second.OwnerJobId).toBe("server-a")
 		expect(second.AppliedPurchases["purchase-2"]).toBe(nil)
@@ -132,8 +114,7 @@ describe("ServerOverclockLeaseRules", function()
 		expect(foreignRenewed).toBe(false)
 		expect(foreign.LeaseUntil).toBe(1_075)
 
-		local renewed, ownerRenewed =
-			ServerOverclockLeaseRules.Renew(first, "server-a", 1_020, 75)
+		local renewed, ownerRenewed = ServerOverclockLeaseRules.Renew(first, "server-a", 1_020, 75)
 		expect(ownerRenewed).toBe(true)
 		expect(renewed.LeaseUntil).toBe(1_095)
 
