@@ -329,11 +329,17 @@ local function processReceipt(receiptInfo: { [string]: any }): Enum.ProductPurch
 	return Enum.ProductPurchaseDecision.PurchaseGranted
 end
 
+function MonetizationService.ProcessReceipt(
+	receiptInfo: { [string]: any }
+): Enum.ProductPurchaseDecision
+	return processReceipt(receiptInfo)
+end
+
 function MonetizationService.ProcessReceiptForStudio(
 	receiptInfo: { [string]: any }
 ): Enum.ProductPurchaseDecision
 	assert(RunService:IsStudio(), "ProcessReceiptForStudio may only be used in Studio")
-	return processReceipt(receiptInfo)
+	return MonetizationService.ProcessReceipt(receiptInfo)
 end
 
 local function refreshPass(player: Player, passName: string, passId: number): boolean?
@@ -603,7 +609,7 @@ function MonetizationService.Init()
 	end
 	initialized = true
 
-	MarketplaceService.ProcessReceipt = processReceipt
+	MarketplaceService.ProcessReceipt = MonetizationService.ProcessReceipt
 	refreshServerOverclockAttributes()
 
 	RemoteService.BindRequest(RemoteNames.RequestEquipClubCosmetic, function(player, cosmeticId)
