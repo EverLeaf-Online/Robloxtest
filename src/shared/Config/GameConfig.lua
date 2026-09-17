@@ -1,7 +1,7 @@
 --!strict
 
 local GameConfig = {
-	ProfileSchemaVersion = 4,
+	ProfileSchemaVersion = 5,
 
 	Economy = {
 		MaxCredits = 1_000_000_000_000,
