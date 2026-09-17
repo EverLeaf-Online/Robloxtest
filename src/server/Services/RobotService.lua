@@ -11,6 +11,7 @@ local Validation = require(ReplicatedStorage.Shared.Util.Validation)
 local AnalyticsService = require(script.Parent.AnalyticsService)
 local DataService = require(script.Parent.DataService)
 local EconomyService = require(script.Parent.EconomyService)
+local MonetizationService = require(script.Parent.MonetizationService)
 local RemoteService = require(script.Parent.RemoteService)
 local StateService = require(script.Parent.StateService)
 
@@ -107,7 +108,11 @@ function RobotService.Assign(player: Player, robotUid: any, padId: any)
 			return false, result(false, "ROBOT_NOT_OWNED", nil)
 		end
 
-		local unlockedSlots = FactoryRules.GetWorkSlots(data.Machines.WorkSlotsLevel)
+		local baseSlots = FactoryRules.GetWorkSlots(data.Machines.WorkSlotsLevel)
+		local unlockedSlots = math.min(
+			GameConfig.Factory.MaxWorkSlots + 2,
+			baseSlots + MonetizationService.GetExtraWorkSlots(player)
+		)
 		if padIndex > unlockedSlots then
 			return false, result(false, "WORK_PAD_LOCKED", { UnlockedSlots = unlockedSlots })
 		end
