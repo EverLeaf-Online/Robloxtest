@@ -4,18 +4,25 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local RemoteNames = require(ReplicatedStorage.Shared.Networking.RemoteNames)
+local ProfileTypes = require(script.Parent.Parent.Data.ProfileTypes)
 local DataService = require(script.Parent.DataService)
 local PlotService = require(script.Parent.PlotService)
 local RemoteService = require(script.Parent.RemoteService)
 
+type ProfileData = ProfileTypes.ProfileData
+
 local StateService = {}
 local initialized = false
+local SNAPSHOT_COALESCE_SECONDS = 0.05
+local SNAPSHOT_MIN_INTERVAL_SECONDS = 0.15
+local snapshotPending: { [Player]: boolean } = {}
+local lastSnapshotAt: { [Player]: number } = {}
 
 local function cloneDictionary(source: any): any
 	return table.clone(source)
 end
 
-local function cloneRobots(ownedByUid: any): any
+local function cloneRobots(ownedByUid: { [string]: ProfileTypes.OwnedRobot }): any
 	local result = {}
 	for uid, robot in ownedByUid do
 		result[uid] = {
@@ -26,7 +33,7 @@ local function cloneRobots(ownedByUid: any): any
 	return result
 end
 
-function StateService.BuildSnapshot(data: any): any
+function StateService.BuildSnapshot(data: ProfileData): any
 	return {
 		Revision = data.Revision,
 		Currencies = {
@@ -85,7 +92,8 @@ function StateService.BuildSnapshot(data: any): any
 	}
 end
 
-function StateService.PushSnapshot(player: Player)
+function StateService.PushSnapshotNow(player: Player)
+	snapshotPending[player] = nil
 	local data = DataService.GetData(player)
 	if data == nil then
 		return
@@ -106,7 +114,30 @@ function StateService.PushSnapshot(player: Player)
 	snapshot.Plot = {
 		Id = plotId,
 	}
+	lastSnapshotAt[player] = os.clock()
 	RemoteService.Get(RemoteNames.StateSnapshot):FireClient(player, snapshot)
+end
+
+function StateService.PushSnapshot(player: Player)
+	if snapshotPending[player] == true then
+		return
+	end
+	snapshotPending[player] = true
+
+	local now = os.clock()
+	local earliest = (lastSnapshotAt[player] or 0) + SNAPSHOT_MIN_INTERVAL_SECONDS
+	local delaySeconds = math.max(SNAPSHOT_COALESCE_SECONDS, earliest - now)
+	task.delay(delaySeconds, function()
+		if snapshotPending[player] ~= true then
+			return
+		end
+		if player.Parent ~= Players then
+			snapshotPending[player] = nil
+			lastSnapshotAt[player] = nil
+			return
+		end
+		StateService.PushSnapshotNow(player)
+	end)
 end
 
 function StateService.PushProductionDelta(player: Player)
@@ -153,11 +184,18 @@ function StateService.Init()
 	initialized = true
 
 	RemoteService.BindRequest(RemoteNames.RequestState, function(player)
-		StateService.PushSnapshot(player)
+		-- Explicit resync requests bypass the coalescer so a client that detects an
+		-- ordering gap gets an authoritative snapshot immediately.
+		StateService.PushSnapshotNow(player)
 	end)
 
 	DataService.ProfileLoaded:Connect(function(player)
 		StateService.PushSnapshot(player)
+	end)
+
+	Players.PlayerRemoving:Connect(function(player)
+		snapshotPending[player] = nil
+		lastSnapshotAt[player] = nil
 	end)
 
 	for _, player in Players:GetPlayers() do
