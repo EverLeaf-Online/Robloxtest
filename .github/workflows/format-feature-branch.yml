@@ -1,0 +1,51 @@
+name: Format Feature Branch
+
+on:
+  push:
+    branches:
+      - feat/scrap-to-bot-monetization-engagement
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v7
+        with:
+          ref: feat/scrap-to-bot-monetization-engagement
+
+      - name: Install Rokit
+        shell: bash
+        run: |
+          ROKIT_INSTALLER_URL="https://raw.githubusercontent.com/rojo-rbx/rokit/2f2618428ef31279e2fc80b0b1d73485bc929ddd/scripts/install.sh"
+          curl --fail --silent --show-error --location \
+            --retry 4 --retry-delay 2 --retry-all-errors \
+            "$ROKIT_INSTALLER_URL" | bash -s -- 1.2.0
+          echo "$HOME/.rokit/bin" >> "$GITHUB_PATH"
+
+      - name: Install pinned toolchain
+        shell: bash
+        run: "$HOME/.rokit/bin/rokit install --no-trust-check"
+
+      - name: Format Luau
+        run: stylua src spec.lua
+
+      - name: Commit formatting
+        shell: bash
+        run: |
+          if git diff --quiet -- src spec.lua; then
+            echo "No formatting changes needed."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src spec.lua
+          git commit -m "chore: format Luau"
+          git push origin HEAD:feat/scrap-to-bot-monetization-engagement
