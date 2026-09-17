@@ -15,14 +15,23 @@ local MonetizationService = require(script.Parent.MonetizationService)
 
 type LeaseRecord = ServerOverclockLeaseRules.LeaseRecord
 
+type PurchaseRecord = {
+	LeaseId: string,
+	Applied: boolean,
+	BoostUntil: number,
+	UpdatedAt: number,
+}
+
 local ServerOverclockCoordinator = {}
 
-local STORE_NAME = "ScrapToBot_ServerOverclockLease_v1"
+local LEASE_STORE_NAME = "ScrapToBot_ServerOverclockLease_v1"
+local PURCHASE_STORE_NAME = "ScrapToBot_ServerOverclockPurchase_v1"
 local LEASE_SECONDS = 75
 local HEARTBEAT_SECONDS = 30
 local BOOST_SECONDS = 15 * 60
 local SERVER_OVERCLOCK_PRODUCT_ID = RobloxIds.DeveloperProducts.ServerOverclock
-local LeaseStore = DataStoreService:GetDataStore(STORE_NAME)
+local LeaseStore = DataStoreService:GetDataStore(LEASE_STORE_NAME)
+local PurchaseStore = DataStoreService:GetDataStore(PURCHASE_STORE_NAME)
 local SESSION_ID = if game.JobId ~= ""
 	then game.JobId
 	else "Studio_" .. HttpService:GenerateGUID(false)
@@ -37,8 +46,22 @@ local function leaseKey(leaseId: string): string
 	return "Lease_" .. leaseId
 end
 
+local function purchaseKey(purchaseId: string): string
+	return "Purchase_" .. purchaseId
+end
+
 local function isValidLeaseId(value: any): boolean
 	return typeof(value) == "string" and #value > 0 and #value <= 128
+end
+
+local function normalizePurchaseRecord(value: any): PurchaseRecord
+	local record = if typeof(value) == "table" then value else {}
+	return {
+		LeaseId = if isValidLeaseId(record.LeaseId) then record.LeaseId else "",
+		Applied = record.Applied == true,
+		BoostUntil = if typeof(record.BoostUntil) == "number" then record.BoostUntil else 0,
+		UpdatedAt = if typeof(record.UpdatedAt) == "number" then record.UpdatedAt else 0,
+	}
 end
 
 local function hasEffectiveServerOverclock(): boolean
@@ -94,6 +117,30 @@ local function updateLease(
 	return ServerOverclockLeaseRules.Normalize(updatedOrError)
 end
 
+local function updatePurchase(
+	purchaseId: string,
+	transform: (PurchaseRecord, number) -> PurchaseRecord?
+): PurchaseRecord?
+	local ok, updatedOrError = pcall(function()
+		return PurchaseStore:UpdateAsync(purchaseKey(purchaseId), function(current)
+			return transform(normalizePurchaseRecord(current), os.time())
+		end)
+	end)
+	if not ok then
+		warn(
+			("[ServerOverclockCoordinator] Purchase marker update failed for %s: %s"):format(
+				purchaseId,
+				tostring(updatedOrError)
+			)
+		)
+		return nil
+	end
+	if typeof(updatedOrError) ~= "table" then
+		return nil
+	end
+	return normalizePurchaseRecord(updatedOrError)
+end
+
 local function choosePurchaseLeaseId(): string
 	if hasEffectiveServerOverclock() then
 		return activeLeaseId
@@ -101,14 +148,78 @@ local function choosePurchaseLeaseId(): string
 	return SESSION_ID
 end
 
+local function reservePurchase(purchaseId: string, preferredLeaseId: string): PurchaseRecord?
+	return updatePurchase(purchaseId, function(record, now)
+		if record.LeaseId == "" then
+			record.LeaseId = preferredLeaseId
+			record.UpdatedAt = now
+		end
+		return record
+	end)
+end
+
+local function markPurchaseApplied(
+	purchaseId: string,
+	leaseId: string,
+	boostUntil: number
+): PurchaseRecord?
+	return updatePurchase(purchaseId, function(record, now)
+		if record.LeaseId ~= "" and record.LeaseId ~= leaseId then
+			return record
+		end
+		record.LeaseId = leaseId
+		record.Applied = true
+		record.BoostUntil = math.max(record.BoostUntil, boostUntil)
+		record.UpdatedAt = now
+		return record
+	end)
+end
+
+local function syncPurchaseToProfile(
+	player: Player,
+	leaseId: string,
+	boostUntil: number
+): boolean
+	local changed = false
+	local executed = DataService.Transaction(player, function(data)
+		if
+			data.Entitlements.ServerOverclockLeaseId == ""
+			or data.Entitlements.ServerOverclockUntil <= boostUntil
+		then
+			data.Entitlements.ServerOverclockLeaseId = leaseId
+			data.Entitlements.ServerOverclockUntil = math.max(
+				data.Entitlements.ServerOverclockUntil,
+				boostUntil
+			)
+			changed = true
+		end
+		return true, nil
+	end)
+	if not executed then
+		return false
+	end
+	return if changed then DataService.SaveNow(player) else true
+end
+
 local function ensurePurchaseApplied(player: Player, purchaseId: string): boolean
 	if not DataService.IsReady(player) or purchaseId == "" then
 		return false
 	end
 
-	local leaseId = choosePurchaseLeaseId()
+	local reserved = reservePurchase(purchaseId, choosePurchaseLeaseId())
+	if reserved == nil or not isValidLeaseId(reserved.LeaseId) then
+		return false
+	end
+
+	-- A lifetime purchase marker is authoritative even after the bounded profile receipt
+	-- ring has rotated this PurchaseId out. Never extend a lease for an already-applied
+	-- purchase; only finish profile synchronization if a prior attempt crashed mid-flight.
+	if reserved.Applied then
+		return syncPurchaseToProfile(player, reserved.LeaseId, reserved.BoostUntil)
+	end
+
 	local applied = false
-	local updated = updateLease(leaseId, function(record, now)
+	local updatedLease = updateLease(reserved.LeaseId, function(record, now)
 		local nextRecord, accepted = ServerOverclockLeaseRules.ApplyPurchase(
 			record,
 			SESSION_ID,
@@ -121,24 +232,32 @@ local function ensurePurchaseApplied(player: Player, purchaseId: string): boolea
 		return nextRecord
 	end)
 	if
-		updated == nil
+		updatedLease == nil
 		or not applied
-		or updated.OwnerJobId ~= SESSION_ID
-		or updated.AppliedPurchases[purchaseId] ~= true
+		or updatedLease.OwnerJobId ~= SESSION_ID
+		or updatedLease.AppliedPurchases[purchaseId] ~= true
 	then
 		return false
 	end
 
-	local executed = DataService.Transaction(player, function(data)
-		data.Entitlements.ServerOverclockLeaseId = leaseId
-		data.Entitlements.ServerOverclockUntil = updated.BoostUntil
-		return true, nil
-	end)
-	if not executed or not DataService.SaveNow(player) then
+	-- Marking the purchase is intentionally separate from the lease write. If this write
+	-- fails, ProcessReceipt returns NotProcessedYet. The retry is safe because the lease
+	-- itself already remembers the PurchaseId and ApplyPurchase will not extend twice.
+	local purchaseRecord =
+		markPurchaseApplied(purchaseId, reserved.LeaseId, updatedLease.BoostUntil)
+	if
+		purchaseRecord == nil
+		or not purchaseRecord.Applied
+		or purchaseRecord.LeaseId ~= reserved.LeaseId
+	then
 		return false
 	end
 
-	adoptLease(leaseId, updated)
+	if not syncPurchaseToProfile(player, reserved.LeaseId, purchaseRecord.BoostUntil) then
+		return false
+	end
+
+	adoptLease(reserved.LeaseId, updatedLease)
 	return true
 end
 
