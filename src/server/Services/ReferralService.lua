@@ -13,6 +13,9 @@ local EconomyService = require(script.Parent.EconomyService)
 local NotificationService = require(script.Parent.NotificationService)
 local RemoteService = require(script.Parent.RemoteService)
 local StateService = require(script.Parent.StateService)
+local ProfileTypes = require(script.Parent.Parent.Data.ProfileTypes)
+
+type ProfileData = ProfileTypes.ProfileData
 
 local ReferralService = {}
 local initialized = false
@@ -160,7 +163,7 @@ local function claimQueuedRewards(player: Player)
 	)
 end
 
-local function isNewPlayerReferralCandidate(data: any): boolean
+local function isNewPlayerReferralCandidate(data: ProfileData): boolean
 	return data.Stats.LifetimePlaySeconds == 0
 		and data.Stats.LifetimeRobotsBuilt == 0
 		and next(data.Tutorial.Milestones) == nil
