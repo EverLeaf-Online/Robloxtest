@@ -6,6 +6,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local RobloxIds = require(ReplicatedStorage.Shared.Config.RobloxIds)
 
+local MonetizationService = require(script.Parent.MonetizationService)
+
 local NotificationService = {}
 local initialized = false
 local openCloudNotification: any? = nil
@@ -130,6 +132,24 @@ function NotificationService.Init()
 	end
 	initialized = true
 	resolveOpenCloudNotification()
+
+	MonetizationService.FactoryClubRewardGranted:Connect(function(player: Player)
+		task.spawn(function()
+			local success, code = NotificationService.SendToUser(
+				player.UserId,
+				"FactoryClubReward",
+				"factory-club-reward"
+			)
+			if not success then
+				warn(
+					("[NotificationService] Factory Club reward notification failed for %d: %s"):format(
+						player.UserId,
+						code
+					)
+				)
+			end
+		end)
+	end)
 end
 
 return NotificationService

@@ -1,5 +1,6 @@
 --!strict
 
+local AdminBroadcastService = require(script.Parent.Services.AdminBroadcastService)
 local AnalyticsService = require(script.Parent.Services.AnalyticsService)
 local BadgeService = require(script.Parent.Services.BadgeService)
 local DataService = require(script.Parent.Services.DataService)
@@ -40,6 +41,7 @@ local function start()
 	ZoneService.Init()
 	MonetizationService.Init()
 	NotificationService.Init()
+	AdminBroadcastService.Init()
 	FactoryReadyNotificationService.Init()
 	EntitlementPresentationService.Init()
 	BadgeService.Init()

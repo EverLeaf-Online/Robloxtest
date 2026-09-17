@@ -54,6 +54,23 @@ local function award(player: Player, badgeName: string, badgeId: number)
 		return
 	end
 
+	local ownsOk, ownsOrError =
+		pcall(BadgeService.UserHasBadgeAsync, BadgeService, player.UserId, badgeId)
+	if not ownsOk then
+		attempted[badgeName] = nil
+		warn(
+			("[BadgeService] Failed to check %s ownership for %d: %s"):format(
+				badgeName,
+				player.UserId,
+				tostring(ownsOrError)
+			)
+		)
+		return
+	end
+	if ownsOrError == true then
+		return
+	end
+
 	local ok, awardedOrError =
 		pcall(BadgeService.AwardBadgeAsync, BadgeService, player.UserId, badgeId)
 	if not ok then
