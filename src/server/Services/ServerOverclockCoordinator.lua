@@ -336,12 +336,10 @@ function ServerOverclockCoordinator.Init()
 	end
 	initialized = true
 
-	local originalProcessReceipt = MarketplaceService.ProcessReceipt
-	assert(
-		typeof(originalProcessReceipt) == "function",
-		"MonetizationService must initialize first"
-	)
-
+	-- ProcessReceipt is a write-only callback member on MarketplaceService. Wrap the
+	-- ordinary Luau handler exported by MonetizationService instead of reading it back
+	-- from the Roblox service, which throws at runtime in Studio and live servers.
+	local originalProcessReceipt = MonetizationService.ProcessReceipt
 	MarketplaceService.ProcessReceipt = function(receiptInfo: { [string]: any })
 		local decision = originalProcessReceipt(receiptInfo)
 		if
