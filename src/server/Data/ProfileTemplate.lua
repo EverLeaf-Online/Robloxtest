@@ -18,6 +18,10 @@ local ProfileTemplate = {
 		PowerCoreFragments = 0,
 	},
 
+	Consumables = {
+		InstantProcessTokens = 0,
+	},
+
 	Robots = {
 		OwnedByUid = {},
 		NextUid = 1,
@@ -62,6 +66,17 @@ local ProfileTemplate = {
 
 	Entitlements = {
 		CachedPassFlags = {},
+		StarterPackClaimed = false,
+		PersonalOverclockUntil = 0,
+		FactoryClubLastGrantedCycle = "",
+		FactoryClubCosmetics = {},
+		EquippedFactoryClubCosmetic = "",
+	},
+
+	Referrals = {
+		PendingInviterUserId = 0,
+		PendingStartedAt = 0,
+		QualifiedRewardCount = 0,
 	},
 
 	Receipts = {
@@ -71,10 +86,12 @@ local ProfileTemplate = {
 	Stats = {
 		LifetimeCredits = 0,
 		LifetimeRobotsBuilt = 0,
+		LifetimePlaySeconds = 0,
 	},
 
 	Timestamps = {
 		LastJoin = 0,
+		LastLeave = 0,
 		LastSave = 0,
 		LastProductionTick = 0,
 	},
