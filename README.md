@@ -11,11 +11,13 @@ This repository contains the current Scrap-to-Bot Factory prototype and supporti
 
 ## Git / Rojo runtime source of truth
 
-For normal Roblox Studio development and playtesting, use **Git branch `main` with `default.project.json`**. Rojo serves one checked-out working tree; historical feature branches are not simultaneously layered into Studio. The architecture, graybox, monetization/engagement, hardening, and security-audit work were reconciled into `main`.
+For normal Roblox Studio development and playtesting, use **Git branch `main` with `default.project.json`**. Rojo serves one checked-out working tree; historical feature branches are not simultaneously layered into Studio.
 
-`test.project.json` is reserved for the dedicated Jest/OCALE test project. Backup branches remain safety/history references and are not normal runtime layers. The divergent `backup/main-parallel-implementation-2026-09-17` branch is an older alternative implementation and must not be overlaid or merged wholesale into the canonical runtime.
+The full repository content audit is recorded in `docs/FULL_GIT_CONTENT_AUDIT_2026-09-17.md`. That audit inspected the divergent parallel implementation and every surviving legacy branch, selectively ported bounded offline production and useful configuration documentation into the canonical architecture, and explicitly rejected obsolete duplicate service/UI implementations. The legacy backup/feature/audit branch refs from that reconciliation were then removed.
 
-See `docs/BRANCH_RUNTIME_RECONCILIATION_2026-09-17.md` for the full branch-by-branch reconciliation and branch-switch safety rules.
+`test.project.json` is reserved for the dedicated Jest/OCALE test project. Merged short-lived development branches may temporarily remain as Git housekeeping refs, but they are not runtime layers and contain no required content once their work is verified in `main`.
+
+See `docs/BRANCH_RUNTIME_RECONCILIATION_2026-09-17.md` for the runtime/branch rule and `docs/FULL_GIT_CONTENT_AUDIT_2026-09-17.md` for the full content-level audit.
 
 The active production candidate is **Scrap-to-Bot Factory**: collect salvage, process it through a visibly growing personal factory, assemble collectible robots, assign those robots to automate production, expand into better zones, and eventually progress into higher factory tiers.
 
@@ -48,7 +50,8 @@ See `docs/LIVE_VALIDATION_STATUS_2026-09-17.md` for the exact verified/pending m
 
 ## Planning and research documents
 
-- `docs/BRANCH_RUNTIME_RECONCILIATION_2026-09-17.md` — **Git/Rojo runtime source of truth**, including branch roles, the canonical Studio checkout, and the divergent parallel-backup rule.
+- `docs/BRANCH_RUNTIME_RECONCILIATION_2026-09-17.md` — **Git/Rojo runtime source of truth** and branch-switch safety rules.
+- `docs/FULL_GIT_CONTENT_AUDIT_2026-09-17.md` — **full content-level reconciliation** of the legacy branch stack, selective ports, rejected duplicate implementations, and cleanup disposition.
 - `docs/LIVE_VALIDATION_STATUS_2026-09-17.md` — **current authoritative execution status** for published persistence, monetization, receipt, Factory Club, and notification validation.
 - `docs/MASTER_PRODUCTION_PLAN.md` — **implementation blueprint**: locked v1 scope, first-session/30-minute progression, economy rules, profile model, service architecture, networking contract, security gates, UI/art plan, analytics, monetization, testing, production phases, exit criteria, and implementation order.
 - `docs/FIRST_PLAYABLE_STATUS_2026-09-16.md` — historical first-playable implementation/static-validation snapshot; use the 2026-09-17 live status for newer runtime results.
@@ -78,25 +81,3 @@ When implementation guidance conflicts, use sources in this order:
 9. old scripts/tutorials and third-party game archives only as historical/design/exploit references.
 
 **Official ownership alone is not enough.** Archived or stale Roblox repositories are treated as historical references unless current Creator Hub guidance or a maintained replacement says otherwise.
-
-**Public availability is not a commercial-use license.** Third-party `.rbxl`/`.rbxlx` archives with unclear provenance are not code or asset sources for this project. We may study general mechanics and then implement original systems/assets from scratch.
-
-## Historical code
-
-The previous **Grow a Tiny Planet** source was intentionally removed from `main` on 2026-09-16, but remains recoverable from Git history. Commit `79875d7599e4ddd44d5433e9683ed5c1e07335ff` is a useful pre-deletion reference for persistence, receipt handling, and service organization. We selectively reuse proven architectural ideas rather than restoring the old game wholesale.
-
-## Reference exploit / reverse-engineering repositories
-
-The following repositories are treated only as historical exploit/threat catalogs:
-
-- `https://github.com/retpirato/Roblox-Scripts`
-- `https://github.com/Stefanuk12/ROBLOX`
-- `https://github.com/Upbolt/Hydroxide`
-
-Their exploit/reverse-engineering code is **not a production dependency and must never be imported into the game**. They are used to identify threat classes such as remote spoofing and capture, autofarming, teleport collection, anti-cheat bypass, client function hooking, runtime constant/upvalue inspection, hidden-key extraction, ESP, and progression automation so the simulator can be hardened server-side from the beginning.
-
-The security assumption is simple: if a value or decision exists on the client, a capable attacker may be able to observe or alter it. Durable value must therefore be authorized and calculated server-side.
-
-## Reference-only game archive
-
-`https://github.com/IIIStatusIII/Roblox-Uncopylocked-Games` is treated only as design archaeology. Its README says the files came from multiple third-party sources and do not belong to the repository owner, and the repository has no license establishing commercial reuse rights. Do not copy its games, scripts, maps, UI, assets, branding, or third-party IP into Robloxtest.
