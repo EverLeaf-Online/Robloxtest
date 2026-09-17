@@ -20,7 +20,7 @@ local initialized = false
 local PRODUCT = RobloxIds.DeveloperProducts
 local PASSES = RobloxIds.Passes
 local FACTORY_CLUB = RobloxIds.Subscription.FactoryClub
-local RECEIPT_CAP = 100
+local RECEIPT_CAP = 500
 local PASS_NAMES = table.freeze({
 	"Production2x",
 	"ExpandedStorage",
@@ -83,36 +83,22 @@ local function setPresentationAttributes(player: Player)
 	end
 end
 
-local function addMaterialBundle(data: any)
-	data.Materials.ScrapMetal = math.min(
-		GameConfig.Economy.MaxMaterialCount,
-		data.Materials.ScrapMetal + 250
-	)
-	data.Materials.Wiring = math.min(
-		GameConfig.Economy.MaxMaterialCount,
-		data.Materials.Wiring + 75
-	)
-	data.Materials.PowerCoreFragments = math.min(
-		GameConfig.Economy.MaxMaterialCount,
-		data.Materials.PowerCoreFragments + 10
-	)
+local MATERIAL_BUNDLE = table.freeze({
+	ScrapMetal = 250,
+	Wiring = 75,
+	PowerCoreFragments = 10,
+})
+
+local function addMaterialBundle(data: any): boolean
+	return EconomyService.GrantPaidMaterials(data, MATERIAL_BUNDLE)
 end
 
-local function addTokens(data: any, amount: number)
-	data.Consumables.InstantProcessTokens = math.min(
-		GameConfig.Economy.MaxInstantProcessTokens,
-		data.Consumables.InstantProcessTokens + amount
-	)
-end
-
-local function addCredits(data: any, amount: number)
-	local room = GameConfig.Economy.MaxCredits - data.Currencies.Credits
-	local granted = math.max(0, math.min(room, amount))
-	data.Currencies.Credits += granted
-	data.Stats.LifetimeCredits = math.min(
-		GameConfig.Economy.MaxCredits,
-		data.Stats.LifetimeCredits + granted
-	)
+local function addTokens(data: any, amount: number): boolean
+	if amount <= 0 or data.Consumables.InstantProcessTokens > GameConfig.Economy.MaxInstantProcessTokens - amount then
+		return false
+	end
+	data.Consumables.InstantProcessTokens += amount
+	return true
 end
 
 local function receiptExists(data: any, purchaseId: string): boolean
@@ -145,7 +131,9 @@ end
 
 local function grantProduct(data: any, productId: number): (boolean, string)
 	if productId == PRODUCT.MaterialSupplyCrate then
-		addMaterialBundle(data)
+		if not addMaterialBundle(data) then
+			return false, "MATERIAL_HARD_CAP"
+		end
 		return true, "MaterialSupplyCrate"
 	elseif productId == PRODUCT.FactoryOverclock15m then
 		local now = os.time()
@@ -153,13 +141,21 @@ local function grantProduct(data: any, productId: number): (boolean, string)
 			math.max(data.Entitlements.PersonalOverclockUntil, now) + 15 * 60
 		return true, "FactoryOverclock15m"
 	elseif productId == PRODUCT.InstantProcessTokens then
-		addTokens(data, 5)
+		if not addTokens(data, 5) then
+			return false, "TOKEN_CAPACITY_FULL"
+		end
 		return true, "InstantProcessTokens"
 	elseif productId == PRODUCT.StarterPack then
 		local repeatPurchase = data.Entitlements.StarterPackClaimed == true
-		addMaterialBundle(data)
-		addTokens(data, 3)
-		addCredits(data, 1_000)
+		if not addMaterialBundle(data) then
+			return false, "MATERIAL_HARD_CAP"
+		end
+		if not addTokens(data, 3) then
+			return false, "TOKEN_CAPACITY_FULL"
+		end
+		if not EconomyService.GrantCreditsExact(data, 1_000) then
+			return false, "CREDIT_CAPACITY_FULL"
+		end
 		data.Entitlements.StarterPackClaimed = true
 		return true, if repeatPurchase then "StarterPackRepeatPurchase" else "StarterPack"
 	elseif productId == PRODUCT.ServerOverclock then
@@ -196,7 +192,7 @@ local function processReceipt(receiptInfo: { [string]: any }): Enum.ProductPurch
 
 		local granted, resolvedName = grantProduct(data, receiptInfo.ProductId)
 		if not granted then
-			return false, "UNKNOWN_PRODUCT"
+			return false, resolvedName
 		end
 		productName = resolvedName
 		recordReceipt(data, purchaseId)
@@ -204,7 +200,15 @@ local function processReceipt(receiptInfo: { [string]: any }): Enum.ProductPurch
 	end)
 
 	if not executed then
-		if result == "UNKNOWN_PRODUCT" then
+		return Enum.ProductPurchaseDecision.NotProcessedYet
+	end
+	if result == "AlreadyGranted" then
+		return if DataService.SaveNow(player)
+			then Enum.ProductPurchaseDecision.PurchaseGranted
+			else Enum.ProductPurchaseDecision.NotProcessedYet
+	end
+	if productName == "" then
+		if result == "UnknownProduct" then
 			warn(("[MonetizationService] Unknown developer product %s"):format(tostring(receiptInfo.ProductId)))
 		end
 		return Enum.ProductPurchaseDecision.NotProcessedYet
@@ -366,13 +370,14 @@ local function applyFactoryClubState(
 
 	if isSubscribed and cycleId ~= nil and cycleId ~= "" then
 		cosmeticId = "Club_" .. cycleId
-		local executed = DataService.Transaction(player, function(data)
+		local executed, transactionResult = DataService.Transaction(player, function(data)
 			if data.Entitlements.FactoryClubLastGrantedCycle == cycleId then
 				return true, false
 			end
 
-			addMaterialBundle(data)
-			addTokens(data, 3)
+			if not addMaterialBundle(data) or not addTokens(data, 3) then
+				return false, "FACTORY_CLUB_REWARD_CAPACITY"
+			end
 			data.Entitlements.FactoryClubLastGrantedCycle = cycleId
 			data.Entitlements.FactoryClubCosmetics[cosmeticId] = true
 			if data.Entitlements.EquippedFactoryClubCosmetic == "" then
@@ -383,6 +388,11 @@ local function applyFactoryClubState(
 		end)
 		if not executed then
 			return false, "FACTORY_CLUB_TRANSACTION_FAILED"
+		end
+		if transactionResult == "FACTORY_CLUB_REWARD_CAPACITY" then
+			setPresentationAttributes(player)
+			StateService.PushSnapshot(player)
+			return false, "FACTORY_CLUB_REWARD_CAPACITY"
 		end
 	end
 
@@ -419,6 +429,9 @@ function MonetizationService.EquipFactoryClubCosmetic(player: Player, cosmeticId
 		return true, "COSMETIC_EQUIPPED"
 	end)
 	if not executed then
+		return false, tostring(code)
+	end
+	if code ~= "COSMETIC_EQUIPPED" then
 		return false, tostring(code)
 	end
 	if not DataService.SaveNow(player) then
