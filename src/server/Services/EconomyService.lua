@@ -8,7 +8,6 @@ local Materials = require(ReplicatedStorage.Shared.Config.Materials)
 local Recipes = require(ReplicatedStorage.Shared.Config.Recipes)
 
 local EconomyService = {}
-local runtimeStorageMultiplierByData = setmetatable({}, { __mode = "k" })
 
 local function isValidAmount(amount: any): boolean
 	return typeof(amount) == "number"
@@ -25,6 +24,19 @@ local function totalAmounts(amounts: { [string]: number }): number
 	return total
 end
 
+local function normalizeStorageMultiplier(multiplier: number?): number
+	if
+		typeof(multiplier) == "number"
+		and multiplier == multiplier
+		and multiplier >= 1
+		and multiplier <= 10
+		and multiplier < math.huge
+	then
+		return multiplier
+	end
+	return 1
+end
+
 function EconomyService.ValidateMaterialAmounts(amounts: any): boolean
 	if typeof(amounts) ~= "table" then
 		return false
@@ -38,22 +50,9 @@ function EconomyService.ValidateMaterialAmounts(amounts: any): boolean
 	return true
 end
 
-function EconomyService.SetRuntimeStorageMultiplier(data: any, multiplier: number)
-	assert(typeof(data) == "table", "profile data must be a table")
-	assert(
-		typeof(multiplier) == "number" and multiplier >= 1 and multiplier <= 10,
-		"storage multiplier out of bounds"
-	)
-	runtimeStorageMultiplierByData[data] = multiplier
-end
-
-function EconomyService.GetStorageCapacity(data: any): number
+function EconomyService.GetStorageCapacity(data: any, storageMultiplier: number?): number
 	local capacity = FactoryRules.GetStorageCapacity(data.Machines.StorageLevel)
-	local cachedFlags = data.Entitlements and data.Entitlements.CachedPassFlags
-	if cachedFlags and cachedFlags.ExpandedStorage == true then
-		capacity *= 2
-	end
-	capacity *= runtimeStorageMultiplierByData[data] or 1
+	capacity *= normalizeStorageMultiplier(storageMultiplier)
 	return math.floor(capacity)
 end
 
@@ -78,7 +77,8 @@ end
 function EconomyService.CanFitTransaction(
 	data: any,
 	cost: { [string]: number },
-	output: { [string]: number }
+	output: { [string]: number },
+	storageMultiplier: number?
 ): boolean
 	if
 		not EconomyService.ValidateMaterialAmounts(cost)
@@ -91,7 +91,7 @@ function EconomyService.CanFitTransaction(
 		data.Materials,
 		cost,
 		output,
-		EconomyService.GetStorageCapacity(data)
+		EconomyService.GetStorageCapacity(data, storageMultiplier)
 	)
 end
 
@@ -126,7 +126,11 @@ function EconomyService.GrantPaidMaterials(data: any, amounts: { [string]: numbe
 	return true
 end
 
-function EconomyService.GrantMaterials(data: any, amounts: { [string]: number }): boolean
+function EconomyService.GrantMaterials(
+	data: any,
+	amounts: { [string]: number },
+	storageMultiplier: number?
+): boolean
 	if not EconomyService.ValidateMaterialAmounts(amounts) then
 		return false
 	end
@@ -138,7 +142,7 @@ function EconomyService.GrantMaterials(data: any, amounts: { [string]: number })
 		not FactoryRules.CanGrantWithReservation(
 			currentTotal,
 			added,
-			EconomyService.GetStorageCapacity(data),
+			EconomyService.GetStorageCapacity(data, storageMultiplier),
 			reserved
 		)
 	then
@@ -151,7 +155,11 @@ function EconomyService.GrantMaterials(data: any, amounts: { [string]: number })
 	return true
 end
 
-function EconomyService.GrantProcessorOutput(data: any, amounts: { [string]: number }): boolean
+function EconomyService.GrantProcessorOutput(
+	data: any,
+	amounts: { [string]: number },
+	storageMultiplier: number?
+): boolean
 	if not EconomyService.ValidateMaterialAmounts(amounts) then
 		return false
 	end
@@ -163,7 +171,7 @@ function EconomyService.GrantProcessorOutput(data: any, amounts: { [string]: num
 		not FactoryRules.CanCompleteReservedOutput(
 			currentTotal,
 			added,
-			EconomyService.GetStorageCapacity(data),
+			EconomyService.GetStorageCapacity(data, storageMultiplier),
 			reserved
 		)
 	then
