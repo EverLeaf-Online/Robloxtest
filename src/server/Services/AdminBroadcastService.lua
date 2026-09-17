@@ -189,7 +189,8 @@ function AdminBroadcastService.Init()
 			return
 		end
 
-		local publishOk, publishError = pcall(MessagingService.PublishAsync, MessagingService, TOPIC, payload)
+		local publishOk, publishError =
+			pcall(MessagingService.PublishAsync, MessagingService, TOPIC, payload)
 		if not publishOk then
 			warn(
 				("[AdminBroadcastService] MessagingService publish failed: %s"):format(
