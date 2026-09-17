@@ -4,9 +4,11 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local FactoryRules = require(ReplicatedStorage.Shared.Domain.FactoryRules)
+local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
 local Robots = require(ReplicatedStorage.Shared.Config.Robots)
 
 local DataService = require(script.Parent.DataService)
+local MonetizationService = require(script.Parent.MonetizationService)
 local PlotService = require(script.Parent.PlotService)
 local WorldService = require(script.Parent.WorldService)
 
@@ -122,39 +124,11 @@ local function buildLocomotion(
 			Enum.PartType.Cylinder
 		)
 	elseif locomotion == "Tracks" then
-		makePart(
-			model,
-			"LeftTrack",
-			Vector3.new(1, 0.8, 3),
-			CFrame.new(-1.25, y, 0),
-			baseColor,
-			nil
-		)
-		makePart(
-			model,
-			"RightTrack",
-			Vector3.new(1, 0.8, 3),
-			CFrame.new(1.25, y, 0),
-			baseColor,
-			nil
-		)
+		makePart(model, "LeftTrack", Vector3.new(1, 0.8, 3), CFrame.new(-1.25, y, 0), baseColor, nil)
+		makePart(model, "RightTrack", Vector3.new(1, 0.8, 3), CFrame.new(1.25, y, 0), baseColor, nil)
 	elseif locomotion == "Legs" then
-		makePart(
-			model,
-			"LeftLeg",
-			Vector3.new(0.75, 1.3, 0.75),
-			CFrame.new(-0.9, y, 0),
-			baseColor,
-			nil
-		)
-		makePart(
-			model,
-			"RightLeg",
-			Vector3.new(0.75, 1.3, 0.75),
-			CFrame.new(0.9, y, 0),
-			baseColor,
-			nil
-		)
+		makePart(model, "LeftLeg", Vector3.new(0.75, 1.3, 0.75), CFrame.new(-0.9, y, 0), baseColor, nil)
+		makePart(model, "RightLeg", Vector3.new(0.75, 1.3, 0.75), CFrame.new(0.9, y, 0), baseColor, nil)
 	else
 		makePart(
 			model,
@@ -179,11 +153,7 @@ local function buildTool(model: Model, toolType: string, accent: Color3, bodySiz
 	local front = -(bodySizeValue.Z / 2 + 0.75)
 	local toolSize = if toolType == "Drill"
 		then Vector3.new(0.9, 0.9, 1.7)
-		elseif toolType == "TwinMagnet" or toolType == "MultiTool" then Vector3.new(
-			2.2,
-			0.75,
-			1
-		)
+		elseif toolType == "TwinMagnet" or toolType == "MultiTool" then Vector3.new(2.2, 0.75, 1)
 		else Vector3.new(1.2, 0.8, 1.2)
 	makePart(model, "Tool", toolSize, CFrame.new(0, 0, front), accent, nil)
 end
@@ -309,15 +279,17 @@ local function syncPlayer(player: Player)
 		return
 	end
 
-	local unlockedSlots = FactoryRules.GetWorkSlots(data.Machines.WorkSlotsLevel)
+	local baseSlots = FactoryRules.GetWorkSlots(data.Machines.WorkSlotsLevel)
+	local unlockedSlots = math.min(
+		GameConfig.Factory.MaxWorkSlots + 2,
+		baseSlots + MonetizationService.GetExtraWorkSlots(player)
+	)
 	local folder = getVisualFolder(plot)
-	for index = 1, 4 do
+	for index = 1, GameConfig.Factory.MaxWorkSlots + 2 do
 		local padId = ("Pad%d"):format(index)
 		local pad = WorldService.GetPlotWorkPad(plotId, padId)
 		if pad ~= nil then
-			local assignedUid = if index <= unlockedSlots
-				then data.Assignments.WorkPads[padId]
-				else nil
+			local assignedUid = if index <= unlockedSlots then data.Assignments.WorkPads[padId] else nil
 			syncPad(folder, pad, assignedUid, data)
 		end
 	end
