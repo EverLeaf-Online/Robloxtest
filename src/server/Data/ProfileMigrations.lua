@@ -84,6 +84,14 @@ local migrations: { [number]: (any) -> () } = {
 			data.Timestamps.LastLeave = 0
 		end
 	end,
+	[4] = function(data)
+		if typeof(data.Referrals) ~= "table" then
+			data.Referrals = {}
+		end
+		if typeof(data.Referrals.PendingPlaySeconds) ~= "number" then
+			data.Referrals.PendingPlaySeconds = 0
+		end
+	end,
 }
 
 local function readVersion(data: any): number
