@@ -146,11 +146,12 @@ function SalvageService.Collect(player: Player, nodeId: any)
 
 	local firstCollect = data.Tutorial.Milestones.FirstScrap ~= true
 	local rewards = makeRewards(authoritativeZoneId, firstCollect)
+	local storageMultiplier = MonetizationService.GetStorageMultiplier(player)
 	local executed, transactionResult = DataService.Transaction(player, function(profileData)
 		if profileData.Progression.Zone < authoritativeZoneId then
 			return false, result(false, "ZONE_LOCKED", { RequiredZone = authoritativeZoneId })
 		end
-		if not EconomyService.GrantMaterials(profileData, rewards) then
+		if not EconomyService.GrantMaterials(profileData, rewards, storageMultiplier) then
 			return false, result(false, "STORAGE_FULL", nil)
 		end
 		profileData.Tutorial.Milestones.FirstScrap = true
