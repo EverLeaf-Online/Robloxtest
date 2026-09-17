@@ -106,6 +106,26 @@ function EconomyService.SpendMaterials(data: any, cost: { [string]: number }): b
 	return true
 end
 
+function EconomyService.GrantPaidMaterials(data: any, amounts: { [string]: number }): boolean
+	if not EconomyService.ValidateMaterialAmounts(amounts) then
+		return false
+	end
+
+	for materialId, amount in amounts do
+		local current = data.Materials[materialId]
+		if current > GameConfig.Economy.MaxMaterialCount - amount then
+			return false
+		end
+	end
+
+	-- Paid grants may exceed normal storage capacity, but never the hard profile cap.
+	-- Normal collection/processing remains capacity-gated until the player spends below capacity.
+	for materialId, amount in amounts do
+		data.Materials[materialId] += amount
+	end
+	return true
+end
+
 function EconomyService.GrantMaterials(data: any, amounts: { [string]: number }): boolean
 	if not EconomyService.ValidateMaterialAmounts(amounts) then
 		return false
