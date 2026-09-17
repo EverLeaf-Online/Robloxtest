@@ -100,6 +100,17 @@ local migrations: { [number]: (any) -> () } = {
 			data.Entitlements.ServerOverclockUntil = 0
 		end
 	end,
+	[6] = function(data)
+		if typeof(data.Entitlements) ~= "table" then
+			data.Entitlements = {}
+		end
+		if typeof(data.Entitlements.ServerOverclockLeaseId) ~= "string" then
+			data.Entitlements.ServerOverclockLeaseId = ""
+		end
+		if #data.Entitlements.ServerOverclockLeaseId > 128 then
+			data.Entitlements.ServerOverclockLeaseId = ""
+		end
+	end,
 }
 
 local function readVersion(data: any): number
