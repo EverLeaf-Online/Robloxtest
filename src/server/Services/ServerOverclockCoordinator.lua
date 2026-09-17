@@ -175,11 +175,7 @@ local function markPurchaseApplied(
 	end)
 end
 
-local function syncPurchaseToProfile(
-	player: Player,
-	leaseId: string,
-	boostUntil: number
-): boolean
+local function syncPurchaseToProfile(player: Player, leaseId: string, boostUntil: number): boolean
 	local changed = false
 	local executed = DataService.Transaction(player, function(data)
 		if
@@ -187,10 +183,8 @@ local function syncPurchaseToProfile(
 			or data.Entitlements.ServerOverclockUntil <= boostUntil
 		then
 			data.Entitlements.ServerOverclockLeaseId = leaseId
-			data.Entitlements.ServerOverclockUntil = math.max(
-				data.Entitlements.ServerOverclockUntil,
-				boostUntil
-			)
+			data.Entitlements.ServerOverclockUntil =
+				math.max(data.Entitlements.ServerOverclockUntil, boostUntil)
 			changed = true
 		end
 		return true, nil
@@ -343,7 +337,10 @@ function ServerOverclockCoordinator.Init()
 	initialized = true
 
 	local originalProcessReceipt = MarketplaceService.ProcessReceipt
-	assert(typeof(originalProcessReceipt) == "function", "MonetizationService must initialize first")
+	assert(
+		typeof(originalProcessReceipt) == "function",
+		"MonetizationService must initialize first"
+	)
 
 	MarketplaceService.ProcessReceipt = function(receiptInfo: { [string]: any })
 		local decision = originalProcessReceipt(receiptInfo)
@@ -352,7 +349,9 @@ function ServerOverclockCoordinator.Init()
 			and decision == Enum.ProductPurchaseDecision.PurchaseGranted
 		then
 			local player = Players:GetPlayerByUserId(receiptInfo.PlayerId)
-			if player == nil or not ensurePurchaseApplied(player, tostring(receiptInfo.PurchaseId)) then
+			if
+				player == nil or not ensurePurchaseApplied(player, tostring(receiptInfo.PurchaseId))
+			then
 				refreshWorkspaceAttributes()
 				return Enum.ProductPurchaseDecision.NotProcessedYet
 			end
