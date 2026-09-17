@@ -7,6 +7,7 @@
         "LoadStringEnabled": true
       },
       "ServerUnderTest": {
+        "$className": "Folder",
         "Data": {
           "$path": "src/server/Data"
         },
@@ -14,6 +15,7 @@
           "$path": "src/server/Domain"
         },
         "Services": {
+          "$className": "Folder",
           "EconomyService": {
             "$path": "src/server/Services/EconomyService.lua"
           }
