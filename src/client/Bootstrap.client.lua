@@ -3,6 +3,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local RemoteNames = require(ReplicatedStorage.Shared.Networking.RemoteNames)
+local FactoryClubCosmeticController = require(script.Parent.Controllers.FactoryClubCosmeticController)
 local InstantProcessController = require(script.Parent.Controllers.InstantProcessController)
 local NotificationOptInController = require(script.Parent.Controllers.NotificationOptInController)
 local PlotController = require(script.Parent.Controllers.PlotController)
@@ -26,6 +27,7 @@ end
 PlotController.Init()
 WorldInteractionController.Init()
 UIController.Init()
+FactoryClubCosmeticController.Init()
 InstantProcessController.Init()
 NotificationOptInController.Init()
 StudioMonetizationTestController.Init()
