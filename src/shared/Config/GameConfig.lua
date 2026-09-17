@@ -1,7 +1,7 @@
 --!strict
 
 local GameConfig = {
-	ProfileSchemaVersion = 3,
+	ProfileSchemaVersion = 4,
 
 	Economy = {
 		MaxCredits = 1_000_000_000_000,
@@ -34,6 +34,9 @@ local GameConfig = {
 
 	Engagement = {
 		ReferralQualificationSeconds = 10 * 60,
+		ReferralPersistIntervalSeconds = 30,
+		ReferralRewardCredits = 500,
+		ReferralRewardTokens = 1,
 		FactoryReadyDelaySeconds = 30 * 60,
 		NotificationOptInDelaySeconds = 3 * 60,
 	},
