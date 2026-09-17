@@ -170,14 +170,12 @@ local function processDue()
 			continue
 		end
 
-		local sent, code = NotificationService.SendToUser(userId, "FactoryReady", "factory-ready")
+		local sent = NotificationService.SendToUser(userId, "FactoryReady", "factory-ready")
 		if sent then
 			cancel(userId)
-		elseif code == "OPEN_CLOUD_PACKAGE_MISSING" then
-			-- Keep the job queued; installing the Roblox OpenCloud package later will
-			-- allow a future active server to deliver it.
-			deferRetry(userId)
 		else
+			-- Keep failed deliveries queued so a later active server can retry after
+			-- transient API failures or after the Open Cloud package becomes available.
 			deferRetry(userId)
 		end
 		releaseLock(userId)
