@@ -1,6 +1,5 @@
 --!strict
 
-local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -10,6 +9,7 @@ local RobloxIds = require(ReplicatedStorage.Shared.Config.RobloxIds)
 
 local DataService = require(script.Parent.DataService)
 local EconomyService = require(script.Parent.EconomyService)
+local MonetizationService = require(script.Parent.MonetizationService)
 local StateService = require(script.Parent.StateService)
 
 local StudioTestService = {}
@@ -84,12 +84,7 @@ local function testDeveloperProduct(player: Player, productName: string): (boole
 		return false, "UNKNOWN_TEST_PRODUCT"
 	end
 
-	local callback = MarketplaceService.ProcessReceipt
-	if callback == nil then
-		return false, "PROCESS_RECEIPT_NOT_BOUND"
-	end
-
-	local ok, decisionOrError = pcall(callback, {
+	local ok, decisionOrError = pcall(MonetizationService.ProcessReceiptForStudio, {
 		PlayerId = player.UserId,
 		PurchaseId = nextPurchaseId(player, productName),
 		ProductId = productId,
