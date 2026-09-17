@@ -271,7 +271,20 @@ function MachineService.UseInstantProcessToken(player: Player)
 		StateService.ActionResult(player, RemoteNames.RequestUseInstantProcessToken, false, tostring(transactionResult), nil)
 		return
 	end
-	StateService.ActionResult(player, RemoteNames.RequestUseInstantProcessToken, true, transactionResult.Code, transactionResult.Payload)
+	if typeof(transactionResult) ~= "table" then
+		StateService.ActionResult(player, RemoteNames.RequestUseInstantProcessToken, false, "INVALID_TRANSACTION_RESULT", nil)
+		return
+	end
+	StateService.ActionResult(
+		player,
+		RemoteNames.RequestUseInstantProcessToken,
+		transactionResult.Success == true,
+		tostring(transactionResult.Code),
+		transactionResult.Payload
+	)
+	if transactionResult.Success ~= true then
+		return
+	end
 	MachineService.PollPlayer(player)
 	MonetizationService.RefreshPlayer(player)
 	StateService.PushSnapshot(player)
