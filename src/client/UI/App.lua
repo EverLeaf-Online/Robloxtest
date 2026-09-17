@@ -308,13 +308,16 @@ local function machineStatus(snapshot: any, now: number): string
 	)
 	if processor.Active then
 		local remaining = math.max(0, processor.CompletesAt - now)
-		table.insert(lines, ("Processor: %s (%ds)"):format(processor.RecipeId, remaining))
+		table.insert(
+			lines,
+			("Processor: %s (%ds)"):format(processor.RecipeId, math.ceil(remaining))
+		)
 	else
 		table.insert(lines, "Processor: Ready")
 	end
 	if assembler.Active then
 		local remaining = math.max(0, assembler.CompletesAt - now)
-		table.insert(lines, ("Assembler: Building (%ds)"):format(remaining))
+		table.insert(lines, ("Assembler: Building (%ds)"):format(math.ceil(remaining)))
 	else
 		table.insert(lines, "Assembler: Ready")
 	end
@@ -587,10 +590,11 @@ end
 
 local function App()
 	local snapshot, setSnapshot = React.useState(nil :: any?)
+	local snapshotRef = React.useRef(nil :: any?)
 	local openPanel, setOpenPanel = React.useState(nil :: string?)
 	local actionMessage, setActionMessage = React.useState("")
 	local actionSuccess, setActionSuccess = React.useState(true)
-	local now, setNow = React.useState(os.time())
+	local now, setNow = React.useState(Workspace:GetServerTimeNow())
 	local compact, setCompact = React.useState(false)
 	local extraWorkSlots, setExtraWorkSlots =
 		React.useState(if LocalPlayer:GetAttribute("PassBotWorkSlots2") == true then 2 else 0)
@@ -600,13 +604,45 @@ local function App()
 		local deltaRemote = getRemote(RemoteNames.StateDelta)
 		local actionRemote = getRemote(RemoteNames.ActionResult)
 		local requestState = getRemote(RemoteNames.RequestState)
+		local lastResyncRequest = -math.huge
+
 		local stateConnection = stateRemote.OnClientEvent:Connect(function(nextSnapshot)
+			if typeof(nextSnapshot) ~= "table" then
+				return
+			end
+
+			local currentSnapshot = snapshotRef.current
+			if typeof(currentSnapshot) == "table" then
+				local currentRevision = currentSnapshot.Revision
+				local nextRevision = nextSnapshot.Revision
+				if
+					typeof(currentRevision) == "number"
+					and typeof(nextRevision) == "number"
+					and nextRevision < currentRevision
+				then
+					return
+				end
+			end
+
+			snapshotRef.current = nextSnapshot
 			setSnapshot(nextSnapshot)
 		end)
 		local deltaConnection = deltaRemote.OnClientEvent:Connect(function(delta)
-			setSnapshot(function(currentSnapshot)
-				return mergeProductionDelta(currentSnapshot, delta)
-			end)
+			local currentSnapshot = snapshotRef.current
+			if typeof(currentSnapshot) ~= "table" then
+				local nowClock = os.clock()
+				if nowClock - lastResyncRequest >= 1 then
+					lastResyncRequest = nowClock
+					requestState:FireServer()
+				end
+				return
+			end
+
+			local nextSnapshot = mergeProductionDelta(currentSnapshot, delta)
+			if nextSnapshot ~= currentSnapshot then
+				snapshotRef.current = nextSnapshot
+				setSnapshot(nextSnapshot)
+			end
 		end)
 		local actionConnection = actionRemote.OnClientEvent:Connect(function(actionResult)
 			if typeof(actionResult) ~= "table" then
@@ -650,9 +686,9 @@ local function App()
 		local alive = true
 		task.spawn(function()
 			while alive do
-				task.wait(0.25)
+				task.wait(1)
 				if alive then
-					setNow(os.time())
+					setNow(Workspace:GetServerTimeNow())
 				end
 			end
 		end)
