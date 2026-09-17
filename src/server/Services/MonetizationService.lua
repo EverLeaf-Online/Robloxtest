@@ -51,7 +51,8 @@ local function receiptLedgerContains(userId: number, purchaseId: string): boolea
 	if RunService:IsStudio() then
 		return false
 	end
-	local ok, ledgerOrError = pcall(ReceiptLedgerStore.GetAsync, ReceiptLedgerStore, receiptLedgerKey(userId))
+	local ok, ledgerOrError =
+		pcall(ReceiptLedgerStore.GetAsync, ReceiptLedgerStore, receiptLedgerKey(userId))
 	if not ok then
 		warn(
 			("[MonetizationService] Receipt ledger read failed for %d: %s"):format(
