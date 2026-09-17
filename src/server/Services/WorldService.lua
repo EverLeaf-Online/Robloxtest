@@ -156,7 +156,7 @@ local function buildFactoryPlot(parent: Folder, plotId: number, center: Vector3)
 	local padsFolder = Instance.new("Folder")
 	padsFolder.Name = "WorkPads"
 	padsFolder.Parent = plot
-	for index = 1, 4 do
+	for index = 1, GameConfig.Factory.MaxWorkSlots + 2 do
 		local column = (index - 1) % 2
 		local row = math.floor((index - 1) / 2)
 		local padId = ("Pad%d"):format(index)
