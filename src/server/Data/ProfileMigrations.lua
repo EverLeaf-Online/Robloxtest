@@ -49,6 +49,9 @@ local migrations: { [number]: (any) -> () } = {
 		if typeof(data.Entitlements.PersonalOverclockUntil) ~= "number" then
 			data.Entitlements.PersonalOverclockUntil = 0
 		end
+		if typeof(data.Entitlements.FactoryClubActiveCached) ~= "boolean" then
+			data.Entitlements.FactoryClubActiveCached = false
+		end
 		if typeof(data.Entitlements.FactoryClubLastGrantedCycle) ~= "string" then
 			data.Entitlements.FactoryClubLastGrantedCycle = ""
 		end
