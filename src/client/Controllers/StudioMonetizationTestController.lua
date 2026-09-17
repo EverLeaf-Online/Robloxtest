@@ -8,6 +8,7 @@ local StudioMonetizationTestController = {}
 local initialized = false
 
 local REMOTE_NAME = "StudioMonetizationTest"
+local REMOTE_WAIT_TIMEOUT_SECONDS = 10
 
 local ACTIONS = {
 	{ Label = "Material Crate", Action = "MaterialSupplyCrate" },
@@ -53,8 +54,22 @@ function StudioMonetizationTestController.Init()
 	end
 
 	local player = Players.LocalPlayer
-	local remote =
-		ReplicatedStorage:WaitForChild("Remotes"):WaitForChild(REMOTE_NAME) :: RemoteEvent
+	local remotes = ReplicatedStorage:WaitForChild("Remotes", REMOTE_WAIT_TIMEOUT_SECONDS)
+	if remotes == nil then
+		warn("[StudioMonetizationTestController] Remotes folder was not created by the server")
+		return
+	end
+
+	local remoteInstance = remotes:WaitForChild(REMOTE_NAME, REMOTE_WAIT_TIMEOUT_SECONDS)
+	if remoteInstance == nil or not remoteInstance:IsA("RemoteEvent") then
+		warn(
+			("[StudioMonetizationTestController] %s remote was not created by the server"):format(
+				REMOTE_NAME
+			)
+		)
+		return
+	end
+	local remote = remoteInstance
 
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "StudioMonetizationTestUI"
