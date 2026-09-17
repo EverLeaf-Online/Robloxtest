@@ -39,7 +39,11 @@ local function hasFactoryActivity(player: Player): boolean
 end
 
 local function schedule(player: Player)
-	if RunService:IsStudio() or not DataService.IsReady(player) or not hasFactoryActivity(player) then
+	if
+		RunService:IsStudio()
+		or not DataService.IsReady(player)
+		or not hasFactoryActivity(player)
+	then
 		return
 	end
 
@@ -48,7 +52,12 @@ local function schedule(player: Player)
 		queueStore:SetAsync(queueKey(player.UserId), dueAt)
 	end)
 	if not ok then
-		warn(("[FactoryReadyNotificationService] Failed scheduling %d: %s"):format(player.UserId, tostring(err)))
+		warn(
+			("[FactoryReadyNotificationService] Failed scheduling %d: %s"):format(
+				player.UserId,
+				tostring(err)
+			)
+		)
 	end
 end
 
@@ -60,7 +69,12 @@ local function cancel(userId: number)
 		queueStore:RemoveAsync(queueKey(userId))
 	end)
 	if not ok then
-		warn(("[FactoryReadyNotificationService] Failed cancelling %d: %s"):format(userId, tostring(err)))
+		warn(
+			("[FactoryReadyNotificationService] Failed cancelling %d: %s"):format(
+				userId,
+				tostring(err)
+			)
+		)
 	end
 end
 
@@ -85,7 +99,12 @@ local function acquireLock(userId: number): boolean
 		end)
 	end)
 	if not ok then
-		warn(("[FactoryReadyNotificationService] Lock failed for %d: %s"):format(userId, tostring(err)))
+		warn(
+			("[FactoryReadyNotificationService] Lock failed for %d: %s"):format(
+				userId,
+				tostring(err)
+			)
+		)
 		return false
 	end
 	return claimed
@@ -113,7 +132,11 @@ local function processDue()
 		return queueStore:GetSortedAsync(true, PAGE_SIZE, 0, os.time())
 	end)
 	if not ok then
-		warn(("[FactoryReadyNotificationService] Queue poll failed: %s"):format(tostring(pagesOrError)))
+		warn(
+			("[FactoryReadyNotificationService] Queue poll failed: %s"):format(
+				tostring(pagesOrError)
+			)
+		)
 		return
 	end
 
@@ -122,7 +145,11 @@ local function processDue()
 		return pages:GetCurrentPage()
 	end)
 	if not pageOk then
-		warn(("[FactoryReadyNotificationService] Queue page failed: %s"):format(tostring(entriesOrError)))
+		warn(
+			("[FactoryReadyNotificationService] Queue page failed: %s"):format(
+				tostring(entriesOrError)
+			)
+		)
 		return
 	end
 

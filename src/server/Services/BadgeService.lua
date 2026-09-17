@@ -54,7 +54,8 @@ local function award(player: Player, badgeName: string, badgeId: number)
 		return
 	end
 
-	local ok, awardedOrError = pcall(BadgeService.AwardBadgeAsync, BadgeService, player.UserId, badgeId)
+	local ok, awardedOrError =
+		pcall(BadgeService.AwardBadgeAsync, BadgeService, player.UserId, badgeId)
 	if not ok then
 		attempted[badgeName] = nil
 		warn(

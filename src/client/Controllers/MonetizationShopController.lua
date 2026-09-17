@@ -20,11 +20,27 @@ local starterPackClaimed = false
 local statusLabel: TextLabel? = nil
 
 local PRODUCT_ROWS = {
-	{ Key = "MaterialSupplyCrate", Label = "Material Supply Crate", Id = RobloxIds.DeveloperProducts.MaterialSupplyCrate },
-	{ Key = "FactoryOverclock15m", Label = "15-Min Factory Overclock", Id = RobloxIds.DeveloperProducts.FactoryOverclock15m },
-	{ Key = "InstantProcessTokens", Label = "+5 Instant Process Tokens", Id = RobloxIds.DeveloperProducts.InstantProcessTokens },
+	{
+		Key = "MaterialSupplyCrate",
+		Label = "Material Supply Crate",
+		Id = RobloxIds.DeveloperProducts.MaterialSupplyCrate,
+	},
+	{
+		Key = "FactoryOverclock15m",
+		Label = "15-Min Factory Overclock",
+		Id = RobloxIds.DeveloperProducts.FactoryOverclock15m,
+	},
+	{
+		Key = "InstantProcessTokens",
+		Label = "+5 Instant Process Tokens",
+		Id = RobloxIds.DeveloperProducts.InstantProcessTokens,
+	},
 	{ Key = "StarterPack", Label = "Starter Pack", Id = RobloxIds.DeveloperProducts.StarterPack },
-	{ Key = "ServerOverclock", Label = "Server Overclock", Id = RobloxIds.DeveloperProducts.ServerOverclock },
+	{
+		Key = "ServerOverclock",
+		Label = "Server Overclock",
+		Id = RobloxIds.DeveloperProducts.ServerOverclock,
+	},
 }
 
 local function formatDuration(seconds: number): string
@@ -59,9 +75,15 @@ local function setStarterPackVisibility()
 end
 
 local function promptProduct(productId: number)
-	local ok, err = pcall(MarketplaceService.PromptProductPurchase, MarketplaceService, player, productId)
+	local ok, err =
+		pcall(MarketplaceService.PromptProductPurchase, MarketplaceService, player, productId)
 	if not ok then
-		warn(("[MonetizationShopController] Product prompt failed for %d: %s"):format(productId, tostring(err)))
+		warn(
+			("[MonetizationShopController] Product prompt failed for %d: %s"):format(
+				productId,
+				tostring(err)
+			)
+		)
 	end
 end
 
@@ -99,7 +121,12 @@ end
 
 local function refreshPrice(button: TextButton, baseLabel: string, productId: number)
 	task.spawn(function()
-		local ok, infoOrError = pcall(MarketplaceService.GetProductInfo, MarketplaceService, productId, Enum.InfoType.Product)
+		local ok, infoOrError = pcall(
+			MarketplaceService.GetProductInfo,
+			MarketplaceService,
+			productId,
+			Enum.InfoType.Product
+		)
 		if not ok or typeof(infoOrError) ~= "table" then
 			return
 		end
@@ -210,7 +237,8 @@ local function createUi()
 		refreshPrice(button, row.Label, row.Id)
 	end
 
-	local clubButton = makeButton(shopPanel, "FactoryClub", "FACTORY CLUB  •  49 R$/MONTH", #PRODUCT_ROWS + 2)
+	local clubButton =
+		makeButton(shopPanel, "FactoryClub", "FACTORY CLUB  •  49 R$/MONTH", #PRODUCT_ROWS + 2)
 	clubButton.BackgroundColor3 = Color3.fromRGB(112, 77, 154)
 	clubButton.Activated:Connect(promptFactoryClub)
 

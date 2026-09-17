@@ -3,8 +3,10 @@
 local AnalyticsService = require(script.Parent.Services.AnalyticsService)
 local BadgeService = require(script.Parent.Services.BadgeService)
 local DataService = require(script.Parent.Services.DataService)
-local EntitlementPresentationService = require(script.Parent.Services.EntitlementPresentationService)
-local FactoryReadyNotificationService = require(script.Parent.Services.FactoryReadyNotificationService)
+local EntitlementPresentationService =
+	require(script.Parent.Services.EntitlementPresentationService)
+local FactoryReadyNotificationService =
+	require(script.Parent.Services.FactoryReadyNotificationService)
 local MachineService = require(script.Parent.Services.MachineService)
 local MonetizationService = require(script.Parent.Services.MonetizationService)
 local NotificationService = require(script.Parent.Services.NotificationService)

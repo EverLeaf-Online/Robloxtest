@@ -52,12 +52,7 @@ end
 
 local function nextPurchaseId(player: Player, productName: string): string
 	receiptSequence += 1
-	return ("StudioTest-%d-%s-%d-%d"):format(
-		player.UserId,
-		productName,
-		os.time(),
-		receiptSequence
-	)
+	return ("StudioTest-%d-%s-%d-%d"):format(player.UserId, productName, os.time(), receiptSequence)
 end
 
 local function rememberLatestGrantedReceipt(player: Player, productId: number): boolean
@@ -93,7 +88,9 @@ local function testDeveloperProduct(player: Player, productName: string): (boole
 	}
 	local ok, decisionOrError = pcall(MonetizationService.ProcessReceiptForStudio, receipt)
 	if not ok then
-		warn(("[StudioTestService] Receipt simulation failed: %s"):format(tostring(decisionOrError)))
+		warn(
+			("[StudioTestService] Receipt simulation failed: %s"):format(tostring(decisionOrError))
+		)
 		return false, "RECEIPT_SIMULATION_FAILED"
 	end
 
@@ -117,7 +114,8 @@ local function replayLastReceipt(player: Player): (boolean, string)
 	if receipt == nil then
 		return false, "NO_SUCCESSFUL_STUDIO_RECEIPT"
 	end
-	local ok, decisionOrError = pcall(MonetizationService.ProcessReceiptForStudio, table.clone(receipt))
+	local ok, decisionOrError =
+		pcall(MonetizationService.ProcessReceiptForStudio, table.clone(receipt))
 	if not ok then
 		warn(("[StudioTestService] Receipt replay failed: %s"):format(tostring(decisionOrError)))
 		return false, "RECEIPT_REPLAY_FAILED"
@@ -169,7 +167,11 @@ function StudioTestService.Init()
 			return
 		end
 		if not rememberLatestGrantedReceipt(player, productId) then
-			warn(("[StudioTestService] Could not capture granted receipt for %d"):format(player.UserId))
+			warn(
+				("[StudioTestService] Could not capture granted receipt for %d"):format(
+					player.UserId
+				)
+			)
 			return
 		end
 		remote:FireClient(player, "ReceiptReady", tostring(productName), true, "RECEIPT_READY")

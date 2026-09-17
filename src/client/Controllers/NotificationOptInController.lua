@@ -27,7 +27,9 @@ local function promptIfEligible()
 	end)
 	if not ok then
 		setStatus("ELIGIBILITY_API_ERROR")
-		warn(("[NotificationOptIn] Eligibility check failed: %s"):format(tostring(canPromptOrError)))
+		warn(
+			("[NotificationOptIn] Eligibility check failed: %s"):format(tostring(canPromptOrError))
+		)
 		return
 	end
 	if canPromptOrError ~= true then

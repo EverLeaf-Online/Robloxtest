@@ -102,7 +102,13 @@ end
 
 function MachineService.StartProcessor(player: Player, recipeId: any)
 	if not Validation.isBoundedString(recipeId, GameConfig.Networking.MaxStringLength) then
-		StateService.ActionResult(player, RemoteNames.RequestProcess, false, "INVALID_RECIPE_ID", nil)
+		StateService.ActionResult(
+			player,
+			RemoteNames.RequestProcess,
+			false,
+			"INVALID_RECIPE_ID",
+			nil
+		)
 		return
 	end
 
@@ -134,15 +140,20 @@ function MachineService.StartProcessor(player: Player, recipeId: any)
 			return false, result(false, "STORAGE_FULL", nil)
 		end
 
-		assert(EconomyService.SpendMaterials(data, recipe.Input), "validated processor cost must be spendable")
+		assert(
+			EconomyService.SpendMaterials(data, recipe.Input),
+			"validated processor cost must be spendable"
+		)
 		local startedAt = os.time()
-		local duration = math.max(1, math.ceil(FactoryRules.GetProcessorSeconds(data.Machines.ProcessorLevel)))
+		local duration =
+			math.max(1, math.ceil(FactoryRules.GetProcessorSeconds(data.Machines.ProcessorLevel)))
 		job.Active = true
 		job.RecipeId = recipe.Id
 		job.StartedAt = startedAt
 		job.CompletesAt = startedAt + duration
 
-		return true, result(true, "PROCESS_STARTED", { RecipeId = recipe.Id, CompletesAt = job.CompletesAt })
+		return true,
+			result(true, "PROCESS_STARTED", { RecipeId = recipe.Id, CompletesAt = job.CompletesAt })
 	end)
 
 	sendTransactionResult(player, RemoteNames.RequestProcess, executed, transactionResult)
@@ -151,7 +162,13 @@ end
 function MachineService.StartAssembler(player: Player)
 	local assembler = PlotService.GetAssembler(player)
 	if assembler == nil then
-		StateService.ActionResult(player, RemoteNames.RequestAssemble, false, "NO_FACTORY_PLOT", nil)
+		StateService.ActionResult(
+			player,
+			RemoteNames.RequestAssemble,
+			false,
+			"NO_FACTORY_PLOT",
+			nil
+		)
 		return
 	end
 	if not isNear(player, assembler) then
@@ -173,10 +190,16 @@ function MachineService.StartAssembler(player: Player)
 			return false, result(false, "MISSING_MATERIALS", nil)
 		end
 
-		assert(EconomyService.SpendMaterials(data, cost), "validated assembler cost must be spendable")
+		assert(
+			EconomyService.SpendMaterials(data, cost),
+			"validated assembler cost must be spendable"
+		)
 		local startedAt = os.time()
 		local baseDuration = FactoryRules.GetAssemblerSeconds(data.Machines.AssemblerLevel)
-		local duration = math.max(1, math.ceil(baseDuration * MonetizationService.GetAssemblerTimeMultiplier(player)))
+		local duration = math.max(
+			1,
+			math.ceil(baseDuration * MonetizationService.GetAssemblerTimeMultiplier(player))
+		)
 		job.Active = true
 		job.StartedAt = startedAt
 		job.CompletesAt = startedAt + duration
@@ -204,11 +227,20 @@ local function completeProcessor(player: Player, now: number): boolean
 		local recipeId = job.RecipeId
 		resetProcessorJob(job)
 		data.Tutorial.Milestones.FirstProcess = true
-		return true, result(true, "PROCESS_COMPLETE", { RecipeId = recipeId, Output = recipe.Output })
+		return true,
+			result(true, "PROCESS_COMPLETE", { RecipeId = recipeId, Output = recipe.Output })
 	end)
-	if not executed or transactionResult == nil then return false end
+	if not executed or transactionResult == nil then
+		return false
+	end
 	if transactionResult.Success == true then
-		StateService.ActionResult(player, "ProcessorComplete", true, transactionResult.Code, transactionResult.Payload)
+		StateService.ActionResult(
+			player,
+			"ProcessorComplete",
+			true,
+			transactionResult.Code,
+			transactionResult.Payload
+		)
 		StateService.PushSnapshot(player)
 		return true
 	end
@@ -218,15 +250,23 @@ end
 local function completeAssembler(player: Player, now: number): boolean
 	local executed, transactionResult = DataService.Transaction(player, function(data)
 		local job = data.Machines.AssemblerJob
-		if not job.Active or job.CompletesAt > now then return false, nil end
+		if not job.Active or job.CompletesAt > now then
+			return false, nil
+		end
 		if ownedRobotCount(data) >= GameConfig.Economy.MaxOwnedRobots then
 			return false, result(false, "ROBOT_INVENTORY_FULL", nil)
 		end
 		local firstBuild = data.Stats.LifetimeRobotsBuilt == 0
 		local robotId = FactoryRules.RollRobot(random:NextNumber(), firstBuild)
 		assert(Robots.Definitions[robotId] ~= nil, "robot roll must resolve to a known definition")
-		local uidNumber = RobotInventoryRules.FindAvailableUidNumber(data.Robots.OwnedByUid, data.Robots.NextUid, GameConfig.Economy.MaxOwnedRobots)
-		if uidNumber == nil then return false, result(false, "ROBOT_UID_UNAVAILABLE", nil) end
+		local uidNumber = RobotInventoryRules.FindAvailableUidNumber(
+			data.Robots.OwnedByUid,
+			data.Robots.NextUid,
+			GameConfig.Economy.MaxOwnedRobots
+		)
+		if uidNumber == nil then
+			return false, result(false, "ROBOT_UID_UNAVAILABLE", nil)
+		end
 		local uid = RobotInventoryRules.FormatUid(uidNumber)
 		data.Robots.NextUid = RobotInventoryRules.AdvanceUidNumber(uidNumber)
 		data.Robots.OwnedByUid[uid] = { RobotId = robotId, AcquiredAt = now }
@@ -237,9 +277,17 @@ local function completeAssembler(player: Player, now: number): boolean
 		resetAssemblerJob(job)
 		return true, result(true, "ASSEMBLY_COMPLETE", { RobotUid = uid, RobotId = robotId })
 	end)
-	if not executed or transactionResult == nil then return false end
+	if not executed or transactionResult == nil then
+		return false
+	end
 	if transactionResult.Success == true then
-		StateService.ActionResult(player, "AssemblerComplete", true, transactionResult.Code, transactionResult.Payload)
+		StateService.ActionResult(
+			player,
+			"AssemblerComplete",
+			true,
+			transactionResult.Code,
+			transactionResult.Payload
+		)
 		StateService.PushSnapshot(player)
 		return true
 	end
@@ -265,14 +313,31 @@ function MachineService.UseInstantProcessToken(player: Player)
 			return false, result(false, "NO_ACTIVE_PROCESS", nil)
 		end
 		data.Consumables.InstantProcessTokens -= 1
-		return true, result(true, "INSTANT_PROCESS_USED", { Target = target, TokensRemaining = data.Consumables.InstantProcessTokens })
+		return true,
+			result(
+				true,
+				"INSTANT_PROCESS_USED",
+				{ Target = target, TokensRemaining = data.Consumables.InstantProcessTokens }
+			)
 	end)
 	if not executed then
-		StateService.ActionResult(player, RemoteNames.RequestUseInstantProcessToken, false, tostring(transactionResult), nil)
+		StateService.ActionResult(
+			player,
+			RemoteNames.RequestUseInstantProcessToken,
+			false,
+			tostring(transactionResult),
+			nil
+		)
 		return
 	end
 	if typeof(transactionResult) ~= "table" then
-		StateService.ActionResult(player, RemoteNames.RequestUseInstantProcessToken, false, "INVALID_TRANSACTION_RESULT", nil)
+		StateService.ActionResult(
+			player,
+			RemoteNames.RequestUseInstantProcessToken,
+			false,
+			"INVALID_TRANSACTION_RESULT",
+			nil
+		)
 		return
 	end
 	StateService.ActionResult(
@@ -292,12 +357,18 @@ end
 
 function MachineService.PollPlayer(player: Player)
 	local data = DataService.GetData(player)
-	if data == nil then return end
+	if data == nil then
+		return
+	end
 	local now = os.time()
 	local processorJob = data.Machines.ProcessorJob
-	if processorJob.Active and processorJob.CompletesAt <= now then completeProcessor(player, now) end
+	if processorJob.Active and processorJob.CompletesAt <= now then
+		completeProcessor(player, now)
+	end
 	local assemblerJob = data.Machines.AssemblerJob
-	if assemblerJob.Active and assemblerJob.CompletesAt <= now then completeAssembler(player, now) end
+	if assemblerJob.Active and assemblerJob.CompletesAt <= now then
+		completeAssembler(player, now)
+	end
 end
 
 local function rejectForeignPlot(player: Player, actionName: string)
@@ -310,8 +381,13 @@ local function bindWorldPrompts()
 		local prompt = control:FindFirstChildOfClass("ProximityPrompt")
 		if typeof(recipeId) == "string" and prompt then
 			prompt.Triggered:Connect(function(player)
-				if not RateLimiter.Consume(player, RemoteNames.RequestProcess) then return end
-				if not PlotService.OwnsPart(player, control) then rejectForeignPlot(player, RemoteNames.RequestProcess); return end
+				if not RateLimiter.Consume(player, RemoteNames.RequestProcess) then
+					return
+				end
+				if not PlotService.OwnsPart(player, control) then
+					rejectForeignPlot(player, RemoteNames.RequestProcess)
+					return
+				end
 				MachineService.StartProcessor(player, recipeId)
 			end)
 		end
@@ -320,8 +396,13 @@ local function bindWorldPrompts()
 		local assemblerPrompt = assembler:FindFirstChildOfClass("ProximityPrompt")
 		if assemblerPrompt then
 			assemblerPrompt.Triggered:Connect(function(player)
-				if not RateLimiter.Consume(player, RemoteNames.RequestAssemble) then return end
-				if not PlotService.OwnsPart(player, assembler) then rejectForeignPlot(player, RemoteNames.RequestAssemble); return end
+				if not RateLimiter.Consume(player, RemoteNames.RequestAssemble) then
+					return
+				end
+				if not PlotService.OwnsPart(player, assembler) then
+					rejectForeignPlot(player, RemoteNames.RequestAssemble)
+					return
+				end
 				MachineService.StartAssembler(player)
 			end)
 		end
@@ -329,19 +410,29 @@ local function bindWorldPrompts()
 end
 
 function MachineService.Init()
-	if initialized then return end
+	if initialized then
+		return
+	end
 	initialized = true
-	RemoteService.BindRequest(RemoteNames.RequestProcess, function(player, recipeId) MachineService.StartProcessor(player, recipeId) end)
-	RemoteService.BindRequest(RemoteNames.RequestAssemble, function(player) MachineService.StartAssembler(player) end)
+	RemoteService.BindRequest(RemoteNames.RequestProcess, function(player, recipeId)
+		MachineService.StartProcessor(player, recipeId)
+	end)
+	RemoteService.BindRequest(RemoteNames.RequestAssemble, function(player)
+		MachineService.StartAssembler(player)
+	end)
 	RemoteService.BindRequest(RemoteNames.RequestUseInstantProcessToken, function(player)
 		MachineService.UseInstantProcessToken(player)
 	end)
 	bindWorldPrompts()
-	DataService.ProfileLoaded:Connect(function(player) MachineService.PollPlayer(player) end)
+	DataService.ProfileLoaded:Connect(function(player)
+		MachineService.PollPlayer(player)
+	end)
 	task.spawn(function()
 		while true do
 			task.wait(GameConfig.Factory.MachinePollSeconds)
-			for _, player in Players:GetPlayers() do MachineService.PollPlayer(player) end
+			for _, player in Players:GetPlayers() do
+				MachineService.PollPlayer(player)
+			end
 		end
 	end)
 end

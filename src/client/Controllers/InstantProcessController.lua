@@ -10,7 +10,8 @@ local initialized = false
 
 local player = Players.LocalPlayer
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
-local useTokenRemote = remotes:WaitForChild(RemoteNames.RequestUseInstantProcessToken) :: RemoteEvent
+local useTokenRemote =
+	remotes:WaitForChild(RemoteNames.RequestUseInstantProcessToken) :: RemoteEvent
 
 local function tokenCount(): number
 	local value = player:GetAttribute("InstantProcessTokens")

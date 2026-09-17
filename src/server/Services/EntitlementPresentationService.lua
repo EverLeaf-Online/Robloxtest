@@ -125,7 +125,9 @@ local function applyNameplate(player: Player)
 
 	label.Text = text
 	local cosmeticId = tostring(player:GetAttribute("FactoryClubEquippedCosmetic") or "")
-	label.TextColor3 = cosmeticColor(if player:GetAttribute("FactoryClubNameplateEnabled") == true then cosmeticId else "")
+	label.TextColor3 = cosmeticColor(
+		if player:GetAttribute("FactoryClubNameplateEnabled") == true then cosmeticId else ""
+	)
 end
 
 local function bindPlayer(player: Player)
@@ -133,18 +135,30 @@ local function bindPlayer(player: Player)
 	local connections = {}
 	connectionsByPlayer[player] = connections
 
-	table.insert(connections, player.CharacterAdded:Connect(function()
-		task.defer(applyNameplate, player)
-	end))
-	table.insert(connections, player:GetAttributeChangedSignal("VIPNameplateEnabled"):Connect(function()
-		applyNameplate(player)
-	end))
-	table.insert(connections, player:GetAttributeChangedSignal("FactoryClubNameplateEnabled"):Connect(function()
-		applyNameplate(player)
-	end))
-	table.insert(connections, player:GetAttributeChangedSignal("FactoryClubEquippedCosmetic"):Connect(function()
-		applyNameplate(player)
-	end))
+	table.insert(
+		connections,
+		player.CharacterAdded:Connect(function()
+			task.defer(applyNameplate, player)
+		end)
+	)
+	table.insert(
+		connections,
+		player:GetAttributeChangedSignal("VIPNameplateEnabled"):Connect(function()
+			applyNameplate(player)
+		end)
+	)
+	table.insert(
+		connections,
+		player:GetAttributeChangedSignal("FactoryClubNameplateEnabled"):Connect(function()
+			applyNameplate(player)
+		end)
+	)
+	table.insert(
+		connections,
+		player:GetAttributeChangedSignal("FactoryClubEquippedCosmetic"):Connect(function()
+			applyNameplate(player)
+		end)
+	)
 
 	if player.Character ~= nil then
 		task.defer(applyNameplate, player)

@@ -85,7 +85,10 @@ local function queueQualifiedReferral(inviterUserId: number, referredUserId: num
 		referralStore:UpdateAsync(pendingKey(inviterUserId), function(oldValue)
 			local record = if typeof(oldValue) == "table" then oldValue else {}
 			local qualified = if typeof(record.Qualified) == "table" then record.Qualified else {}
-			if qualified[referredKey] ~= true and countQualified(qualified) < GameConfig.Economy.MaxReferralRewards then
+			if
+				qualified[referredKey] ~= true
+				and countQualified(qualified) < GameConfig.Economy.MaxReferralRewards
+			then
 				qualified[referredKey] = true
 			end
 			record.Qualified = qualified
@@ -126,7 +129,8 @@ local function claimQueuedRewards(player: Player)
 		EconomyService.GrantCredits(data, GameConfig.Engagement.ReferralRewardCredits * available)
 		data.Consumables.InstantProcessTokens = math.min(
 			GameConfig.Economy.MaxInstantProcessTokens,
-			data.Consumables.InstantProcessTokens + GameConfig.Engagement.ReferralRewardTokens * available
+			data.Consumables.InstantProcessTokens
+				+ GameConfig.Engagement.ReferralRewardTokens * available
 		)
 		data.Referrals.QualifiedRewardCount += available
 		grantedRewards = available
@@ -194,7 +198,10 @@ local function initializeReferral(player: Player)
 
 	local refreshed = DataService.GetData(player)
 	if refreshed ~= nil then
-		player:SetAttribute("ReferralQualifiedRewardCount", refreshed.Referrals.QualifiedRewardCount)
+		player:SetAttribute(
+			"ReferralQualifiedRewardCount",
+			refreshed.Referrals.QualifiedRewardCount
+		)
 	end
 end
 
@@ -217,7 +224,8 @@ local function persistActivePlay(player: Player)
 
 	local inviterUserId = data.Referrals.PendingInviterUserId
 	local willQualify = inviterUserId > 0
-		and data.Referrals.PendingPlaySeconds + elapsed >= GameConfig.Engagement.ReferralQualificationSeconds
+		and data.Referrals.PendingPlaySeconds + elapsed
+			>= GameConfig.Engagement.ReferralQualificationSeconds
 
 	if willQualify then
 		if not queueQualifiedReferral(inviterUserId, player.UserId) then
@@ -226,10 +234,8 @@ local function persistActivePlay(player: Player)
 	end
 
 	local executed = DataService.Transaction(player, function(profileData)
-		profileData.Stats.LifetimePlaySeconds = math.min(
-			2_147_483_647,
-			profileData.Stats.LifetimePlaySeconds + elapsed
-		)
+		profileData.Stats.LifetimePlaySeconds =
+			math.min(2_147_483_647, profileData.Stats.LifetimePlaySeconds + elapsed)
 
 		if profileData.Referrals.PendingInviterUserId == 0 then
 			return true, false
@@ -239,7 +245,10 @@ local function persistActivePlay(player: Player)
 			GameConfig.Engagement.ReferralQualificationSeconds,
 			profileData.Referrals.PendingPlaySeconds + elapsed
 		)
-		if profileData.Referrals.PendingPlaySeconds < GameConfig.Engagement.ReferralQualificationSeconds then
+		if
+			profileData.Referrals.PendingPlaySeconds
+			< GameConfig.Engagement.ReferralQualificationSeconds
+		then
 			return true, false
 		end
 

@@ -78,7 +78,8 @@ function ProductionService.TickPlayer(player: Player)
 	end
 
 	local productionMultiplier = MonetizationService.GetProductionMultiplier(player)
-	local rawCredits = rate * productionMultiplier * elapsed + (fractionalCreditsByUser[player.UserId] or 0)
+	local rawCredits = rate * productionMultiplier * elapsed
+		+ (fractionalCreditsByUser[player.UserId] or 0)
 	local wholeCredits = math.floor(rawCredits)
 	fractionalCreditsByUser[player.UserId] = rawCredits - wholeCredits
 	if wholeCredits <= 0 then

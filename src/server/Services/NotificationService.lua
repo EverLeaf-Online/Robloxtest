@@ -21,7 +21,9 @@ local function resolveOpenCloudNotification(): any?
 	local module = v2 and v2:FindFirstChild("UserNotification")
 	if module == nil or not module:IsA("ModuleScript") then
 		if not warnedMissingPackage and not RunService:IsStudio() then
-			warn("[NotificationService] ServerScriptService.OpenCloud.V2.UserNotification is not installed; experience notifications are disabled")
+			warn(
+				"[NotificationService] ServerScriptService.OpenCloud.V2.UserNotification is not installed; experience notifications are disabled"
+			)
 			warnedMissingPackage = true
 		end
 		return nil
@@ -29,7 +31,11 @@ local function resolveOpenCloudNotification(): any?
 
 	local ok, result = pcall(require, module)
 	if not ok then
-		warn(("[NotificationService] Failed requiring OpenCloud notification package: %s"):format(tostring(result)))
+		warn(
+			("[NotificationService] Failed requiring OpenCloud notification package: %s"):format(
+				tostring(result)
+			)
+		)
 		return nil
 	end
 	openCloudNotification = result
@@ -86,7 +92,13 @@ function NotificationService.SendToUser(
 		return api.createUserNotification(userId, request)
 	end)
 	if not ok then
-		warn(("[NotificationService] %s send failed for %d: %s"):format(notificationName, userId, tostring(result)))
+		warn(
+			("[NotificationService] %s send failed for %d: %s"):format(
+				notificationName,
+				userId,
+				tostring(result)
+			)
+		)
 		return false, "SEND_FAILED"
 	end
 
@@ -98,12 +110,14 @@ function NotificationService.SendToUser(
 		if typeof(result.error) == "table" and result.error.message ~= nil then
 			message = tostring(result.error.message)
 		end
-		warn(("[NotificationService] %s rejected for %d (%s): %s"):format(
-			notificationName,
-			userId,
-			tostring(result.statusCode),
-			message
-		))
+		warn(
+			("[NotificationService] %s rejected for %d (%s): %s"):format(
+				notificationName,
+				userId,
+				tostring(result.statusCode),
+				message
+			)
+		)
 		return false, "NOT_DELIVERED"
 	end
 

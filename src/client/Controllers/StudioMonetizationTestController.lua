@@ -53,7 +53,8 @@ function StudioMonetizationTestController.Init()
 	end
 
 	local player = Players.LocalPlayer
-	local remote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild(REMOTE_NAME) :: RemoteEvent
+	local remote =
+		ReplicatedStorage:WaitForChild("Remotes"):WaitForChild(REMOTE_NAME) :: RemoteEvent
 
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "StudioMonetizationTestUI"

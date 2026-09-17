@@ -201,7 +201,9 @@ function DataService.SaveNow(player: Player): boolean
 		profile:Save()
 	end)
 	if not ok then
-		warn(("[DataService] Immediate save failed for %d: %s"):format(player.UserId, tostring(err)))
+		warn(
+			("[DataService] Immediate save failed for %d: %s"):format(player.UserId, tostring(err))
+		)
 		return false
 	end
 	return profile:IsActive() == true

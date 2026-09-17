@@ -121,7 +121,12 @@ local function sanitizeClubCosmetics(entitlements: any)
 	local cosmetics = ensureTable(entitlements, "FactoryClubCosmetics")
 	local keys: { string } = {}
 	for cosmeticId, owned in cosmetics do
-		if typeof(cosmeticId) ~= "string" or #cosmeticId == 0 or #cosmeticId > 32 or owned ~= true then
+		if
+			typeof(cosmeticId) ~= "string"
+			or #cosmeticId == 0
+			or #cosmeticId > 32
+			or owned ~= true
+		then
 			cosmetics[cosmeticId] = nil
 		else
 			table.insert(keys, cosmeticId)
@@ -209,17 +214,10 @@ function ProfileSanitizer.Sanitize(data: any)
 	local entitlements = ensureTable(data, "Entitlements")
 	sanitizePassFlags(entitlements)
 	entitlements.StarterPackClaimed = sanitizeBoolean(entitlements.StarterPackClaimed, false)
-	entitlements.PersonalOverclockUntil = clampInteger(
-		entitlements.PersonalOverclockUntil,
-		0,
-		4_102_444_800,
-		0
-	)
-	entitlements.FactoryClubLastGrantedCycle = sanitizeBoundedString(
-		entitlements.FactoryClubLastGrantedCycle,
-		32,
-		""
-	)
+	entitlements.PersonalOverclockUntil =
+		clampInteger(entitlements.PersonalOverclockUntil, 0, 4_102_444_800, 0)
+	entitlements.FactoryClubLastGrantedCycle =
+		sanitizeBoundedString(entitlements.FactoryClubLastGrantedCycle, 32, "")
 	sanitizeClubCosmetics(entitlements)
 
 	local assignments = ensureTable(data, "Assignments")
@@ -229,7 +227,8 @@ function ProfileSanitizer.Sanitize(data: any)
 	if typeof(cachedPassFlags) == "table" and cachedPassFlags.BotWorkSlots2 == true then
 		unlockedSlots = math.min(GameConfig.Factory.MaxWorkSlots + 2, unlockedSlots + 2)
 	end
-	local normalizedWorkPads = AssignmentRules.NormalizeWorkPads(workPads, ownedByUid, unlockedSlots)
+	local normalizedWorkPads =
+		AssignmentRules.NormalizeWorkPads(workPads, ownedByUid, unlockedSlots)
 	table.clear(workPads)
 	for padId, robotUid in normalizedWorkPads do
 		workPads[padId] = robotUid
@@ -263,7 +262,8 @@ function ProfileSanitizer.Sanitize(data: any)
 	end
 
 	local referrals = ensureTable(data, "Referrals")
-	referrals.PendingInviterUserId = clampInteger(referrals.PendingInviterUserId, 0, 2_147_483_647, 0)
+	referrals.PendingInviterUserId =
+		clampInteger(referrals.PendingInviterUserId, 0, 2_147_483_647, 0)
 	referrals.PendingStartedAt = clampInteger(referrals.PendingStartedAt, 0, 4_102_444_800, 0)
 	referrals.PendingPlaySeconds = clampInteger(
 		referrals.PendingPlaySeconds,
@@ -271,23 +271,16 @@ function ProfileSanitizer.Sanitize(data: any)
 		GameConfig.Engagement.ReferralQualificationSeconds,
 		0
 	)
-	referrals.QualifiedRewardCount = clampInteger(
-		referrals.QualifiedRewardCount,
-		0,
-		GameConfig.Economy.MaxReferralRewards,
-		0
-	)
+	referrals.QualifiedRewardCount =
+		clampInteger(referrals.QualifiedRewardCount, 0, GameConfig.Economy.MaxReferralRewards, 0)
 	if referrals.PendingInviterUserId == 0 then
 		referrals.PendingStartedAt = 0
 		referrals.PendingPlaySeconds = 0
 	end
 
 	local receipts = ensureTable(data, "Receipts")
-	receipts.RecentPurchaseIds = ReceiptRules.NormalizeRecentPurchaseIds(
-		receipts.RecentPurchaseIds,
-		100,
-		128
-	)
+	receipts.RecentPurchaseIds =
+		ReceiptRules.NormalizeRecentPurchaseIds(receipts.RecentPurchaseIds, 100, 128)
 
 	local stats = ensureTable(data, "Stats")
 	stats.LifetimeCredits = clampInteger(stats.LifetimeCredits, 0, GameConfig.Economy.MaxCredits, 0)

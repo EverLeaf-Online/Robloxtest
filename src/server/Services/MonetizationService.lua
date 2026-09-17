@@ -73,8 +73,14 @@ local function setPresentationAttributes(player: Player)
 		player:SetAttribute("InstantProcessTokens", data.Consumables.InstantProcessTokens)
 		player:SetAttribute("StarterPackClaimed", data.Entitlements.StarterPackClaimed)
 		player:SetAttribute("PersonalOverclockUntil", data.Entitlements.PersonalOverclockUntil)
-		player:SetAttribute("FactoryClubLastGrantedCycle", data.Entitlements.FactoryClubLastGrantedCycle)
-		player:SetAttribute("FactoryClubEquippedCosmetic", data.Entitlements.EquippedFactoryClubCosmetic)
+		player:SetAttribute(
+			"FactoryClubLastGrantedCycle",
+			data.Entitlements.FactoryClubLastGrantedCycle
+		)
+		player:SetAttribute(
+			"FactoryClubEquippedCosmetic",
+			data.Entitlements.EquippedFactoryClubCosmetic
+		)
 		local cosmeticCount = 0
 		for _ in data.Entitlements.FactoryClubCosmetics do
 			cosmeticCount += 1
@@ -94,7 +100,11 @@ local function addMaterialBundle(data: any): boolean
 end
 
 local function addTokens(data: any, amount: number): boolean
-	if amount <= 0 or data.Consumables.InstantProcessTokens > GameConfig.Economy.MaxInstantProcessTokens - amount then
+	if
+		amount <= 0
+		or data.Consumables.InstantProcessTokens
+			> GameConfig.Economy.MaxInstantProcessTokens - amount
+	then
 		return false
 	end
 	data.Consumables.InstantProcessTokens += amount
@@ -137,8 +147,10 @@ local function grantProduct(data: any, productId: number): (boolean, string)
 		return true, "MaterialSupplyCrate"
 	elseif productId == PRODUCT.FactoryOverclock15m then
 		local now = os.time()
-		data.Entitlements.PersonalOverclockUntil =
-			math.max(data.Entitlements.PersonalOverclockUntil, now) + 15 * 60
+		data.Entitlements.PersonalOverclockUntil = math.max(
+			data.Entitlements.PersonalOverclockUntil,
+			now
+		) + 15 * 60
 		return true, "FactoryOverclock15m"
 	elseif productId == PRODUCT.InstantProcessTokens then
 		if not addTokens(data, 5) then
@@ -207,7 +219,11 @@ local function processReceipt(receiptInfo: { [string]: any }): Enum.ProductPurch
 	end
 	if productName == "" then
 		if result == "UnknownProduct" then
-			warn(("[MonetizationService] Unknown developer product %s"):format(tostring(receiptInfo.ProductId)))
+			warn(
+				("[MonetizationService] Unknown developer product %s"):format(
+					tostring(receiptInfo.ProductId)
+				)
+			)
 		end
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
@@ -228,18 +244,16 @@ local function processReceipt(receiptInfo: { [string]: any }): Enum.ProductPurch
 	return Enum.ProductPurchaseDecision.PurchaseGranted
 end
 
-function MonetizationService.ProcessReceiptForStudio(receiptInfo: { [string]: any }): Enum.ProductPurchaseDecision
+function MonetizationService.ProcessReceiptForStudio(
+	receiptInfo: { [string]: any }
+): Enum.ProductPurchaseDecision
 	assert(RunService:IsStudio(), "ProcessReceiptForStudio may only be used in Studio")
 	return processReceipt(receiptInfo)
 end
 
 local function refreshPass(player: Player, passName: string, passId: number): boolean?
-	local ok, ownsOrError = pcall(
-		MarketplaceService.UserOwnsGamePassAsync,
-		MarketplaceService,
-		player.UserId,
-		passId
-	)
+	local ok, ownsOrError =
+		pcall(MarketplaceService.UserOwnsGamePassAsync, MarketplaceService, player.UserId, passId)
 	if not ok then
 		warn(
 			("[MonetizationService] Pass check failed for %d/%s: %s"):format(
@@ -405,22 +419,33 @@ local function applyFactoryClubState(
 
 	if granted then
 		if not DataService.SaveNow(player) then
-			warn(("[MonetizationService] Failed to persist Factory Club grant for %d"):format(player.UserId))
+			warn(
+				("[MonetizationService] Failed to persist Factory Club grant for %d"):format(
+					player.UserId
+				)
+			)
 			return false, "FACTORY_CLUB_SAVE_FAILED"
 		end
 		factoryClubRewardEvent:Fire(player, cycleId, cosmeticId)
 		return true, "FACTORY_CLUB_ENABLED_AND_GRANTED"
 	end
 
-	return true, if isSubscribed then "FACTORY_CLUB_ENABLED_NO_DUPLICATE" else "FACTORY_CLUB_DISABLED"
+	return true,
+		if isSubscribed then "FACTORY_CLUB_ENABLED_NO_DUPLICATE" else "FACTORY_CLUB_DISABLED"
 end
 
-function MonetizationService.SetFactoryClubForStudio(player: Player, active: boolean): (boolean, string)
+function MonetizationService.SetFactoryClubForStudio(
+	player: Player,
+	active: boolean
+): (boolean, string)
 	assert(RunService:IsStudio(), "SetFactoryClubForStudio may only be used in Studio")
 	return applyFactoryClubState(player, active, if active then "StudioTestCycle" else nil)
 end
 
-function MonetizationService.EquipFactoryClubCosmetic(player: Player, cosmeticId: string): (boolean, string)
+function MonetizationService.EquipFactoryClubCosmetic(
+	player: Player,
+	cosmeticId: string
+): (boolean, string)
 	if #cosmeticId > 80 then
 		return false, "INVALID_COSMETIC"
 	end
@@ -496,43 +521,39 @@ function MonetizationService.Init()
 		StateService.ActionResult(player, "EquipClubCosmetic", success, code)
 	end)
 
-	MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(
-		player: Player,
-		gamePassId: number,
-		wasPurchased: boolean
-	)
-		if not wasPurchased then
-			return
-		end
-		for _, passName in PASS_NAMES do
-			if PASSES[passName] == gamePassId then
-				passFlags[player] = passFlags[player] or {}
-				passFlags[player][passName] = true
-				DataService.Transaction(player, function(data)
-					data.Entitlements.CachedPassFlags[passName] = true
-					return true, nil
-				end)
-				setPresentationAttributes(player)
-				passUpdatedEvent:Fire(player, passName, true)
-				break
+	MarketplaceService.PromptGamePassPurchaseFinished:Connect(
+		function(player: Player, gamePassId: number, wasPurchased: boolean)
+			if not wasPurchased then
+				return
+			end
+			for _, passName in PASS_NAMES do
+				if PASSES[passName] == gamePassId then
+					passFlags[player] = passFlags[player] or {}
+					passFlags[player][passName] = true
+					DataService.Transaction(player, function(data)
+						data.Entitlements.CachedPassFlags[passName] = true
+						return true, nil
+					end)
+					setPresentationAttributes(player)
+					passUpdatedEvent:Fire(player, passName, true)
+					break
+				end
 			end
 		end
-	end)
+	)
 
-	MarketplaceService.PromptSubscriptionPurchaseFinished:Connect(function(
-		player: Player,
-		subscriptionId: string,
-		didTryPurchasing: boolean
-	)
-		if subscriptionId ~= FACTORY_CLUB or not didTryPurchasing then
-			return
-		end
-		task.delay(3, function()
-			if player.Parent == Players then
-				MonetizationService.RefreshSubscription(player)
+	MarketplaceService.PromptSubscriptionPurchaseFinished:Connect(
+		function(player: Player, subscriptionId: string, didTryPurchasing: boolean)
+			if subscriptionId ~= FACTORY_CLUB or not didTryPurchasing then
+				return
 			end
-		end)
-	end)
+			task.delay(3, function()
+				if player.Parent == Players then
+					MonetizationService.RefreshSubscription(player)
+				end
+			end)
+		end
+	)
 
 	DataService.ProfileLoaded:Connect(function(player)
 		task.spawn(MonetizationService.RefreshPlayer, player)
