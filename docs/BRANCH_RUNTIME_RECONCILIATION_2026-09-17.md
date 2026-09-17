@@ -12,58 +12,34 @@ For normal Studio development and playtesting:
 
 Rojo serves exactly one checked-out working tree. Git branches are not combined at runtime.
 
-The repository previously used a stacked/layered development workflow. In that context, “layered” described branch ancestry and staged integration work, not multiple branches being mounted into Studio simultaneously.
+The repository previously used stacked feature branches. In that context, “layered” described Git ancestry and staged integration work, not multiple branches being mounted into Studio simultaneously.
 
-## Why `main` is the complete current runtime
+## Full content audit result
 
-Commit `4727e7a5e11201538e3fedb4db47a5e2b8b46e5f` explicitly merged the Scrap-to-Bot integration into `main` and consolidated architecture, graybox gameplay, monetization, engagement, persistence, and validation work.
+The earlier branch-role review was followed by a full branch-by-branch content audit in `docs/FULL_GIT_CONTENT_AUDIT_2026-09-17.md` and PR #7.
 
-Subsequent hardening and audit work was then merged into `main`, whose current reconciled head at the time of this audit is `4222b3adb2f012f53234928b9a5eb734b227a3a6` (`Harden server authority and production runtime safety`).
+That audit inspected the surviving content of every branch, including the divergent `backup/main-parallel-implementation-2026-09-17` tree. The parallel implementation was intentionally not merged wholesale because it used an obsolete competing service/filesystem architecture. Its one meaningful missing gameplay feature, bounded offline production, was reimplemented against the canonical architecture and merged into `main`; useful operational documentation was also reconciled. Obsolete duplicate services and incomplete controller/HUD code were explicitly rejected or deferred with reasons.
 
-## Branch reconciliation
+The legacy feature, audit, backup, reconciliation, and parallel-implementation refs covered by that audit were subsequently removed from the remote. Their history remains preserved by Git commits and merged pull requests.
 
-### Canonical integrated branch
+## Current rule
 
-- `main` — authoritative current runtime and normal Rojo checkout.
+`main` is the complete active game runtime. A non-main branch is only a temporary development branch for work not yet merged.
 
-### Historical feature branches already represented in `main`
+When a short-lived branch is merged, its branch pointer may remain briefly as Git history housekeeping, but it is not another runtime layer and does not need to be overlaid into Studio. Once its work is verified in `main`, the branch can be deleted.
 
-- `feat/scrap-to-bot-architecture`
-- `feat/scrap-to-bot-graybox-loop`
-- `feat/scrap-to-bot-monetization-engagement`
-
-These branches are development history, not additional runtime layers. Their intended work was consolidated into `main`.
-
-### Merged hardening/audit branches
-
-- `fix/scrap-to-bot-post-merge-hardening-2026-09-17`
-- `audit/static-security-performance-2026-09-17`
-
-These are retained branch pointers for merged work. Their changes are represented in the current integrated `main` state even where squash/merge ancestry makes a simple ahead/behind comparison appear divergent.
-
-### Backup/checkpoint branches
-
-- `backup/checkpoint-before-reconcile-files`
-- `backup/graybox-before-monetization-reconcile-2026-09-17`
-- `backup/main-before-reconcile-safety`
-
-These are safety checkpoints. Do not use them as the normal Studio/Rojo source and do not delete them merely to reduce branch count.
-
-### Parallel implementation backup
-
-- `backup/main-parallel-implementation-2026-09-17`
-
-This branch is a genuinely divergent, older parallel implementation. It uses a different filesystem/service layout (`src/ReplicatedStorage`, `src/ServerScriptService`, `src/StarterPlayer`) versus the canonical integrated layout on `main` (`src/shared`, `src/server`, `src/client`).
-
-It is **not** a runtime layer that should be overlaid on `main`, and it should **not** be merged wholesale. Doing so would duplicate/reintroduce competing services, remotes, UI, and data architecture.
-
-Useful ideas or features that remain unique to that backup should be selectively ported into the canonical architecture only after review. Current examples worth evaluating later include its explicit offline-production implementation and some gamepad/UI-navigation work. Those are feature-port candidates, not evidence that Studio should run from the backup branch.
+Current hardening work after the full audit has continued through normal short-lived PRs, including paid-entitlement fixes, client revision ordering, live-validation documentation, and server-integration/Server Overclock lease hardening. Those merged changes are part of `main`.
 
 ## Development rule going forward
 
-Normal development starts from current `main`, then uses a short-lived feature/fix branch when making changes. Studio/Rojo serves whichever branch is currently checked out in that working tree. After the feature branch is reviewed and merged, return the normal Studio checkout to `main`.
+1. Start from current `main`.
+2. Create a short-lived feature/fix branch when needed.
+3. Rojo serves that branch only because it is the checked-out working tree.
+4. Review, test, and merge the branch into `main`.
+5. Return the normal Studio checkout to `main`.
+6. Delete the merged branch after confirming it has no unique required content.
 
-Do not describe feature branches as simultaneously “layered into” the running game. When discussing branch layering, state explicitly whether the meaning is Git ancestry/integration history or runtime state.
+Do not describe feature branches as simultaneously “layered into” the running game.
 
 ## Studio safety rule
 
@@ -75,4 +51,4 @@ Before switching the branch backing an active Rojo session:
 4. restart Rojo with the intended project file;
 5. reconnect Studio and inspect the sync diff before accepting destructive changes.
 
-For the current canonical game, the intended combination is `main` + `default.project.json`.
+For the canonical game, the intended combination is always `main` + `default.project.json` unless intentionally testing a short-lived development branch.
