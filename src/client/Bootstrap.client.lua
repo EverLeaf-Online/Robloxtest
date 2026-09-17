@@ -3,6 +3,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local RemoteNames = require(ReplicatedStorage.Shared.Networking.RemoteNames)
+local InstantProcessController = require(script.Parent.Controllers.InstantProcessController)
 local PlotController = require(script.Parent.Controllers.PlotController)
 local UIController = require(script.Parent.Controllers.UIController)
 local WorldInteractionController = require(script.Parent.Controllers.WorldInteractionController)
@@ -23,5 +24,6 @@ end
 PlotController.Init()
 WorldInteractionController.Init()
 UIController.Init()
+InstantProcessController.Init()
 
 print("[ScrapToBotFactory] Client foundation initialized")
