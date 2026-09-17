@@ -71,13 +71,13 @@ function NotificationService.SendToUser(
 		payload = {
 			messageId = messageId,
 			type = "MOMENT",
-		},
-		analyticsData = {
-			category = notificationName,
+			analyticsData = {
+				category = notificationName,
+			},
 		},
 	}
 	if launchData ~= nil and launchData ~= "" then
-		request.joinExperience = {
+		request.payload.joinExperience = {
 			launchData = string.sub(launchData, 1, 200),
 		}
 	end
