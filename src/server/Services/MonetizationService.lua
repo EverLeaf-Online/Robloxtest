@@ -14,6 +14,9 @@ local DataService = require(script.Parent.DataService)
 local EconomyService = require(script.Parent.EconomyService)
 local RemoteService = require(script.Parent.RemoteService)
 local StateService = require(script.Parent.StateService)
+local ProfileTypes = require(script.Parent.Parent.Data.ProfileTypes)
+
+type ProfileData = ProfileTypes.ProfileData
 
 local MonetizationService = {}
 local initialized = false
@@ -163,11 +166,11 @@ local MATERIAL_BUNDLE = table.freeze({
 	PowerCoreFragments = 10,
 })
 
-local function addMaterialBundle(data: any): boolean
+local function addMaterialBundle(data: ProfileData): boolean
 	return EconomyService.GrantPaidMaterials(data, MATERIAL_BUNDLE)
 end
 
-local function addTokens(data: any, amount: number): boolean
+local function addTokens(data: ProfileData, amount: number): boolean
 	if
 		amount <= 0
 		or data.Consumables.InstantProcessTokens
@@ -179,11 +182,11 @@ local function addTokens(data: any, amount: number): boolean
 	return true
 end
 
-local function receiptExists(data: any, purchaseId: string): boolean
+local function receiptExists(data: ProfileData, purchaseId: string): boolean
 	return table.find(data.Receipts.RecentPurchaseIds, purchaseId) ~= nil
 end
 
-local function recordReceipt(data: any, purchaseId: string)
+local function recordReceipt(data: ProfileData, purchaseId: string)
 	if receiptExists(data, purchaseId) then
 		return
 	end
@@ -193,7 +196,7 @@ local function recordReceipt(data: any, purchaseId: string)
 	end
 end
 
-local function grantProduct(data: any, productId: number): (boolean, string)
+local function grantProduct(data: ProfileData, productId: number): (boolean, string)
 	if productId == PRODUCT.MaterialSupplyCrate then
 		if not addMaterialBundle(data) then
 			return false, "MATERIAL_HARD_CAP"
