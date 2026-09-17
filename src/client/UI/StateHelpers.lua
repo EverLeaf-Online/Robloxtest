@@ -174,10 +174,16 @@ function StateHelpers.MachineStatus(snapshot: any, now: number): string
 	local lines = {}
 	local ownedPlotId = StateHelpers.PlotId(snapshot)
 
-	table.insert(lines, if ownedPlotId then ("Plot %d"):format(ownedPlotId) else "Assigning plot...")
+	table.insert(
+		lines,
+		if ownedPlotId then ("Plot %d"):format(ownedPlotId) else "Assigning plot..."
+	)
 	if processor.Active then
 		local remaining = math.max(0, processor.CompletesAt - now)
-		table.insert(lines, ("Processor: %s (%ds)"):format(processor.RecipeId, math.ceil(remaining)))
+		table.insert(
+			lines,
+			("Processor: %s (%ds)"):format(processor.RecipeId, math.ceil(remaining))
+		)
 	else
 		table.insert(lines, "Processor: Ready")
 	end
