@@ -69,6 +69,7 @@ local ProfileTemplate = {
 		StarterPackClaimed = false,
 		PersonalOverclockUntil = 0,
 		ServerOverclockUntil = 0,
+		ServerOverclockLeaseId = "",
 		FactoryClubActiveCached = false,
 		FactoryClubLastGrantedCycle = "",
 		FactoryClubCosmetics = {},
