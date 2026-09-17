@@ -71,7 +71,6 @@ local function testDeveloperProduct(player: Player, productName: string): (boole
 		PurchaseId = nextPurchaseId(player, productName),
 		ProductId = productId,
 	}
-	lastReceiptByPlayer[player] = receipt
 	local ok, decisionOrError = pcall(MonetizationService.ProcessReceiptForStudio, receipt)
 	if not ok then
 		warn(("[StudioTestService] Receipt simulation failed: %s"):format(tostring(decisionOrError)))
@@ -82,6 +81,7 @@ local function testDeveloperProduct(player: Player, productName: string): (boole
 		return false, "RECEIPT_NOT_GRANTED"
 	end
 
+	lastReceiptByPlayer[player] = receipt
 	return true, productName
 end
 
@@ -92,13 +92,17 @@ end
 local function replayLastReceipt(player: Player): (boolean, string)
 	local receipt = lastReceiptByPlayer[player]
 	if receipt == nil then
-		return false, "NO_RECEIPT_TO_REPLAY"
+		return false, "NO_SUCCESSFUL_STUDIO_RECEIPT"
 	end
 	local ok, decisionOrError = pcall(MonetizationService.ProcessReceiptForStudio, receipt)
 	if not ok then
+		warn(("[StudioTestService] Receipt replay failed: %s"):format(tostring(decisionOrError)))
 		return false, "RECEIPT_REPLAY_FAILED"
 	end
-	return decisionOrError == Enum.ProductPurchaseDecision.PurchaseGranted, "RECEIPT_REPLAY_IDEMPOTENT"
+	if decisionOrError ~= Enum.ProductPurchaseDecision.PurchaseGranted then
+		return false, "RECEIPT_REPLAY_NOT_GRANTED"
+	end
+	return true, "RECEIPT_REPLAY_IDEMPOTENT"
 end
 
 local function canHandleRequest(player: Player): boolean
