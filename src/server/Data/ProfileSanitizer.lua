@@ -206,9 +206,32 @@ function ProfileSanitizer.Sanitize(data: any)
 	sanitizeProcessorJob(machines)
 	sanitizeAssemblerJob(machines)
 
+	-- Entitlements affect validation of other saved state, so sanitize them before
+	-- normalizing assignments. Otherwise a valid Pad2/Pad3 assignment granted by
+	-- the +2 Bot Work Slots pass is immediately stripped by this sanitizer.
+	local entitlements = ensureTable(data, "Entitlements")
+	sanitizePassFlags(entitlements)
+	entitlements.StarterPackClaimed = sanitizeBoolean(entitlements.StarterPackClaimed, false)
+	entitlements.PersonalOverclockUntil = clampInteger(
+		entitlements.PersonalOverclockUntil,
+		0,
+		4_102_444_800,
+		0
+	)
+	entitlements.FactoryClubLastGrantedCycle = sanitizeBoundedString(
+		entitlements.FactoryClubLastGrantedCycle,
+		32,
+		""
+	)
+	sanitizeClubCosmetics(entitlements)
+
 	local assignments = ensureTable(data, "Assignments")
 	local workPads = ensureTable(assignments, "WorkPads")
 	local unlockedSlots = FactoryRules.GetWorkSlots(machines.WorkSlotsLevel)
+	local cachedPassFlags = entitlements.CachedPassFlags
+	if typeof(cachedPassFlags) == "table" and cachedPassFlags.BotWorkSlots2 == true then
+		unlockedSlots = math.min(GameConfig.Factory.MaxWorkSlots + 2, unlockedSlots + 2)
+	end
 	local normalizedWorkPads = AssignmentRules.NormalizeWorkPads(workPads, ownedByUid, unlockedSlots)
 	table.clear(workPads)
 	for padId, robotUid in normalizedWorkPads do
@@ -241,22 +264,6 @@ function ProfileSanitizer.Sanitize(data: any)
 			milestones[milestoneId] = nil
 		end
 	end
-
-	local entitlements = ensureTable(data, "Entitlements")
-	sanitizePassFlags(entitlements)
-	entitlements.StarterPackClaimed = sanitizeBoolean(entitlements.StarterPackClaimed, false)
-	entitlements.PersonalOverclockUntil = clampInteger(
-		entitlements.PersonalOverclockUntil,
-		0,
-		4_102_444_800,
-		0
-	)
-	entitlements.FactoryClubLastGrantedCycle = sanitizeBoundedString(
-		entitlements.FactoryClubLastGrantedCycle,
-		32,
-		""
-	)
-	sanitizeClubCosmetics(entitlements)
 
 	local referrals = ensureTable(data, "Referrals")
 	referrals.PendingInviterUserId = clampInteger(referrals.PendingInviterUserId, 0, 2_147_483_647, 0)
