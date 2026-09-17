@@ -10,6 +10,7 @@ local Robots = require(ReplicatedStorage.Shared.Config.Robots)
 local AnalyticsService = require(script.Parent.AnalyticsService)
 local DataService = require(script.Parent.DataService)
 local EconomyService = require(script.Parent.EconomyService)
+local MonetizationService = require(script.Parent.MonetizationService)
 local StateService = require(script.Parent.StateService)
 
 local ProductionService = {}
@@ -25,8 +26,12 @@ local function parsePadIndex(padId: string): number?
 	return tonumber(match)
 end
 
-local function productionRate(data: any): number
-	local unlockedSlots = FactoryRules.GetWorkSlots(data.Machines.WorkSlotsLevel)
+local function productionRate(player: Player, data: any): number
+	local baseSlots = FactoryRules.GetWorkSlots(data.Machines.WorkSlotsLevel)
+	local unlockedSlots = math.min(
+		GameConfig.Factory.MaxWorkSlots + 2,
+		baseSlots + MonetizationService.GetExtraWorkSlots(player)
+	)
 	local total = 0
 
 	for padId, robotUid in data.Assignments.WorkPads do
@@ -67,12 +72,13 @@ function ProductionService.TickPlayer(player: Player)
 		return
 	end
 
-	local rate = productionRate(data)
+	local rate = productionRate(player, data)
 	if rate <= 0 then
 		return
 	end
 
-	local rawCredits = rate * elapsed + (fractionalCreditsByUser[player.UserId] or 0)
+	local multiplier = MonetizationService.GetProductionMultiplier(player)
+	local rawCredits = rate * multiplier * elapsed + (fractionalCreditsByUser[player.UserId] or 0)
 	local wholeCredits = math.floor(rawCredits)
 	fractionalCreditsByUser[player.UserId] = rawCredits - wholeCredits
 	if wholeCredits <= 0 then
