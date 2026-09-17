@@ -2,7 +2,13 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local JestGlobals = require(ReplicatedStorage.DevPackages.JestGlobals)
+local describe = JestGlobals.describe
+local expect = JestGlobals.expect
+local it = JestGlobals.it
+
 local FactoryRules = require(ReplicatedStorage.Shared.Domain.FactoryRules)
+local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
 local TransactionRules = require(ReplicatedStorage.Shared.Domain.TransactionRules)
 
 local serverRoot = script.Parent.Parent
@@ -54,8 +60,8 @@ describe("EconomyService", function()
 
 	it("never lets paid material grants exceed the hard profile cap", function()
 		local data = deepCopy(ProfileTemplate)
-		data.Materials.ScrapMetal = 10_000_000
+		data.Materials.ScrapMetal = GameConfig.Economy.MaxMaterialCount
 		expect(EconomyService.GrantPaidMaterials(data, { ScrapMetal = 1 })).toBe(false)
-		expect(data.Materials.ScrapMetal).toBe(10_000_000)
+		expect(data.Materials.ScrapMetal).toBe(GameConfig.Economy.MaxMaterialCount)
 	end)
 end)
