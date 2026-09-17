@@ -5,6 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local FactoryRules = require(ReplicatedStorage.Shared.Domain.FactoryRules)
 local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
+local OfflineProductionRules = require(ReplicatedStorage.Shared.Domain.OfflineProductionRules)
 local Robots = require(ReplicatedStorage.Shared.Config.Robots)
 
 local AnalyticsService = require(script.Parent.AnalyticsService)
@@ -17,6 +18,7 @@ local ProductionService = {}
 local initialized = false
 local lastTickByUser: { [number]: number } = {}
 local creditCarryByUser: { [number]: number } = {}
+local offlineAppliedByUser: { [number]: boolean } = {}
 
 local function parsePadIndex(padId: string): number?
 	local match = string.match(padId, "^Pad(%d+)$")
@@ -55,9 +57,107 @@ local function restoreGrantToCarry(userId: number, amount: number)
 		math.min(GameConfig.Economy.MaxCredits, (creditCarryByUser[userId] or 0) + amount)
 end
 
+local function queueOfflineProduction(player: Player)
+	task.spawn(function()
+		local deadline = os.clock() + 10
+		while
+			player.Parent == Players
+			and DataService.IsReady(player)
+			and player:GetAttribute("PassProduction2x") == nil
+			and os.clock() < deadline
+		do
+			task.wait(0.05)
+		end
+
+		if player.Parent == Players and DataService.IsReady(player) then
+			ProductionService.ApplyOfflineProduction(player)
+		end
+	end)
+end
+
+function ProductionService.ApplyOfflineProduction(player: Player): number
+	local userId = player.UserId
+	if offlineAppliedByUser[userId] == true or not DataService.IsReady(player) then
+		return 0
+	end
+
+	-- Claim the join before opening the transaction so repeated entitlement refreshes
+	-- cannot double-grant the same offline interval. A failed transaction clears the
+	-- claim and schedules one bounded retry.
+	offlineAppliedByUser[userId] = true
+	local now = os.time()
+	local executed, transactionResult = DataService.Transaction(player, function(profileData)
+		local elapsed = OfflineProductionRules.GetElapsedSeconds(
+			now,
+			profileData.Timestamps.LastProductionTick,
+			profileData.Timestamps.LastLeave,
+			GameConfig.Factory.OfflineProductionMaxSeconds
+		)
+		local rate = productionRate(player, profileData)
+		local requested = OfflineProductionRules.GetCreditGrant(
+			rate,
+			elapsed,
+			GameConfig.Factory.OfflineProductionEfficiency,
+			MonetizationService.GetPermanentProductionMultiplier(player),
+			GameConfig.Economy.MaxCredits
+		)
+
+		local room = math.max(0, GameConfig.Economy.MaxCredits - profileData.Currencies.Credits)
+		local granted = math.min(requested, room)
+		if granted > 0 then
+			profileData.Currencies.Credits += granted
+			profileData.Stats.LifetimeCredits = math.min(
+				GameConfig.Economy.MaxCredits,
+				profileData.Stats.LifetimeCredits + granted
+			)
+			profileData.Tutorial.Milestones.FirstIncomeEarned = true
+		end
+		profileData.Timestamps.LastProductionTick = now
+
+		return true, {
+			Elapsed = elapsed,
+			Granted = granted,
+		}
+	end)
+
+	if not executed or typeof(transactionResult) ~= "table" then
+		offlineAppliedByUser[userId] = nil
+		task.delay(1, function()
+			if player.Parent == Players and DataService.IsReady(player) then
+				ProductionService.ApplyOfflineProduction(player)
+			end
+		end)
+		return 0
+	end
+
+	local elapsed = if typeof(transactionResult.Elapsed) == "number" then transactionResult.Elapsed else 0
+	local granted = if typeof(transactionResult.Granted) == "number" then transactionResult.Granted else 0
+	player:SetAttribute("OfflineProductionSeconds", elapsed)
+	player:SetAttribute("OfflineCreditsGranted", granted)
+
+	if granted > 0 then
+		local updatedData = DataService.GetData(player)
+		if updatedData ~= nil then
+			AnalyticsService.RecordCreditSource(
+				player,
+				"OfflineBotProduction",
+				granted,
+				updatedData.Currencies.Credits
+			)
+		end
+	end
+
+	StateService.PushProductionDelta(player)
+	return granted
+end
+
 function ProductionService.TickPlayer(player: Player)
 	local userId = player.UserId
 	if not DataService.IsReady(player) then
+		lastTickByUser[userId] = os.clock()
+		return
+	end
+	if offlineAppliedByUser[userId] ~= true then
 		lastTickByUser[userId] = os.clock()
 		return
 	end
@@ -99,6 +199,7 @@ function ProductionService.TickPlayer(player: Player)
 			return false, 0
 		end
 		profileData.Tutorial.Milestones.FirstIncomeEarned = true
+		profileData.Timestamps.LastProductionTick = os.time()
 		return true, granted
 	end)
 
@@ -147,16 +248,23 @@ function ProductionService.Init()
 	DataService.ProfileLoaded:Connect(function(player)
 		lastTickByUser[player.UserId] = os.clock()
 		creditCarryByUser[player.UserId] = 0
+		offlineAppliedByUser[player.UserId] = nil
+		queueOfflineProduction(player)
 	end)
 
 	Players.PlayerRemoving:Connect(function(player)
 		lastTickByUser[player.UserId] = nil
 		creditCarryByUser[player.UserId] = nil
+		offlineAppliedByUser[player.UserId] = nil
 	end)
 
 	for _, player in Players:GetPlayers() do
 		lastTickByUser[player.UserId] = os.clock()
 		creditCarryByUser[player.UserId] = 0
+		offlineAppliedByUser[player.UserId] = nil
+		if DataService.IsReady(player) then
+			queueOfflineProduction(player)
+		end
 	end
 
 	task.spawn(function()
