@@ -139,7 +139,8 @@ Validation on the hardening PR:
 
 - GitHub CI passed, including Wally lock validation, StyLua, Selene, shipping Rojo build, and test Rojo build;
 - the OCALE no-publish Luau execution probe passed;
-- the Jest runtime workflow still stopped at the place-publish step under the existing dedicated-test-place edit-lock condition, so this is not treated as a code regression.
+- after the Roblox Studio/edit session was closed, the dedicated OCALE test place published successfully as version `46`;
+- the full Jest suite then executed through Roblox Open Cloud Luau Execution with **8/8 test suites passing and 49/49 tests passing**.
 
 NewContent delivery is still **not marked live-verified** until a real cross-server published-session test is run. The current implementation targets active servers/players; it is not an offline full-audience campaign system.
 
@@ -180,7 +181,7 @@ Pending because they require Robux, platform eligibility, or a real multi-server
 - Duplicate badge-award warnings have been addressed in code; re-check published server output after the next publish.
 - Server Overclock is intentionally server-session state, not player-profile persistence. A new server is not expected to inherit the previous server's timer under the current design.
 - FactoryReady production delay has been restored to 30 minutes after the temporary test.
-- The dedicated OCALE test place must release its edit lock before the full Jest runtime workflow can publish its temporary test build.
+- OCALE runtime publishing is now confirmed operational when Roblox Studio/Team Create is not holding the dedicated test place edit session.
 
 ## Current completion state
 
@@ -196,7 +197,8 @@ Pending because they require Robux, platform eligibility, or a real multi-server
 - live notification opt-in/eligibility controller path;
 - notification settings enabled for the test experience;
 - static/build validation for post-merge engagement hardening;
-- OCALE no-publish Luau execution probe.
+- OCALE no-publish Luau execution probe;
+- full OCALE Jest runtime execution: **8 suites / 49 tests passed**.
 
 ### Come back later
 
@@ -204,7 +206,6 @@ Pending because they require Robux, platform eligibility, or a real multi-server
 - real subscription test;
 - FactoryReady delivery after 100 visits;
 - ReferralReward/FactoryClubReward live delivery;
-- NewContent cross-server live delivery;
-- full OCALE Jest execution after the dedicated place edit lock releases.
+- NewContent cross-server live delivery.
 
-Do not mark those later items failed simply because they are currently blocked by test-account funds, Roblox eligibility, or the external test-place edit lock.
+Do not mark those later items failed simply because they are currently blocked by test-account funds or Roblox eligibility.
