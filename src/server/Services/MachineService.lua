@@ -142,7 +142,14 @@ function MachineService.StartProcessor(player: Player, recipeId: any)
 		if not EconomyService.CanAffordMaterials(data, recipe.Input) then
 			return false, result(false, "MISSING_MATERIALS", nil)
 		end
-		if not EconomyService.CanFitTransaction(data, recipe.Input, recipe.Output, storageMultiplier) then
+		if
+			not EconomyService.CanFitTransaction(
+				data,
+				recipe.Input,
+				recipe.Output,
+				storageMultiplier
+			)
+		then
 			return false, result(false, "STORAGE_FULL", nil)
 		end
 
@@ -151,7 +158,8 @@ function MachineService.StartProcessor(player: Player, recipeId: any)
 			"validated processor cost must be spendable"
 		)
 		local startedAt = serverNow()
-		local duration = math.max(0.001, FactoryRules.GetProcessorSeconds(data.Machines.ProcessorLevel))
+		local duration =
+			math.max(0.001, FactoryRules.GetProcessorSeconds(data.Machines.ProcessorLevel))
 		job.Active = true
 		job.RecipeId = recipe.Id
 		job.StartedAt = startedAt
@@ -201,10 +209,8 @@ function MachineService.StartAssembler(player: Player)
 			"validated assembler cost must be spendable"
 		)
 		local startedAt = serverNow()
-		local duration = FactoryRules.GetAssemblerDuration(
-			data.Machines.AssemblerLevel,
-			assemblerTimeMultiplier
-		)
+		local duration =
+			FactoryRules.GetAssemblerDuration(data.Machines.AssemblerLevel, assemblerTimeMultiplier)
 		job.Active = true
 		job.StartedAt = startedAt
 		job.CompletesAt = startedAt + duration
