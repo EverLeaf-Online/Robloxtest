@@ -16,6 +16,7 @@ local RateLimiter = require(script.Parent.RateLimiter)
 local RemoteService = require(script.Parent.RemoteService)
 local StateService = require(script.Parent.StateService)
 local WorldService = require(script.Parent.WorldService)
+local PlayerCharacter = require(script.Parent.Parent.Util.PlayerCharacter)
 
 local SalvageService = {}
 local initialized = false
@@ -25,18 +26,6 @@ local nodeClaimed: { [string]: boolean } = {}
 
 local function result(success: boolean, code: string, payload: any?): any
 	return { Success = success, Code = code, Payload = payload }
-end
-
-local function playerPosition(player: Player): Vector3?
-	local character = player.Character
-	if character == nil then
-		return nil
-	end
-	local root = character:FindFirstChild("HumanoidRootPart")
-	if root == nil or not root:IsA("BasePart") then
-		return nil
-	end
-	return root.Position
 end
 
 local function setNodeActive(nodeId: string, active: boolean)
@@ -131,7 +120,7 @@ function SalvageService.Collect(player: Player, nodeId: any)
 		)
 		return
 	end
-	local position = playerPosition(player)
+	local position = PlayerCharacter.GetPosition(player)
 	if
 		position == nil
 		or (position - node.Position).Magnitude > GameConfig.World.SalvageCollectDistance
@@ -211,7 +200,7 @@ local function autoCollectNearest(player: Player)
 	if not MonetizationService.HasAutoCollect(player) or not DataService.IsReady(player) then
 		return
 	end
-	local position = playerPosition(player)
+	local position = PlayerCharacter.GetPosition(player)
 	if position == nil then
 		return
 	end
