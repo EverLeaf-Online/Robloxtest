@@ -11,6 +11,7 @@ local Validation = require(ReplicatedStorage.Shared.Util.Validation)
 local AnalyticsService = require(script.Parent.AnalyticsService)
 local DataService = require(script.Parent.DataService)
 local EconomyService = require(script.Parent.EconomyService)
+local PlotService = require(script.Parent.PlotService)
 local RemoteService = require(script.Parent.RemoteService)
 local StateService = require(script.Parent.StateService)
 
@@ -32,6 +33,24 @@ local function result(success: boolean, code: string, payload: any?): any
 	}
 end
 
+local function playerPosition(player: Player): Vector3?
+	local character = player.Character
+	if character == nil then
+		return nil
+	end
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if root == nil or not root:IsA("BasePart") then
+		return nil
+	end
+	return root.Position
+end
+
+local function isNear(player: Player, part: BasePart): boolean
+	local position = playerPosition(player)
+	return position ~= nil
+		and (position - part.Position).Magnitude <= GameConfig.World.InteractionDistance
+end
+
 function UpgradeService.Purchase(player: Player, upgradeId: any)
 	if not Validation.isBoundedString(upgradeId, GameConfig.Networking.MaxStringLength) then
 		StateService.ActionResult(
@@ -48,6 +67,16 @@ function UpgradeService.Purchase(player: Player, upgradeId: any)
 	local machineField = machineFields[upgradeId]
 	if definition == nil or machineField == nil then
 		StateService.ActionResult(player, RemoteNames.RequestUpgrade, false, "UNKNOWN_UPGRADE", nil)
+		return
+	end
+
+	local console = PlotService.GetUpgradeConsole(player)
+	if console == nil then
+		StateService.ActionResult(player, RemoteNames.RequestUpgrade, false, "NO_FACTORY_PLOT", nil)
+		return
+	end
+	if not isNear(player, console) then
+		StateService.ActionResult(player, RemoteNames.RequestUpgrade, false, "TOO_FAR_AWAY", nil)
 		return
 	end
 
