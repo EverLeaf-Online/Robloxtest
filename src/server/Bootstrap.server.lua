@@ -2,6 +2,7 @@
 
 local AnalyticsService = require(script.Parent.Services.AnalyticsService)
 local DataService = require(script.Parent.Services.DataService)
+local EntitlementPresentationService = require(script.Parent.Services.EntitlementPresentationService)
 local MachineService = require(script.Parent.Services.MachineService)
 local MonetizationService = require(script.Parent.Services.MonetizationService)
 local PlotPresentationService = require(script.Parent.Services.PlotPresentationService)
@@ -31,6 +32,7 @@ local function start()
 	AnalyticsService.Init()
 	ZoneService.Init()
 	MonetizationService.Init()
+	EntitlementPresentationService.Init()
 	DataService.Init()
 	print("[ScrapToBotFactory] Graybox gameplay services initialized")
 end
