@@ -64,7 +64,7 @@ function StudioMonetizationTestController.Init()
 	local panel = Instance.new("Frame")
 	panel.Name = "Panel"
 	panel.AnchorPoint = Vector2.new(1, 0)
-	panel.Position = UDim2.new(1, -16, 0, 72)
+	panel.Position = UDim2.new(1, -340, 0, 72)
 	panel.Size = UDim2.fromOffset(210, 412)
 	panel.BackgroundColor3 = Color3.fromRGB(24, 27, 34)
 	panel.BorderSizePixel = 0
