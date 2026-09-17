@@ -206,9 +206,6 @@ function ProfileSanitizer.Sanitize(data: any)
 	sanitizeProcessorJob(machines)
 	sanitizeAssemblerJob(machines)
 
-	-- Entitlements affect validation of other saved state, so sanitize them before
-	-- normalizing assignments. Otherwise a valid Pad2/Pad3 assignment granted by
-	-- the +2 Bot Work Slots pass is immediately stripped by this sanitizer.
 	local entitlements = ensureTable(data, "Entitlements")
 	sanitizePassFlags(entitlements)
 	entitlements.StarterPackClaimed = sanitizeBoolean(entitlements.StarterPackClaimed, false)
@@ -268,6 +265,12 @@ function ProfileSanitizer.Sanitize(data: any)
 	local referrals = ensureTable(data, "Referrals")
 	referrals.PendingInviterUserId = clampInteger(referrals.PendingInviterUserId, 0, 2_147_483_647, 0)
 	referrals.PendingStartedAt = clampInteger(referrals.PendingStartedAt, 0, 4_102_444_800, 0)
+	referrals.PendingPlaySeconds = clampInteger(
+		referrals.PendingPlaySeconds,
+		0,
+		GameConfig.Engagement.ReferralQualificationSeconds,
+		0
+	)
 	referrals.QualifiedRewardCount = clampInteger(
 		referrals.QualifiedRewardCount,
 		0,
@@ -276,6 +279,7 @@ function ProfileSanitizer.Sanitize(data: any)
 	)
 	if referrals.PendingInviterUserId == 0 then
 		referrals.PendingStartedAt = 0
+		referrals.PendingPlaySeconds = 0
 	end
 
 	local receipts = ensureTable(data, "Receipts")
