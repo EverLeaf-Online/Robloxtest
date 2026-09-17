@@ -279,8 +279,11 @@ function ProfileSanitizer.Sanitize(data: any)
 	end
 
 	local receipts = ensureTable(data, "Receipts")
-	receipts.RecentPurchaseIds =
-		ReceiptRules.NormalizeRecentPurchaseIds(receipts.RecentPurchaseIds, 100, 128)
+	receipts.RecentPurchaseIds = ReceiptRules.NormalizeRecentPurchaseIds(
+		receipts.RecentPurchaseIds,
+		GameConfig.Economy.MaxReceiptHistory,
+		128
+	)
 
 	local stats = ensureTable(data, "Stats")
 	stats.LifetimeCredits = clampInteger(stats.LifetimeCredits, 0, GameConfig.Economy.MaxCredits, 0)
