@@ -97,7 +97,8 @@ end
 
 local serverRoot = ServerScriptService:WaitForChild("ServerUnderTest")
 local serverTests = serverRoot:WaitForChild("Tests")
-local serverSuccess, serverFailure = runSuite("Server integration suite", serverRoot, { serverTests })
+local serverSuccess, serverFailure =
+	runSuite("Server integration suite", serverRoot, { serverTests })
 if not serverSuccess then
 	table.insert(failures, serverFailure)
 end
