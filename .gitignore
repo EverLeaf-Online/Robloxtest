@@ -1,0 +1,26 @@
+# Wally / generated packages
+Packages/
+DevPackages/
+ServerPackages/
+
+# Rojo build output
+build/
+.build/
+*.rbxl
+*.rbxlx
+*.rbxm
+*.rbxmx
+sourcemap.json
+
+# Local credentials / environment
+.env
+.env.*
+!.env.example
+.secrets/
+*.local.ps1
+*.local.sh
+
+# Local editor/tool state
+.vscode/settings.local.json
+.DS_Store
+Thumbs.db

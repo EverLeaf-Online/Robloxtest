@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install Rokit
+        shell: bash
+        run: |
+          ROKIT_INSTALLER_URL="https://raw.githubusercontent.com/rojo-rbx/rokit/2f2618428ef31279e2fc80b0b1d73485bc929ddd/scripts/install.sh"
+          curl --fail --silent --show-error --location \
+            --retry 4 --retry-delay 2 --retry-all-errors \
+            "$ROKIT_INSTALLER_URL" | bash -s -- 1.2.0
+          echo "$HOME/.rokit/bin" >> "$GITHUB_PATH"
+
+      - name: Install pinned toolchain
+        shell: bash
+        run: "$HOME/.rokit/bin/rokit install --no-trust-check"
+
+      - name: Install Wally packages
+        run: wally install
+
+      - name: Verify Wally lockfile is current
+        run: git diff --exit-code -- wally.lock
+
+      - name: Check formatting
+        run: stylua --check src spec.lua
+
+      - name: Lint Luau
+        run: selene src spec.lua
+
+      - name: Validate OCALE runner scripts
+        shell: bash
+        run: |
+          bash -n scripts/run-ocale-tests.sh
+          pwsh -NoProfile -NonInteractive -Command '$tokens = $null; $errors = $null; [System.Management.Automation.Language.Parser]::ParseFile("scripts/run-ocale-tests.ps1", [ref]$tokens, [ref]$errors) | Out-Null; if ($errors.Count -gt 0) { $errors | ForEach-Object { Write-Error $_.Message }; exit 1 }'
+
+      - name: Build shipping project
+        run: |
+          mkdir -p build
+          rojo build default.project.json --output build/ScrapToBotFactory.rbxlx
+
+      - name: Build test project
+        run: rojo build test.project.json --output build/ScrapToBotTests.rbxm
