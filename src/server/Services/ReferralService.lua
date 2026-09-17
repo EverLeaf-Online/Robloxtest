@@ -304,6 +304,7 @@ function ReferralService.Init()
 					lastPersistAt[player] = nil
 				end
 			end
+		end
 	end)
 end
 
