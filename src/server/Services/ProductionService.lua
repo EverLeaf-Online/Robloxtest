@@ -13,6 +13,9 @@ local DataService = require(script.Parent.DataService)
 local EconomyService = require(script.Parent.EconomyService)
 local MonetizationService = require(script.Parent.MonetizationService)
 local StateService = require(script.Parent.StateService)
+local ProfileTypes = require(script.Parent.Parent.Data.ProfileTypes)
+
+type ProfileData = ProfileTypes.ProfileData
 
 local ProductionService = {}
 local initialized = false
@@ -28,7 +31,7 @@ local function parsePadIndex(padId: string): number?
 	return tonumber(match)
 end
 
-local function productionRate(player: Player, data: any): number
+local function productionRate(player: Player, data: ProfileData): number
 	local baseSlots = FactoryRules.GetWorkSlots(data.Machines.WorkSlotsLevel)
 	local unlockedSlots = math.min(
 		GameConfig.Factory.MaxWorkSlots + 2,

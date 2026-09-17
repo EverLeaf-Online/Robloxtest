@@ -15,6 +15,7 @@ local MonetizationService = require(script.Parent.MonetizationService)
 local PlotService = require(script.Parent.PlotService)
 local RemoteService = require(script.Parent.RemoteService)
 local StateService = require(script.Parent.StateService)
+local PlayerCharacter = require(script.Parent.Parent.Util.PlayerCharacter)
 
 local RobotService = {}
 local initialized = false
@@ -31,22 +32,8 @@ local function validString(value: any): boolean
 	return Validation.isBoundedString(value, GameConfig.Networking.MaxStringLength)
 end
 
-local function playerPosition(player: Player): Vector3?
-	local character = player.Character
-	if character == nil then
-		return nil
-	end
-	local root = character:FindFirstChild("HumanoidRootPart")
-	if root == nil or not root:IsA("BasePart") then
-		return nil
-	end
-	return root.Position
-end
-
 local function isNear(player: Player, part: BasePart): boolean
-	local position = playerPosition(player)
-	return position ~= nil
-		and (position - part.Position).Magnitude <= GameConfig.World.InteractionDistance
+	return PlayerCharacter.IsNear(player, part, GameConfig.World.InteractionDistance)
 end
 
 local function requireBotConsole(player: Player, actionName: string): boolean
@@ -74,7 +61,7 @@ local function parsePadIndex(padId: string): number?
 	return index
 end
 
-local function findAssignedPad(workPads: any, robotUid: string): string?
+local function findAssignedPad(workPads: { [string]: string }, robotUid: string): string?
 	for padId, assignedUid in workPads do
 		if assignedUid == robotUid then
 			return padId

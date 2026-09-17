@@ -14,6 +14,10 @@ local RateLimiter = require(script.Parent.RateLimiter)
 local RemoteService = require(script.Parent.RemoteService)
 local StateService = require(script.Parent.StateService)
 local WorldService = require(script.Parent.WorldService)
+local PlayerCharacter = require(script.Parent.Parent.Util.PlayerCharacter)
+local ProfileTypes = require(script.Parent.Parent.Data.ProfileTypes)
+
+type ProfileData = ProfileTypes.ProfileData
 
 local ZoneService = {}
 local initialized = false
@@ -26,22 +30,8 @@ local function result(success: boolean, code: string, payload: any?): any
 	}
 end
 
-local function playerPosition(player: Player): Vector3?
-	local character = player.Character
-	if character == nil then
-		return nil
-	end
-	local root = character:FindFirstChild("HumanoidRootPart")
-	if root == nil or not root:IsA("BasePart") then
-		return nil
-	end
-	return root.Position
-end
-
 local function isNear(player: Player, part: BasePart): boolean
-	local position = playerPosition(player)
-	return position ~= nil
-		and (position - part.Position).Magnitude <= GameConfig.World.InteractionDistance
+	return PlayerCharacter.IsNear(player, part, GameConfig.World.InteractionDistance)
 end
 
 local function teleportToZone(player: Player, zoneId: number): boolean
@@ -55,7 +45,7 @@ local function teleportToZone(player: Player, zoneId: number): boolean
 	return true
 end
 
-local function requirementPayload(definition: any, data: any): any
+local function requirementPayload(definition: any, data: ProfileData): any
 	return {
 		TargetZone = definition.Id,
 		DisplayName = definition.DisplayName,

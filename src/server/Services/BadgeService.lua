@@ -9,6 +9,9 @@ local RobloxIds = require(ReplicatedStorage.Shared.Config.RobloxIds)
 local Robots = require(ReplicatedStorage.Shared.Config.Robots)
 
 local DataService = require(script.Parent.DataService)
+local ProfileTypes = require(script.Parent.Parent.Data.ProfileTypes)
+
+type ProfileData = ProfileTypes.ProfileData
 
 local EngagementBadgeService = {}
 local initialized = false
@@ -17,7 +20,7 @@ local attemptedByPlayer: { [Player]: { [string]: boolean } } = {}
 
 local BADGES = RobloxIds.Badges
 
-local function hasRareDiscovery(data: any): boolean
+local function hasRareDiscovery(data: ProfileData): boolean
 	for robotId in data.Collection.RobotSeen do
 		local definition = Robots.Definitions[robotId]
 		if definition ~= nil and (definition.Rarity == "Rare" or definition.Rarity == "Epic") then
@@ -27,7 +30,7 @@ local function hasRareDiscovery(data: any): boolean
 	return false
 end
 
-local function isEligible(data: any, badgeName: string): boolean
+local function isEligible(data: ProfileData, badgeName: string): boolean
 	if badgeName == "FirstScrap" then
 		return data.Tutorial.Milestones.FirstScrap == true
 	elseif badgeName == "FirstBotBuilt" then

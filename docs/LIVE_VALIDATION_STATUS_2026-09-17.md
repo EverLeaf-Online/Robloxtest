@@ -1,20 +1,20 @@
 # Scrap-to-Bot Factory — Live Validation Status
 
 Status date: **2026-09-17**  
-Source branch: `main`  
-Current runtime hardening head before this documentation update: `27a724751a3a833a74e3532c784da979f3383ea8`
+Source branch after merge: `main`  
+Normal Rojo project: `default.project.json`
 
-This is the current authoritative execution status for the first-playable, monetization, persistence, engagement, and audit-hardening passes. It supersedes older runtime assumptions in `FIRST_PLAYABLE_STATUS_2026-09-16.md` where they conflict.
+This is the current execution and validation record for the Scrap-to-Bot Factory first playable. It supersedes older 2026-09-16 runtime assumptions where they conflict.
 
 ## Published test experience
 
 - Experience/universe ID: `10766713640`
-- Current published test experience name: `Scrap-to-Bot Factory - Tests`
+- Test place used by OCALE: `75490500628229`
+- Current test experience name: `Scrap-to-Bot Factory - Tests`
 - Current access during validation: Private
-- Rojo/Git source branch: `main`
-- Normal Rojo project: `default.project.json`
+- Dedicated Jest/OCALE project: `test.project.json`
 
-## Creator products configured
+## Configured Roblox products
 
 ### Passes
 
@@ -24,7 +24,7 @@ This is the current authoritative execution status for the first-playable, monet
 - Expanded Storage: `1985786272`
 - 2x Production: `1982138683`
 
-### Developer products
+### Developer Products
 
 - Material Supply Crate: `3713191213`
 - 15-Minute Factory Overclock: `3713191406`
@@ -36,256 +36,158 @@ This is the current authoritative execution status for the first-playable, monet
 
 - Factory Club: `EXP-418664834641560145`
 
-### Notifications
+### Experience notifications
 
 - FactoryReady: `3e45ef59-0f23-ee44-9365-5c4402e5e3cd`
 - ReferralReward: `806403da-e0cf-494e-9cb7-974fab0ff1a4`
 - FactoryClubReward: `9de31ecb-88a8-4645-843a-b90c1952419d`
 - NewContent: `e1abb235-8da6-814a-a388-a99aefb23213`
 
-## Git / branch reconciliation — complete
+## Git / runtime reconciliation — complete
 
-The full repository branch-content audit was completed and useful branch-only work was selectively ported into the canonical architecture. The obsolete feature, audit, checkpoint, and parallel-implementation branches were then removed from the remote. `main` is the runtime source of truth.
+The full repository content audit is complete. Useful branch-only work was selectively ported into the canonical architecture and obsolete branch pointers were removed. The runtime source of truth is `main` + `default.project.json`.
 
-The important parallel-branch feature that was missing from the canonical implementation — bounded offline production — was reimplemented against the current services rather than restoring the obsolete parallel architecture.
+The meaningful feature recovered from the old parallel implementation was bounded offline bot production. It was reimplemented against the current services rather than restoring the obsolete parallel filesystem/service layout.
 
-## Core gameplay / persistence — verified
+## Core gameplay / persistence
 
-Implemented and validated at first-playable level:
+Implemented at first-playable level:
 
 - server-authoritative salvage collection;
-- processor jobs;
-- assembler jobs and server-selected robot outcomes;
+- processor and assembler jobs;
+- server-selected robot outcomes;
 - robot ownership, assignment, unassignment, and recycling;
-- passive production;
-- machine/storage/work-slot upgrades;
+- passive and bounded offline production;
+- machine, storage, and work-slot upgrades;
 - zone progression;
-- bounded offline production;
 - ProfileStore-backed persistence and session locking;
-- profile migrations and sanitization;
+- profile migration/reconcile/sanitize flow;
 - published reconnect persistence for Credits, materials, robots, assignments, upgrades, and zone progression.
 
-The first-playable is still a graybox/early presentation build. Physical factory transformation, reveal polish, gamepad/mobile QA, broader service integration tests, and launch-scale performance validation remain later work.
+Profile schema is now **v6**. Schema v6 adds the persisted Server Overclock lease identifier used for crash recovery.
 
-## Studio monetization validation — historical tests plus hardened implementation
+## Paid entitlement correctness hardening
 
-The following behaviors were previously verified in Roblox Studio using the dedicated Studio test harness and Roblox Marketplace test-purchase prompts where applicable:
+The post-audit paid-value fixes are merged into the canonical implementation:
 
-- 2x Production grants the expected exact production multiplier;
-- Expanded Storage entitlement applies;
-- Auto-Collect entitlement applies;
-- +2 Bot Work Slots allows three total work slots from the one-slot baseline;
-- Factory VIP nameplate presentation works;
-- Instant Process Tokens can be consumed against valid jobs;
-- Factory Club Studio activation uses the live entitlement/state path;
-- Factory Club monthly test bundle grants materials and tokens;
-- Factory Club collectible cosmetic ownership/equip presentation works;
-- live shop Developer Product/subscription prompts resolve configured products and dynamic prices.
+- **+2 Bot Work Slots:** base work-slot progression is pass-independent and the entitlement is applied exactly once.
+- **Factory VIP:** assembler duration uses fractional server timestamps and exact `0.85` duration multiplication, preserving the advertised 15% reduction at short upgraded durations.
+- **Factory Club storage:** storage multipliers are passed explicitly into transaction drafts instead of depending on live table identity.
+- **Developer Product receipts:** a durable receipt ledger supplements the bounded recent-receipt cache so old PurchaseIds remain protected after cache rotation.
+- **Factory Club billing cycles:** reward grants defer when Roblox payment-history cycle resolution fails; no synthetic month fallback is created.
+- **Game Pass completion:** ownership is re-checked through `UserOwnsGamePassAsync` before the entitlement is cached as owned.
 
-A later static audit found correctness defects in three paid-benefit implementation details even though the earlier Studio checks appeared successful. Those code defects are now fixed on `main`:
+Earlier Studio pass tests remain historical evidence. The hardened pass/subscription paths still need the manual regression matrix listed below before public launch.
 
-- **+2 Bot Work Slots:** the shared work-slot rule is now pure; the client pass bonus is applied exactly once instead of being counted in both `FactoryRules` and the React HUD.
-- **Factory VIP assembler speed:** assembler jobs now use fractional server timestamps and exact duration multiplication, so the configured `0.85` multiplier remains a true 15% duration reduction even on short upgraded jobs.
-- **Factory Club storage:** storage entitlement multipliers are now passed explicitly into economy transactions instead of being attached to the live profile table identity, so transaction drafts retain the correct capacity.
+## Server Overclock durability / server-hop semantics
 
-These three benefits should be run once more through the Studio monetization matrix after the hardened build is synced/published. Until that rerun, treat the old visual/manual result as historical validation and the new implementation as CI/OCALE-validated code, not as a fresh manual runtime result.
+Server Overclock is no longer treated as volatile per-server Lua state.
 
-## Receipt processing / paid-value hardening
+The current design uses `ServerOverclockCoordinator` plus durable DataStores:
 
-Developer Products remain server authoritative through `MarketplaceService.ProcessReceipt`.
+- a purchase is protected by a lifetime PurchaseId marker;
+- the active boost is represented by a cross-server lease;
+- only the server holding the lease applies the server-wide production multiplier;
+- lease duration is 75 seconds with a 30-second heartbeat;
+- a second live server cannot claim the same unexpired lease;
+- after a crashed owner lease expires, another server can recover the remaining boost without extending its expiry;
+- clean shutdown releases the lease;
+- the purchaser profile stores the lease ID and boost expiry for recovery discovery.
 
-Current implementation guarantees/behavior:
+The lease/rule layer is covered by automated tests. A real charged-Robux purchase followed by a server interruption/server-hop is still required for live-platform validation.
 
-- product IDs and grant amounts are resolved server-side;
-- failed grants return `NotProcessedYet`;
-- successful profile grants are saved before `PurchaseGranted`;
-- the bounded recent-receipt list remains as a fast profile-local replay cache;
-- a separate durable receipt ledger now protects old PurchaseIds after they rotate out of that bounded cache;
-- live receipt-ledger DataStore failures fail closed and return `NotProcessedYet`;
-- Studio receipt replay continues to use the mock/profile path without production DataStore writes;
-- paid material grants can exceed ordinary storage capacity but never the absolute profile material cap;
-- personal overclock repeat purchases extend rather than reset remaining time;
-- Server Overclock purchase expiry is now written into durable purchaser profile state before acknowledgement and can be re-adopted after a later profile load;
-- Game Pass purchase completion is re-verified with `UserOwnsGamePassAsync` before caching ownership as true.
+## Client state ordering / replication
 
-The prior Studio receipt replay test remains valid for the recent-receipt path:
+Implemented:
 
-- `ReplayLastReceipt: PASS (RECEIPT_REPLAY_IDEMPOTENT)`
+- stale full `StateSnapshot` payloads are rejected by revision;
+- stale production deltas remain rejected;
+- a delta arriving before the initial snapshot triggers a throttled resync request instead of being silently lost;
+- machine countdowns use `Workspace:GetServerTimeNow()` and match fractional server timestamps;
+- the clock-driven React update runs at 1 Hz rather than 4 Hz;
+- bursty full snapshot sends are coalesced by `StateService`, while explicit resync requests bypass the coalescer;
+- 1 Hz passive production continues to use the lightweight production delta rather than cloning/replicating the full robot inventory.
 
-Still requiring a real paid published-session test:
+Further replacement of routine full snapshots with targeted deltas remains a performance optimization, not a correctness blocker.
 
-- actually charged Developer Product receipt fulfillment;
-- durable receipt-ledger behavior under a real Roblox receipt;
-- personal overclock persistence after a charged purchase;
-- Server Overclock recovery behavior after a charged purchase and server loss/rejoin.
+## Maintainability cleanup
 
-## Factory Club billing-cycle hardening
+The post-audit cleanup is now implemented:
 
-The subscription status and monthly reward paths were hardened after the static audit.
+- `src/server/Data/ProfileTypes.lua` defines the strict durable `ProfileData` contract;
+- DataService, EconomyService, StateService, ProductionService, ReferralService, BadgeService, MachineService, MonetizationService, RobotVisualService, and related helpers consume typed profile data at durable boundaries;
+- remaining `any` values are intentionally limited to dynamic boundaries such as hostile RemoteEvent input, Roblox/DataStore API payloads, migration/sanitization of malformed persisted data, generic callback results, and React/wire payloads;
+- `Settings.UI` uses `unknown` rather than an unrestricted durable-data `any` escape hatch;
+- repeated character-position/proximity lookup is centralized in `src/server/Util/PlayerCharacter.lua` and shared by Machine, Robot, Salvage, Upgrade, and Zone services;
+- the former monolithic React `App.lua` is split into the root component plus `Theme.lua`, `Components.lua`, `StateHelpers.lua`, and `PanelContent.lua` without moving economy/progression authority to the client.
 
-Previous behavior used a calendar-month fallback when Roblox payment-history lookup could not resolve the actual billing cycle. A later successful payment-history request could therefore produce a different cycle ID for the same paid cycle.
+## Automated validation
 
-Current behavior:
+The dedicated OCALE test DataModel now runs two Jest groups.
 
-- subscription status can still enable Factory Club perks when Roblox confirms the subscription;
-- monthly material/token/cosmetic rewards are granted only when an authoritative payment-history cycle start can be resolved;
-- payment-history failure no longer invents a fallback cycle ID;
-- an unresolved cycle leaves the reward pending instead of risking a duplicate grant;
-- the last granted authoritative cycle remains persisted in the profile.
+Latest fully green PR #11 baseline:
 
-A real subscribed account is still required to production-validate this path.
+- shared/domain suite: **9/9 suites, 55/55 tests**;
+- server integration suite: **3/3 suites, 12/12 tests**;
+- OCALE test-place version: **58**;
+- Wally lock validation: passed;
+- StyLua: passed;
+- Selene: passed;
+- shipping Rojo build: passed;
+- test Rojo build: passed.
 
-## Client state-ordering hardening
+Current server integration coverage includes:
 
-The React client state path was hardened after the audit:
+- EconomyService paid/storage capacity behavior inside isolated transaction drafts;
+- profile schema v6 migration/sanitization for Server Overclock lease IDs;
+- ServerOverclockLeaseRules purchase idempotency, exclusive ownership, stacking, expiry recovery, renewal, and release.
 
-- stale `StateSnapshot` payloads are rejected by revision instead of unconditionally replacing newer client state;
-- the latest accepted snapshot is held in a ref for remote-callback ordering checks;
-- if a production delta arrives before the initial full snapshot, the client requests a fresh state snapshot instead of silently dropping the ordering gap;
-- resync requests are throttled to at most once per second;
-- existing stale-delta revision rejection remains;
-- machine countdown presentation uses `Workspace:GetServerTimeNow()` so it matches fractional server machine timestamps;
-- the clock-driven React update was reduced from 4 Hz to 1 Hz.
+Coverage should still expand around full MonetizationService receipt orchestration, MachineService completion/reconnect behavior, RobotService contention, and hostile-client/multiplayer concurrency.
 
-CI, lint/build validation, OCALE runtime execution, and CodeQL passed for this hardening PR.
+## Live persistence / engagement status
 
-## Live persistence/reconnect — verified
+Previously verified in a published client:
 
-Verified in the published Roblox client before the newest hardening changes:
+- Credits, materials, owned robots, assignments, upgrades, and zone progression survive reconnect;
+- notification opt-in controller runs and the test account shows the experience with notifications enabled.
 
-- Credits persist across leave/rejoin;
-- materials persist across leave/rejoin;
-- owned robots persist across leave/rejoin;
-- robot work-pad assignments persist across leave/rejoin;
-- upgrades persist across leave/rejoin;
-- zone progression persists across leave/rejoin;
-- general saved progression restores correctly through a real published-session reconnect.
+Implemented but still requiring real published multi-server/billing conditions:
 
-The profile schema is now version 5 because durable Server Overclock recovery state was added. Existing profiles migrate forward through the normal migration/reconcile/sanitize path. A fresh published reconnect smoke test after syncing the hardened build is still recommended.
+- NewContent cross-server delivery;
+- ReferralReward delivery after real referral qualification;
+- FactoryClubReward delivery for a real billing cycle;
+- FactoryReady delivery after Roblox notification eligibility is sufficient for meaningful testing.
 
-## Notification opt-in — verified live
+FactoryReady polling still depends on at least one active Roblox server. An always-on external/Open Cloud worker remains a later reliability option if zero-server delivery is required.
 
-The published Roblox client executed the opt-in controller and logged:
+## Manual / live tests still pending before public launch
 
-- `WAITING_FOR_DELAY`
-- `CHECKING_ELIGIBILITY`
-- `PROMPT_UNAVAILABLE`
+- rerun +2 Bot Work Slots and confirm one baseline slot becomes exactly three total;
+- rerun Factory VIP at every configured assembler level and confirm exact 15% duration reduction;
+- rerun Factory Club storage at near-capacity transaction boundaries;
+- published reconnect smoke test after schema v6 migration;
+- actual charged Developer Product receipt fulfillment;
+- durable receipt-ledger behavior with a real Roblox receipt;
+- personal-overclock persistence after a charged purchase;
+- charged Server Overclock purchase followed by interruption/server-hop recovery;
+- actual Factory Club subscription status and monthly reward cycle;
+- hostile-client tests for distant/nonexistent salvage, assignment spoofing, duplicate sell, repeated upgrade, zone skip, malformed numbers, and forged purchase-like requests;
+- two-player ownership/race/concurrency pass;
+- mobile, small-screen, and gamepad QA;
+- low-end client and 8-player/max-profile performance profiling;
+- FactoryReady/ReferralReward/FactoryClubReward/NewContent live delivery conditions listed above.
 
-Roblox account settings were inspected and confirmed:
+## Current engineering TODO
 
-- the test experience appears under **My Games — Games with enabled notifications**;
-- its notification toggle is enabled;
-- Roblox game-event desktop/mobile notification settings are enabled for the account.
+The earlier `ProfileData`, duplicated `playerPosition`, and monolithic `App.lua` cleanup items are complete. Remaining engineering priorities are:
 
-`PROMPT_UNAVAILABLE` is not treated as an error because Roblox does not expose a more specific reason when `CanPromptOptInAsync()` returns false.
-
-## Engagement hardening — implemented
-
-Implemented on `main`:
-
-- duplicate badge-award noise is avoided by checking ownership before award attempts;
-- `FactoryClubRewardGranted` is wired to the configured FactoryClubReward notification;
-- `RequestAdminBroadcast` has a server-authoritative creator check;
-- creator-entered NewContent text is normalized, bounded, and filtered;
-- NewContent announcements publish through `MessagingService` for active servers;
-- active players receive the in-game announcement path;
-- broadcast deduplication is bounded per server;
-- referral reward announcements render through the existing client announcement path.
-
-NewContent delivery is still **not marked live-verified** until a real cross-server published-session test is run.
-
-## FactoryReady notification delivery — blocked for now
-
-Implementation status:
-
-- FactoryReady scheduling exists;
-- durable queue/lock stores exist;
-- server-side Open Cloud notification sender is wired;
-- official Open Cloud `UserNotification` package source is vendored under Git/Rojo control;
-- client opt-in state is confirmed enabled.
-
-Live delivery is **not yet marked verified**.
-
-Current blocker for meaningful production delivery validation: Roblox experience-notification eligibility requires the experience to reach the platform visit threshold before personalized delivery can be relied on for testing. Re-test FactoryReady after the experience reaches **100 visits**.
-
-Production delay is restored to:
-
-- `FactoryReadyDelaySeconds = 30 * 60`
-
-Architecture limitation still tracked: the FactoryReady queue is polled by active Roblox game servers. If no game server is alive when a queued notification becomes due, nothing currently processes it until a game server is active again. An always-on Open Cloud worker is a later reliability option.
-
-## Automated validation status
-
-The project currently has nine shared/domain Jest suites, including offline-production coverage. The latest entitlement and client-state hardening changes passed the repository's automated gates:
-
-- Wally lock validation;
-- StyLua;
-- Selene;
-- shipping Rojo build;
-- test Rojo build;
-- OCALE no-publish Luau execution probe;
-- OCALE Jest runtime execution;
-- CodeQL with no new alerts in the changed code.
-
-These tests do **not** replace the still-needed server-service integration and live multiplayer/device passes. The largest remaining automated-test gap is integration coverage for DataService/MonetizationService/MachineService/EconomyService/RobotService interactions and hostile-client concurrency cases.
-
-## Live tests still pending
-
-Pending because they require a hardened-build Studio/published rerun, Robux, platform eligibility, or a real multi-server test:
-
-- rerun +2 Bot Work Slots against the hardened client calculation;
-- rerun Factory VIP duration and confirm exact 15% duration reduction at all configured assembler levels;
-- rerun Factory Club storage against near-capacity transaction scenarios;
-- published reconnect smoke test after profile schema v5 migration;
-- actual charged Developer Product purchase in the published experience;
-- durable receipt-ledger confirmation with a real Roblox receipt;
-- actual Factory Club subscription state/monthly reward in production;
-- personal-overclock live persistence after a real purchase;
-- Server Overclock recovery after a charged purchase and server interruption/rejoin;
-- FactoryReady push delivery after the experience reaches 100 visits;
-- ReferralReward push delivery under real referral qualification;
-- FactoryClubReward push delivery under a real subscription billing cycle;
-- NewContent cross-server announcement/notification delivery validation;
-- hostile-client/multiplayer runtime test pass;
-- mobile/small-screen/gamepad QA;
-- low-end and max-profile performance profiling.
-
-## Current known engineering TODO
-
-High-priority work remaining after the paid-entitlement fixes:
-
-- add server-service integration tests for receipt, economy/storage, subscription, machine, robot, transaction-contention, and migration paths;
-- replace routine full-profile client snapshots with targeted deltas where practical;
-- profile full-profile transaction copy/sanitize cost under max inventory and multiplayer load;
-- introduce a typed `ProfileData` contract to reduce `any` across the durable data path;
-- split the large React `App.lua` surface into testable components/hooks as the UI grows;
-- complete gamepad navigation, small-screen/mobile QA, and low-end performance profiling;
-- implement stronger physical factory progression and robot reveal polish before public validation;
+- expand server integration tests into MonetizationService, MachineService, RobotService, transaction contention, and reconnect paths;
+- continue replacing large routine full snapshots with targeted state deltas where measurement justifies it;
+- profile transaction deep-copy/sanitize cost with representative max robot inventories and eight players;
+- finish gamepad focus/navigation, small-screen/mobile QA, and low-end performance work;
+- implement stronger physical factory progression, robot reveal animation/VFX/audio, and production-quality world presentation;
 - protect `main` with required CI checks/rules before broader collaboration.
 
-## Current completion state
+## Launch interpretation
 
-### Verified enough to continue development
-
-- core gameplay loop at first-playable level;
-- base save/load/reconnect path;
-- offline production implementation;
-- server-authoritative economy/action validation;
-- Studio Developer Product grant/replay path;
-- Studio/live-shop prompt wiring;
-- Factory Club Studio grant/presentation path;
-- live notification opt-in controller path;
-- full repository branch reconciliation;
-- paid-entitlement correctness fixes merged and automated gates green;
-- client state ordering fixes merged and automated gates green.
-
-### Must still be runtime-validated before public launch
-
-- hardened paid-pass/subscription edge cases listed above;
-- real charged Robux receipts/subscription;
-- hostile-client and multiplayer concurrency;
-- mobile/gamepad/small-screen behavior;
-- representative low-end/max-profile performance;
-- notification delivery paths that depend on Roblox eligibility or real billing events.
-
-Do not mark blocked live-platform items as failed merely because they currently require Robux, notification eligibility, or multi-server conditions.
+The repository is beyond architecture/graybox-only implementation and has meaningful automated server coverage, but it is **not public-launch validated yet**. Do not mark paid or platform-dependent paths as production-verified until the required real Robux, multi-server, notification-eligibility, and device tests have actually run.

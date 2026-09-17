@@ -91,7 +91,7 @@ export type ProfileData = {
 	Settings: {
 		Audio: boolean,
 		Haptics: boolean,
-		UI: { [string]: any },
+		UI: { [string]: unknown },
 	},
 }
 
