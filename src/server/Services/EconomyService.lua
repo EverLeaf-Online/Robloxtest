@@ -38,7 +38,12 @@ function EconomyService.ValidateMaterialAmounts(amounts: any): boolean
 end
 
 function EconomyService.GetStorageCapacity(data: any): number
-	return FactoryRules.GetStorageCapacity(data.Machines.StorageLevel)
+	local capacity = FactoryRules.GetStorageCapacity(data.Machines.StorageLevel)
+	local cachedFlags = data.Entitlements and data.Entitlements.CachedPassFlags
+	if cachedFlags and cachedFlags.ExpandedStorage == true then
+		capacity *= 2
+	end
+	return math.floor(capacity)
 end
 
 function EconomyService.GetReservedProcessorStorage(data: any): number
