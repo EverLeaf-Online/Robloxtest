@@ -592,9 +592,8 @@ local function App()
 	local actionSuccess, setActionSuccess = React.useState(true)
 	local now, setNow = React.useState(os.time())
 	local compact, setCompact = React.useState(false)
-	local extraWorkSlots, setExtraWorkSlots = React.useState(
-		if LocalPlayer:GetAttribute("PassBotWorkSlots2") == true then 2 else 0
-	)
+	local extraWorkSlots, setExtraWorkSlots =
+		React.useState(if LocalPlayer:GetAttribute("PassBotWorkSlots2") == true then 2 else 0)
 
 	React.useEffect(function()
 		local stateRemote = getRemote(RemoteNames.StateSnapshot)
@@ -626,12 +625,13 @@ local function App()
 
 	React.useEffect(function()
 		local function refreshExtraWorkSlots()
-			setExtraWorkSlots(if LocalPlayer:GetAttribute("PassBotWorkSlots2") == true then 2 else 0)
+			setExtraWorkSlots(
+				if LocalPlayer:GetAttribute("PassBotWorkSlots2") == true then 2 else 0
+			)
 		end
 		refreshExtraWorkSlots()
-		local connection = LocalPlayer:GetAttributeChangedSignal("PassBotWorkSlots2"):Connect(
-			refreshExtraWorkSlots
-		)
+		local connection = LocalPlayer:GetAttributeChangedSignal("PassBotWorkSlots2")
+			:Connect(refreshExtraWorkSlots)
 		return function()
 			connection:Disconnect()
 		end
