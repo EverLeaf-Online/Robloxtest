@@ -260,6 +260,25 @@ local function persistActivePlay(player: Player)
 	end
 end
 
+function ReferralService.StudioGrantQualifiedReferral(player: Player): (boolean, string)
+	if not RunService:IsStudio() then
+		return false, "STUDIO_ONLY"
+	end
+	if not DataService.IsReady(player) then
+		return false, "PROFILE_NOT_READY"
+	end
+	local current = readQualifiedCount(player.UserId) or 0
+	if current >= GameConfig.Economy.MaxReferralRewards then
+		return false, "REFERRAL_REWARD_CAP_REACHED"
+	end
+	local fakeReferredUserId = 9_000_000_000 + current + 1
+	if not queueQualifiedReferral(player.UserId, fakeReferredUserId) then
+		return false, "REFERRAL_QUEUE_FAILED"
+	end
+	claimQueuedRewards(player)
+	return true, "REFERRAL_REWARD_GRANTED"
+end
+
 function ReferralService.Init()
 	if initialized then
 		return
@@ -285,7 +304,6 @@ function ReferralService.Init()
 					lastPersistAt[player] = nil
 				end
 			end
-		end
 	end)
 end
 
