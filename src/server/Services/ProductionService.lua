@@ -106,10 +106,8 @@ function ProductionService.ApplyOfflineProduction(player: Player): number
 		local granted = math.min(requested, room)
 		if granted > 0 then
 			profileData.Currencies.Credits += granted
-			profileData.Stats.LifetimeCredits = math.min(
-				GameConfig.Economy.MaxCredits,
-				profileData.Stats.LifetimeCredits + granted
-			)
+			profileData.Stats.LifetimeCredits =
+				math.min(GameConfig.Economy.MaxCredits, profileData.Stats.LifetimeCredits + granted)
 			profileData.Tutorial.Milestones.FirstIncomeEarned = true
 		end
 		profileData.Timestamps.LastProductionTick = now
@@ -130,8 +128,12 @@ function ProductionService.ApplyOfflineProduction(player: Player): number
 		return 0
 	end
 
-	local elapsed = if typeof(transactionResult.Elapsed) == "number" then transactionResult.Elapsed else 0
-	local granted = if typeof(transactionResult.Granted) == "number" then transactionResult.Granted else 0
+	local elapsed = if typeof(transactionResult.Elapsed) == "number"
+		then transactionResult.Elapsed
+		else 0
+	local granted = if typeof(transactionResult.Granted) == "number"
+		then transactionResult.Granted
+		else 0
 	player:SetAttribute("OfflineProductionSeconds", elapsed)
 	player:SetAttribute("OfflineCreditsGranted", granted)
 
