@@ -12,6 +12,7 @@ local AnalyticsService = require(script.Parent.AnalyticsService)
 local DataService = require(script.Parent.DataService)
 local EconomyService = require(script.Parent.EconomyService)
 local MonetizationService = require(script.Parent.MonetizationService)
+local PlotService = require(script.Parent.PlotService)
 local RemoteService = require(script.Parent.RemoteService)
 local StateService = require(script.Parent.StateService)
 
@@ -28,6 +29,37 @@ end
 
 local function validString(value: any): boolean
 	return Validation.isBoundedString(value, GameConfig.Networking.MaxStringLength)
+end
+
+local function playerPosition(player: Player): Vector3?
+	local character = player.Character
+	if character == nil then
+		return nil
+	end
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if root == nil or not root:IsA("BasePart") then
+		return nil
+	end
+	return root.Position
+end
+
+local function isNear(player: Player, part: BasePart): boolean
+	local position = playerPosition(player)
+	return position ~= nil
+		and (position - part.Position).Magnitude <= GameConfig.World.InteractionDistance
+end
+
+local function requireBotConsole(player: Player, actionName: string): boolean
+	local console = PlotService.GetBotConsole(player)
+	if console == nil then
+		StateService.ActionResult(player, actionName, false, "NO_FACTORY_PLOT", nil)
+		return false
+	end
+	if not isNear(player, console) then
+		StateService.ActionResult(player, actionName, false, "TOO_FAR_AWAY", nil)
+		return false
+	end
+	return true
 end
 
 local function parsePadIndex(padId: string): number?
@@ -89,6 +121,9 @@ function RobotService.Assign(player: Player, robotUid: any, padId: any)
 		)
 		return
 	end
+	if not requireBotConsole(player, RemoteNames.RequestAssignRobot) then
+		return
+	end
 
 	local padIndex = parsePadIndex(padId)
 	if padIndex == nil then
@@ -147,6 +182,9 @@ function RobotService.Unassign(player: Player, robotUid: any)
 		)
 		return
 	end
+	if not requireBotConsole(player, RemoteNames.RequestUnassignRobot) then
+		return
+	end
 
 	local executed, transactionResult = DataService.Transaction(player, function(data)
 		if data.Robots.OwnedByUid[robotUid] == nil then
@@ -178,6 +216,9 @@ function RobotService.Sell(player: Player, robotUid: any)
 			"INVALID_ROBOT_UID",
 			nil
 		)
+		return
+	end
+	if not requireBotConsole(player, RemoteNames.RequestSellRobot) then
 		return
 	end
 

@@ -109,6 +109,28 @@ function StateService.PushSnapshot(player: Player)
 	RemoteService.Get(RemoteNames.StateSnapshot):FireClient(player, snapshot)
 end
 
+function StateService.PushProductionDelta(player: Player)
+	local data = DataService.GetData(player)
+	if data == nil then
+		return
+	end
+
+	RemoteService.Get(RemoteNames.StateDelta):FireClient(player, {
+		Revision = data.Revision,
+		Currencies = {
+			Credits = data.Currencies.Credits,
+		},
+		Stats = {
+			LifetimeCredits = data.Stats.LifetimeCredits,
+		},
+		Tutorial = {
+			Milestones = {
+				FirstIncomeEarned = data.Tutorial.Milestones.FirstIncomeEarned == true,
+			},
+		},
+	})
+end
+
 function StateService.ActionResult(
 	player: Player,
 	actionName: string,

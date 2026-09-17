@@ -81,9 +81,8 @@ end
 local function acquireLock(userId: number): boolean
 	local now = os.time()
 	local owner = game.JobId
-	local claimed = false
-	local ok, err = pcall(function()
-		lockStore:UpdateAsync(queueKey(userId), function(old)
+	local ok, valueOrError = pcall(function()
+		return lockStore:UpdateAsync(queueKey(userId), function(old)
 			if typeof(old) == "table" then
 				local expiresAt = old.ExpiresAt
 				local oldOwner = old.Owner
@@ -91,7 +90,6 @@ local function acquireLock(userId: number): boolean
 					return old
 				end
 			end
-			claimed = true
 			return {
 				Owner = owner,
 				ExpiresAt = now + LOCK_SECONDS,
@@ -102,18 +100,39 @@ local function acquireLock(userId: number): boolean
 		warn(
 			("[FactoryReadyNotificationService] Lock failed for %d: %s"):format(
 				userId,
-				tostring(err)
+				tostring(valueOrError)
 			)
 		)
 		return false
 	end
-	return claimed
+
+	return typeof(valueOrError) == "table"
+		and valueOrError.Owner == owner
+		and typeof(valueOrError.ExpiresAt) == "number"
+		and valueOrError.ExpiresAt > now
 end
 
 local function releaseLock(userId: number)
-	pcall(function()
-		lockStore:RemoveAsync(queueKey(userId))
+	local owner = game.JobId
+	local ok, err = pcall(function()
+		lockStore:UpdateAsync(queueKey(userId), function(old)
+			if typeof(old) == "table" and old.Owner == owner then
+				return {
+					Owner = "",
+					ExpiresAt = 0,
+				}
+			end
+			return old
+		end)
 	end)
+	if not ok then
+		warn(
+			("[FactoryReadyNotificationService] Lock release failed for %d: %s"):format(
+				userId,
+				tostring(err)
+			)
+		)
+	end
 end
 
 local function deferRetry(userId: number)

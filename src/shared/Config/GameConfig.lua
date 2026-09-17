@@ -11,6 +11,7 @@ local GameConfig = {
 		MaxInstantProcessTokens = 10_000,
 		MaxFactoryClubCosmetics = 24,
 		MaxReferralRewards = 5,
+		MaxReceiptHistory = 500,
 	},
 
 	World = {
@@ -53,6 +54,7 @@ local GameConfig = {
 			RequestSellRobot = { Capacity = 6, RefillPerSecond = 2 },
 			RequestUpgrade = { Capacity = 4, RefillPerSecond = 1 },
 			RequestUnlockZone = { Capacity = 3, RefillPerSecond = 0.5 },
+			RequestPrestige = { Capacity = 1, RefillPerSecond = 0.1 },
 			RequestUseInstantProcessToken = { Capacity = 3, RefillPerSecond = 0.5 },
 			RequestEquipClubCosmetic = { Capacity = 4, RefillPerSecond = 1 },
 			RequestAdminBroadcast = { Capacity = 1, RefillPerSecond = 0.1 },
