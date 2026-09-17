@@ -1,8 +1,8 @@
 # Scrap-to-Bot Factory — Live Validation Status
 
 Status date: **2026-09-17**  
-Branch: `feat/scrap-to-bot-monetization-engagement`  
-Baseline head before this status update: `c9bffd438e1d034c1de50332fb2cbd1086e96c25`
+Source branch: `main`  
+Post-merge hardening head: `1b78f70b9b48179bc53329329f0e4bed5fcf5767`
 
 This is the current authoritative execution status for the monetization/engagement validation pass. It supersedes the older runtime assumptions in `FIRST_PLAYABLE_STATUS_2026-09-16.md` where they conflict.
 
@@ -11,7 +11,7 @@ This is the current authoritative execution status for the monetization/engageme
 - Experience/universe ID: `10766713640`
 - Current published test experience name: `Scrap-to-Bot Factory - Tests`
 - Current access during validation: Private
-- Rojo/Git source branch: `feat/scrap-to-bot-monetization-engagement`
+- Rojo/Git source branch: `main`
 
 ## Creator products configured
 
@@ -119,6 +119,30 @@ Roblox account settings were then inspected and confirmed:
 
 Therefore the live opt-in code path is working and the account is already in an enabled notification state. `PROMPT_UNAVAILABLE` is not treated as an error because Roblox does not expose a more specific reason when `CanPromptOptInAsync()` returns false.
 
+## Engagement hardening merged
+
+Post-merge hardening is now on `main` through PR #4.
+
+Implemented:
+
+- duplicate badge-award noise is avoided by checking `UserHasBadgeAsync` before attempting `AwardBadgeAsync`;
+- `FactoryClubRewardGranted` is wired to the configured `FactoryClubReward` experience notification;
+- `RequestAdminBroadcast` now has a server-authoritative creator check and cannot be used by ordinary clients;
+- creator-entered NewContent text is normalized, bounded to 120 UTF-8 characters, and filtered before live publication;
+- NewContent announcements publish through `MessagingService` for active servers;
+- active players receive an in-game announcement plus the configured `NewContent` notification send attempt;
+- broadcast deduplication is bounded to 100 message IDs per server;
+- the client renders the existing `Announcement` remote, which also makes referral reward announcements visible;
+- a creator-only client panel drives the existing rate-limited admin broadcast remote while the server remains authoritative.
+
+Validation on the hardening PR:
+
+- GitHub CI passed, including Wally lock validation, StyLua, Selene, shipping Rojo build, and test Rojo build;
+- the OCALE no-publish Luau execution probe passed;
+- the Jest runtime workflow still stopped at the place-publish step under the existing dedicated-test-place edit-lock condition, so this is not treated as a code regression.
+
+NewContent delivery is still **not marked live-verified** until a real cross-server published-session test is run. The current implementation targets active servers/players; it is not an offline full-audience campaign system.
+
 ## FactoryReady notification delivery — blocked for now
 
 Implementation status:
@@ -141,7 +165,7 @@ Also note an architecture reliability limitation: the current FactoryReady queue
 
 ## Live tests still pending
 
-Pending because they require Robux or platform eligibility:
+Pending because they require Robux, platform eligibility, or a real multi-server published test:
 
 - actual charged Developer Product purchase in the published experience;
 - actual Factory Club subscription state and monthly reward in production;
@@ -149,13 +173,14 @@ Pending because they require Robux or platform eligibility:
 - FactoryReady push delivery after the experience reaches 100 visits;
 - ReferralReward push delivery under real referral qualification;
 - FactoryClubReward push delivery under a real subscription billing cycle;
-- NewContent notification broadcast/delivery flow.
+- NewContent cross-server announcement/notification delivery validation.
 
 ## Current known housekeeping
 
-- Roblox server output may print yellow warnings such as `We already gave out badgeId=...` when the test account already owns a badge. These are noisy duplicate-award responses rather than gameplay failures; warning suppression/avoidance is a cleanup item.
+- Duplicate badge-award warnings have been addressed in code; re-check published server output after the next publish.
 - Server Overclock is intentionally server-session state, not player-profile persistence. A new server is not expected to inherit the previous server's timer under the current design.
 - FactoryReady production delay has been restored to 30 minutes after the temporary test.
+- The dedicated OCALE test place must release its edit lock before the full Jest runtime workflow can publish its temporary test build.
 
 ## Current completion state
 
@@ -169,13 +194,17 @@ Pending because they require Robux or platform eligibility:
 - Studio/live-shop prompt wiring;
 - Factory Club Studio grant/presentation path;
 - live notification opt-in/eligibility controller path;
-- notification settings enabled for the test experience.
+- notification settings enabled for the test experience;
+- static/build validation for post-merge engagement hardening;
+- OCALE no-publish Luau execution probe.
 
 ### Come back later
 
 - charged Robux receipt test;
 - real subscription test;
 - FactoryReady delivery after 100 visits;
-- other notification delivery events.
+- ReferralReward/FactoryClubReward live delivery;
+- NewContent cross-server live delivery;
+- full OCALE Jest execution after the dedicated place edit lock releases.
 
-Do not mark those later items failed simply because they are currently blocked by test-account funds or Roblox eligibility.
+Do not mark those later items failed simply because they are currently blocked by test-account funds, Roblox eligibility, or the external test-place edit lock.
