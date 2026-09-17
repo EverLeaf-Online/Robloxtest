@@ -10,6 +10,7 @@ local RemoteNames = require(ReplicatedStorage.Shared.Networking.RemoteNames)
 
 local DataService = require(script.Parent.DataService)
 local EconomyService = require(script.Parent.EconomyService)
+local NotificationService = require(script.Parent.NotificationService)
 local RemoteService = require(script.Parent.RemoteService)
 local StateService = require(script.Parent.StateService)
 
@@ -253,6 +254,9 @@ local function persistActivePlay(player: Player)
 	lastPersistAt[player] = previous + elapsed
 
 	if willQualify then
+		task.spawn(function()
+			NotificationService.SendToUser(inviterUserId, "ReferralReward", "referral_reward")
+		end)
 		local inviter = Players:GetPlayerByUserId(inviterUserId)
 		if inviter ~= nil and DataService.IsReady(inviter) then
 			task.defer(claimQueuedRewards, inviter)
@@ -303,7 +307,6 @@ function ReferralService.Init()
 				else
 					lastPersistAt[player] = nil
 				end
-			end
 		end
 	end)
 end
