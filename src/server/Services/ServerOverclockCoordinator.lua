@@ -9,8 +9,11 @@ local Workspace = game:GetService("Workspace")
 
 local RobloxIds = require(ReplicatedStorage.Shared.Config.RobloxIds)
 
+local ServerOverclockLeaseRules = require(script.Parent.Parent.Domain.ServerOverclockLeaseRules)
 local DataService = require(script.Parent.DataService)
 local MonetizationService = require(script.Parent.MonetizationService)
+
+type LeaseRecord = ServerOverclockLeaseRules.LeaseRecord
 
 local ServerOverclockCoordinator = {}
 
@@ -30,34 +33,12 @@ local activeBoostUntil = 0
 local activeLeaseUntil = 0
 local attributeWriteActive = false
 
-type LeaseRecord = {
-	BoostUntil: number,
-	OwnerJobId: string,
-	LeaseUntil: number,
-	UpdatedAt: number,
-	AppliedPurchases: { [string]: boolean },
-}
-
 local function leaseKey(leaseId: string): string
 	return "Lease_" .. leaseId
 end
 
 local function isValidLeaseId(value: any): boolean
 	return typeof(value) == "string" and #value > 0 and #value <= 128
-end
-
-local function normalizeRecord(value: any): LeaseRecord
-	local record = if typeof(value) == "table" then value else {}
-	local applied = if typeof(record.AppliedPurchases) == "table"
-		then record.AppliedPurchases
-		else {}
-	return {
-		BoostUntil = if typeof(record.BoostUntil) == "number" then record.BoostUntil else 0,
-		OwnerJobId = if typeof(record.OwnerJobId) == "string" then record.OwnerJobId else "",
-		LeaseUntil = if typeof(record.LeaseUntil) == "number" then record.LeaseUntil else 0,
-		UpdatedAt = if typeof(record.UpdatedAt) == "number" then record.UpdatedAt else 0,
-		AppliedPurchases = applied,
-	}
 end
 
 local function hasEffectiveServerOverclock(): boolean
@@ -94,7 +75,7 @@ local function updateLease(
 	local ok, updatedOrError = pcall(function()
 		return LeaseStore:UpdateAsync(leaseKey(leaseId), function(current)
 			local now = os.time()
-			local record = normalizeRecord(current)
+			local record = ServerOverclockLeaseRules.Normalize(current)
 			return transform(record, now)
 		end)
 	end)
@@ -110,7 +91,7 @@ local function updateLease(
 	if typeof(updatedOrError) ~= "table" then
 		return nil
 	end
-	return normalizeRecord(updatedOrError)
+	return ServerOverclockLeaseRules.Normalize(updatedOrError)
 end
 
 local function choosePurchaseLeaseId(): string
@@ -126,22 +107,22 @@ local function ensurePurchaseApplied(player: Player, purchaseId: string): boolea
 	end
 
 	local leaseId = choosePurchaseLeaseId()
+	local applied = false
 	local updated = updateLease(leaseId, function(record, now)
-		if record.OwnerJobId ~= "" and record.OwnerJobId ~= SESSION_ID and record.LeaseUntil > now then
-			return record
-		end
-
-		if record.AppliedPurchases[purchaseId] ~= true then
-			record.BoostUntil = math.max(record.BoostUntil, now) + BOOST_SECONDS
-			record.AppliedPurchases[purchaseId] = true
-		end
-		record.OwnerJobId = SESSION_ID
-		record.LeaseUntil = now + LEASE_SECONDS
-		record.UpdatedAt = now
-		return record
+		local nextRecord, accepted = ServerOverclockLeaseRules.ApplyPurchase(
+			record,
+			SESSION_ID,
+			purchaseId,
+			now,
+			BOOST_SECONDS,
+			LEASE_SECONDS
+		)
+		applied = accepted
+		return nextRecord
 	end)
 	if
 		updated == nil
+		or not applied
 		or updated.OwnerJobId ~= SESSION_ID
 		or updated.AppliedPurchases[purchaseId] ~= true
 	then
@@ -174,19 +155,19 @@ local function tryRecoverForPlayer(player: Player)
 		return
 	end
 
+	local claimed = false
 	local updated = updateLease(leaseId, function(record, now)
-		if record.BoostUntil <= now then
-			return record
-		end
-		if record.OwnerJobId ~= "" and record.OwnerJobId ~= SESSION_ID and record.LeaseUntil > now then
-			return record
-		end
-		record.OwnerJobId = SESSION_ID
-		record.LeaseUntil = now + LEASE_SECONDS
-		record.UpdatedAt = now
-		return record
+		local nextRecord, accepted =
+			ServerOverclockLeaseRules.Claim(record, SESSION_ID, now, LEASE_SECONDS)
+		claimed = accepted
+		return nextRecord
 	end)
-	if updated ~= nil and updated.OwnerJobId == SESSION_ID and updated.BoostUntil > os.time() then
+	if
+		claimed
+		and updated ~= nil
+		and updated.OwnerJobId == SESSION_ID
+		and updated.BoostUntil > os.time()
+	then
 		adoptLease(leaseId, updated)
 	end
 end
@@ -202,15 +183,14 @@ local function heartbeat()
 		return
 	end
 
+	local renewed = false
 	local updated = updateLease(leaseId, function(record, updateNow)
-		if record.OwnerJobId ~= SESSION_ID or record.BoostUntil <= updateNow then
-			return record
-		end
-		record.LeaseUntil = updateNow + LEASE_SECONDS
-		record.UpdatedAt = updateNow
-		return record
+		local nextRecord, accepted =
+			ServerOverclockLeaseRules.Renew(record, SESSION_ID, updateNow, LEASE_SECONDS)
+		renewed = accepted
+		return nextRecord
 	end)
-	if updated ~= nil and updated.OwnerJobId == SESSION_ID then
+	if renewed and updated ~= nil and updated.OwnerJobId == SESSION_ID then
 		adoptLease(leaseId, updated)
 	elseif activeLeaseUntil <= now then
 		clearActiveLease()
@@ -225,12 +205,7 @@ local function releaseActiveLease()
 	end
 	local leaseId = activeLeaseId
 	updateLease(leaseId, function(record, now)
-		if record.OwnerJobId == SESSION_ID then
-			record.OwnerJobId = ""
-			record.LeaseUntil = 0
-			record.UpdatedAt = now
-		end
-		return record
+		return ServerOverclockLeaseRules.Release(record, SESSION_ID, now)
 	end)
 end
 
@@ -266,6 +241,9 @@ function ServerOverclockCoordinator.Init()
 		return decision
 	end
 
+	-- Production reads this exported function dynamically. Replacing it here keeps the
+	-- existing pass/personal-overclock behavior while making the server-wide multiplier
+	-- contingent on this server holding the exclusive lease.
 	MonetizationService.GetProductionMultiplier = function(player: Player): number
 		local multiplier = MonetizationService.GetPermanentProductionMultiplier(player)
 		local data = DataService.GetData(player)
@@ -282,6 +260,8 @@ function ServerOverclockCoordinator.Init()
 		task.spawn(tryRecoverForPlayer, player)
 	end)
 
+	-- MonetizationService still owns the legacy presentation attributes. Keep them
+	-- corrected to lease-backed effective state if that legacy path writes them.
 	Workspace:GetAttributeChangedSignal("ServerOverclockUntil"):Connect(function()
 		if not attributeWriteActive then
 			task.defer(refreshWorkspaceAttributes)
