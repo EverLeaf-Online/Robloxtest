@@ -72,10 +72,7 @@ function EconomyService.GetReservedProcessorStorage(data: ProfileData): number
 	return totalAmounts(recipe.Output)
 end
 
-function EconomyService.CanAffordMaterials(
-	data: ProfileData,
-	cost: { [string]: number }
-): boolean
+function EconomyService.CanAffordMaterials(data: ProfileData, cost: { [string]: number }): boolean
 	return EconomyService.ValidateMaterialAmounts(cost)
 		and FactoryRules.CanAfford(data.Materials, cost)
 end
