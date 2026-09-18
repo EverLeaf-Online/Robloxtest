@@ -7,6 +7,7 @@ local Workspace = game:GetService("Workspace")
 
 local RemoteNames = require(ReplicatedStorage.Shared.Networking.RemoteNames)
 local RobloxIds = require(ReplicatedStorage.Shared.Config.RobloxIds)
+local HUDIconFactory = require(script.Parent.Parent.UI.HUDIconFactory)
 
 local MonetizationShopController = {}
 local initialized = false
@@ -168,34 +169,7 @@ local function createUi()
 	toggle.AutoButtonColor = false
 	toggle.Parent = gui
 
-	local iconPlate = Instance.new("Frame")
-	iconPlate.Name = "Icon"
-	iconPlate.AnchorPoint = Vector2.new(0.5, 0)
-	iconPlate.Position = UDim2.fromScale(0.5, 0)
-	iconPlate.Size = UDim2.fromOffset(54, 54)
-	iconPlate.BackgroundColor3 = Color3.fromRGB(38, 126, 91)
-	iconPlate.BorderSizePixel = 0
-	iconPlate.Parent = toggle
-
-	local iconCorner = Instance.new("UICorner")
-	iconCorner.CornerRadius = UDim.new(1, 0)
-	iconCorner.Parent = iconPlate
-
-	local iconStroke = Instance.new("UIStroke")
-	iconStroke.Color = Color3.fromRGB(104, 214, 156)
-	iconStroke.Thickness = 2
-	iconStroke.Transparency = 0.15
-	iconStroke.Parent = iconPlate
-
-	local icon = Instance.new("TextLabel")
-	icon.Name = "Glyph"
-	icon.Size = UDim2.fromScale(1, 1)
-	icon.BackgroundTransparency = 1
-	icon.Font = Enum.Font.GothamBold
-	icon.Text = "$"
-	icon.TextColor3 = Color3.fromRGB(255, 255, 255)
-	icon.TextSize = 30
-	icon.Parent = iconPlate
+	local iconPlate = HUDIconFactory.CreateShop(toggle, 54)
 
 	local toggleLabel = Instance.new("TextLabel")
 	toggleLabel.Name = "Label"
