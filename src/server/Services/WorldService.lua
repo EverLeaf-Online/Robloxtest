@@ -156,8 +156,11 @@ local function buildPlotPerimeter(plot: Model, plotId: number, center: Vector3)
 		Vector3.new(WorldLayout.Plot.Size.X, 7, 4),
 		center + Vector3.new(0, 3.5, halfZ - 2)
 	)
-	north.Material = Enum.Material.Metal
+	north.Material = Enum.Material.SmoothPlastic
 	north.Color = wallColor
+	north.Transparency = 1
+	north.CanTouch = false
+	north.CanQuery = false
 	tagPlotPart(north, plotId)
 
 	for _, side in { -1, 1 } do
@@ -167,8 +170,11 @@ local function buildPlotPerimeter(plot: Model, plotId: number, center: Vector3)
 			Vector3.new(4, 7, WorldLayout.Plot.Size.Z),
 			center + Vector3.new(side * (halfX - 2), 3.5, 0)
 		)
-		wall.Material = Enum.Material.Metal
+		wall.Material = Enum.Material.SmoothPlastic
 		wall.Color = wallColor
+		wall.Transparency = 1
+		wall.CanTouch = false
+		wall.CanQuery = false
 		tagPlotPart(wall, plotId)
 	end
 
@@ -179,8 +185,11 @@ local function buildPlotPerimeter(plot: Model, plotId: number, center: Vector3)
 			Vector3.new(100, 7, 4),
 			center + Vector3.new(side * 70, 3.5, -(halfZ - 2))
 		)
-		wall.Material = Enum.Material.Metal
+		wall.Material = Enum.Material.SmoothPlastic
 		wall.Color = wallColor
+		wall.Transparency = 1
+		wall.CanTouch = false
+		wall.CanQuery = false
 		tagPlotPart(wall, plotId)
 	end
 end
@@ -324,7 +333,8 @@ local function buildFactoryPlot(parent: Folder, plotId: number, center: Vector3)
 	spawn.Anchored = true
 	spawn.Neutral = true
 	spawn.Size = Vector3.new(8, 1, 8)
-	spawn.Position = entry.Position + Vector3.new(0, 0.8, 0)
+	local spawnPosition = entry.Position + Vector3.new(0, 0.8, 0)
+	spawn.CFrame = CFrame.lookAt(spawnPosition, spawnPosition + Vector3.new(0, 0, 24))
 	spawn.Transparency = 1
 	spawn.CanCollide = false
 	spawn.Parent = plot

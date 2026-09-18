@@ -3,6 +3,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
+local WorldLayout = require(ReplicatedStorage.Shared.Config.WorldLayout)
 local NativeAssetBuilder = require(script.Parent.Parent.Presentation.NativeAssetBuilder)
 local WorldService = require(script.Parent.WorldService)
 
@@ -95,6 +96,131 @@ local function addUIPrompt(part: BasePart, panelName: string, objectText: string
 	prompt.RequiresLineOfSight = false
 	prompt:SetAttribute("LocalUIPanel", panelName)
 	prompt.Parent = part
+end
+
+local function buildPerimeterPresentation(plot: Model, plotId: number, center: Vector3)
+	local halfX = WorldLayout.Plot.Size.X / 2
+	local halfZ = WorldLayout.Plot.Size.Z / 2
+	local railColor = Color3.fromRGB(72, 82, 92)
+	local postColor = Color3.fromRGB(92, 104, 116)
+
+	local function rail(name: string, size: Vector3, position: Vector3)
+		makeDecoration(plot, plotId, name, size, position, railColor, Enum.Material.Metal)
+	end
+
+	local function post(name: string, position: Vector3)
+		makeDecoration(
+			plot,
+			plotId,
+			name,
+			Vector3.new(0.9, 5.4, 0.9),
+			position + Vector3.new(0, 3.1, 0),
+			postColor,
+			Enum.Material.Metal
+		)
+	end
+
+	for level, y in { 2.1, 4.5 } do
+		rail(
+			("NorthRail%d"):format(level),
+			Vector3.new(WorldLayout.Plot.Size.X - 6, 0.38, 0.38),
+			center + Vector3.new(0, y, halfZ - 2)
+		)
+		for _, side in { -1, 1 } do
+			rail(
+				("SideRail%d_%d"):format(if side < 0 then 1 else 2, level),
+				Vector3.new(0.38, 0.38, WorldLayout.Plot.Size.Z - 6),
+				center + Vector3.new(side * (halfX - 2), y, 0)
+			)
+			rail(
+				("SouthRail%d_%d"):format(if side < 0 then 1 else 2, level),
+				Vector3.new(96, 0.38, 0.38),
+				center + Vector3.new(side * 70, y, -(halfZ - 2))
+			)
+		end
+	end
+
+	for index, offset in
+		{
+			Vector3.new(-(halfX - 2), 0, -(halfZ - 2)),
+			Vector3.new(halfX - 2, 0, -(halfZ - 2)),
+			Vector3.new(-(halfX - 2), 0, halfZ - 2),
+			Vector3.new(halfX - 2, 0, halfZ - 2),
+			Vector3.new(-20, 0, -(halfZ - 2)),
+			Vector3.new(20, 0, -(halfZ - 2)),
+			Vector3.new(-(halfX - 2), 0, 0),
+			Vector3.new(halfX - 2, 0, 0),
+		}
+	do
+		post(("PerimeterPost%d"):format(index), center + offset)
+	end
+end
+
+local function buildEntrance(plot: Model, plotId: number, center: Vector3)
+	local entry = center + WorldLayout.Plot.EntryOffset
+	local dark = Color3.fromRGB(48, 54, 62)
+	local steel = Color3.fromRGB(86, 96, 106)
+	local cyan = Color3.fromRGB(70, 205, 224)
+
+	for index, zOffset in { -58, -46, -34 } do
+		makeDecoration(
+			plot,
+			plotId,
+			("EntryApron%d"):format(index),
+			Vector3.new(14, 0.14, 10),
+			Vector3.new(center.X, center.Y + 0.58, center.Z + zOffset),
+			dark,
+			Enum.Material.DiamondPlate
+		)
+
+		for _, xOffset in { -6.4, 6.4 } do
+			local strip = makeDecoration(
+				plot,
+				plotId,
+				("EntryGuide%d_%d"):format(index, if xOffset < 0 then 1 else 2),
+				Vector3.new(0.18, 0.08, 8.6),
+				Vector3.new(center.X + xOffset, center.Y + 0.72, center.Z + zOffset),
+				cyan,
+				Enum.Material.Neon
+			)
+			strip.Transparency = 0.08
+		end
+	end
+
+	for _, xOffset in { -10, 10 } do
+		for index, zOffset in { -60, -40 } do
+			makeDecoration(
+				plot,
+				plotId,
+				("EntryBollard_%d_%d"):format(if xOffset < 0 then 1 else 2, index),
+				Vector3.new(0.8, 3.4, 0.8),
+				Vector3.new(center.X + xOffset, center.Y + 2.2, center.Z + zOffset),
+				steel,
+				Enum.Material.Metal
+			)
+			local lamp = makeDecoration(
+				plot,
+				plotId,
+				("EntryLamp_%d_%d"):format(if xOffset < 0 then 1 else 2, index),
+				Vector3.new(1, 0.35, 1),
+				Vector3.new(center.X + xOffset, center.Y + 4, center.Z + zOffset),
+				cyan,
+				Enum.Material.Neon
+			)
+			lamp.Transparency = 0.05
+		end
+	end
+
+	local welcome = makeDecoration(
+		plot,
+		plotId,
+		"EntryWelcomePlate",
+		Vector3.new(18, 0.25, 3.4),
+		Vector3.new(entry.X, center.Y + 0.7, entry.Z + 9),
+		Color3.fromRGB(66, 73, 82),
+		Enum.Material.Metal
+	)
+	welcome:SetAttribute("EntryPresentation", true)
 end
 
 local function buildStorage(plot: Model, plotId: number, center: Vector3)
@@ -335,6 +461,8 @@ local function decoratePlot(plotId: number, plot: Model)
 	end
 
 	local center = floor.Position
+	buildPerimeterPresentation(plot, plotId, center)
+	buildEntrance(plot, plotId, center)
 	buildStorage(plot, plotId, center)
 	buildStations(plot, plotId, center)
 	buildExpansionSockets(plot, plotId, center)

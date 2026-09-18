@@ -4,8 +4,9 @@ local WorldLayout = {
 	Plot = {
 		Size = Vector3.new(240, 1, 200),
 		FactoryOffset = Vector3.new(0, 0, -18),
-		EntryOffset = Vector3.new(0, 1, -88),
-		SignOffset = Vector3.new(0, 3, -95),
+		EntryOffset = Vector3.new(0, 1, -68),
+		SignOffset = Vector3.new(-46, 3, -82),
+		ReturnPortalOffset = Vector3.new(92, 4.5, -70),
 	},
 
 	StarterSalvageOffsets = table.freeze({
