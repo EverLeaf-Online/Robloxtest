@@ -45,15 +45,15 @@ local function createGui(): (TextBox, TextButton, TextLabel)
 	local launcher = Instance.new("TextButton")
 	launcher.Name = "AdminButton"
 	launcher.AnchorPoint = Vector2.new(1, 0)
-	launcher.Position = UDim2.new(1, -14, 0, 58)
-	launcher.Size = UDim2.fromOffset(64, 70)
+	launcher.Position = UDim2.new(1, -16, 0, 82)
+	launcher.Size = UDim2.fromOffset(64, 72)
 	launcher.BackgroundTransparency = 1
 	launcher.BorderSizePixel = 0
 	launcher.Text = ""
 	launcher.AutoButtonColor = false
 	launcher.Parent = gui
 
-	local launcherIcon = HUDIconFactory.CreateAdmin(launcher, 48)
+	local launcherIcon = HUDIconFactory.CreateAdmin(launcher, 50)
 
 	local launcherLabel = Instance.new("TextLabel")
 	launcherLabel.AnchorPoint = Vector2.new(0.5, 1)
@@ -152,9 +152,9 @@ local function createGui(): (TextBox, TextButton, TextLabel)
 			return
 		end
 		local phone = camera.ViewportSize.X <= 760
-		launcher.Position = UDim2.new(1, -12, 0, if phone then 50 else 58)
-		launcher.Size = if phone then UDim2.fromOffset(58, 64) else UDim2.fromOffset(64, 70)
-		launcherIcon.Size = if phone then UDim2.fromOffset(44, 44) else UDim2.fromOffset(48, 48)
+		launcher.Position = UDim2.new(1, if phone then -12 else -16, 0, if phone then 74 else 82)
+		launcher.Size = if phone then UDim2.fromOffset(58, 66) else UDim2.fromOffset(64, 72)
+		launcherIcon.Size = if phone then UDim2.fromOffset(44, 44) else UDim2.fromOffset(50, 50)
 		frame.Size = if phone then UDim2.new(0.78, 0, 0, 188) else UDim2.fromOffset(390, 188)
 	end
 	refreshLayout()
