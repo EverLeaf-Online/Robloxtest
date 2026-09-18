@@ -86,6 +86,7 @@ local function buildStorage(plot: Model, plotId: number, center: Vector3)
 		)
 		if index == 2 then
 			addLabel(bin, "MATERIAL STORAGE")
+			addUIPrompt(bin, "Storage", "Material Storage")
 		end
 	end
 end
@@ -101,6 +102,7 @@ local function buildStations(plot: Model, plotId: number, center: Vector3)
 		Enum.Material.Metal
 	)
 	addLabel(recycle, "RECYCLE")
+	addUIPrompt(recycle, "Recycle", "Recycle Bots")
 
 	local indexTerminal = makePart(
 		plot,
