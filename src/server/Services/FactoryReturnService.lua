@@ -83,7 +83,8 @@ local function buildAttendant(): BasePart
 	assert(floor ~= nil and floor:IsA("BasePart"), "Factory floor missing")
 
 	local center = floor.Position + WorldLayout.Plot.HubReturnAttendantOffset
-	local frame = CFrame.lookAt(center, Vector3.new(floor.Position.X, center.Y, floor.Position.Z))
+	local facing = WorldLayout.Plot.HubReturnAttendantFacing
+	local frame = CFrame.lookAt(center, center + facing)
 	local anchor = Instance.new("Part")
 	anchor.Name = "HubReturnAttendant"
 	anchor.Anchored = true
