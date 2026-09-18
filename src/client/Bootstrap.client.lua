@@ -11,6 +11,7 @@ local InstantProcessController = require(script.Parent.Controllers.InstantProces
 local MonetizationShopController = require(script.Parent.Controllers.MonetizationShopController)
 local NotificationOptInController = require(script.Parent.Controllers.NotificationOptInController)
 local PlotController = require(script.Parent.Controllers.PlotController)
+local RobotWorkerController = require(script.Parent.Controllers.RobotWorkerController)
 local StudioToolsController = require(script.Parent.Controllers.StudioToolsController)
 local UIController = require(script.Parent.Controllers.UIController)
 local WorldInteractionController = require(script.Parent.Controllers.WorldInteractionController)
@@ -32,6 +33,7 @@ do
 end
 
 PlotController.Init()
+RobotWorkerController.Init()
 WorldInteractionController.Init()
 WorldLabelController.Init()
 ZonePresentationController.Init()

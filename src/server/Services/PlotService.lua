@@ -17,6 +17,15 @@ local ownerByPlot: { [number]: Player } = {}
 
 local NO_FREE_PLOT_MESSAGE = "This server has no free factory plot. Please join another server."
 
+local function teleportToEntry(player: Player, plotId: number)
+	local entry = WorldService.GetPlotEntry(plotId)
+	local character = player.Character
+	if entry == nil or character == nil then
+		return
+	end
+	character:PivotTo(CFrame.new(entry.Position + Vector3.new(0, 4, 0)))
+end
+
 local function setPlotProgressionAttributes(plotId: number, player: Player?)
 	local plot = WorldService.GetPlot(plotId)
 	if plot == nil then
@@ -27,6 +36,7 @@ local function setPlotProgressionAttributes(plotId: number, player: Player?)
 	local assemblerLevel = 1
 	local storageLevel = 1
 	local workSlotsLevel = 1
+	local unlockedZone = 1
 	local extraWorkSlots = 0
 
 	if player ~= nil then
@@ -36,6 +46,7 @@ local function setPlotProgressionAttributes(plotId: number, player: Player?)
 			assemblerLevel = data.Machines.AssemblerLevel
 			storageLevel = data.Machines.StorageLevel
 			workSlotsLevel = data.Machines.WorkSlotsLevel
+			unlockedZone = data.Progression.Zone
 		end
 		extraWorkSlots = if player:GetAttribute("PassBotWorkSlots2") == true then 2 else 0
 	end
@@ -50,6 +61,7 @@ local function setPlotProgressionAttributes(plotId: number, player: Player?)
 	plot:SetAttribute("StorageLevel", storageLevel)
 	plot:SetAttribute("WorkSlotsLevel", workSlotsLevel)
 	plot:SetAttribute("UnlockedWorkSlots", unlockedWorkSlots)
+	plot:SetAttribute("UnlockedZone", unlockedZone)
 end
 
 local function setPlotLabel(plotId: number, player: Player?)
@@ -131,6 +143,7 @@ function PlotService.Assign(player: Player): number?
 	ownerByPlot[plotId] = player
 	setPlotLabel(plotId, player)
 	setPlotProgressionAttributes(plotId, player)
+	task.defer(teleportToEntry, player, plotId)
 	return plotId
 end
 
@@ -213,8 +226,26 @@ function PlotService.Init()
 	Players.PlayerRemoving:Connect(function(player)
 		release(player)
 	end)
+	Players.PlayerAdded:Connect(function(player)
+		player.CharacterAdded:Connect(function()
+			task.defer(function()
+				local plotId = plotByPlayer[player]
+				if plotId ~= nil then
+					teleportToEntry(player, plotId)
+				end
+			end)
+		end)
+	end)
 
 	for _, player in Players:GetPlayers() do
+		player.CharacterAdded:Connect(function()
+			task.defer(function()
+				local plotId = plotByPlayer[player]
+				if plotId ~= nil then
+					teleportToEntry(player, plotId)
+				end
+			end)
+		end)
 		if DataService.IsReady(player) then
 			PlotService.Assign(player)
 		end

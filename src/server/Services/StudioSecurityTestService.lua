@@ -166,9 +166,14 @@ local function moveFar(player: Player, part: BasePart): boolean
 	return true
 end
 
-local function findActiveSalvageNode(): (string?, BasePart?)
+local function findActiveSalvageNode(plotId: number?): (string?, BasePart?)
 	for nodeId, node in WorldService.GetSalvageNodes() do
-		if node.CanCollide and node.Transparency < 0.7 then
+		local nodePlotId = node:GetAttribute("PlotId")
+		if
+			node.CanCollide
+			and node.Transparency < 0.7
+			and (plotId == nil or nodePlotId == plotId)
+		then
 			return nodeId, node
 		end
 	end
@@ -274,7 +279,7 @@ local function runInvalidPayloadCase(player: Player)
 end
 
 local function runDistantSalvageCase(player: Player)
-	local nodeId, node = findActiveSalvageNode()
+	local nodeId, node = findActiveSalvageNode(PlotService.GetPlotId(player))
 	if nodeId == nil or node == nil then
 		report(player, "Distant salvage", false, "No active salvage node available")
 		return
@@ -500,7 +505,8 @@ local function runRepeatedUpgradeCase(player: Player)
 end
 
 local function runZoneSkipCase(player: Player)
-	local gate = WorldService.GetZoneGate(2)
+	local plotId = PlotService.GetPlotId(player)
+	local gate = if plotId ~= nil then WorldService.GetPlotZoneGate(plotId, 2) else nil
 	local data = DataService.GetData(player)
 	if gate == nil or data == nil then
 		report(player, "Zone skip", false, "Zone 2 gate or profile unavailable")
@@ -613,25 +619,26 @@ local function runSalvageRace(player: Player)
 	end
 
 	local secondPlayer = findOtherReadyPlayer(player)
-	local nodeId, node = findActiveSalvageNode()
+	local ownedPlotId = PlotService.GetPlotId(player)
+	local nodeId, node = findActiveSalvageNode(ownedPlotId)
 	if secondPlayer == nil then
-		report(player, "Same-node salvage race", false, "Start a 2-player local server first")
+		report(player, "Private salvage isolation", false, "Start a 2-player local server first")
 		return
 	end
 	if nodeId == nil or node == nil then
-		report(player, "Same-node salvage race", false, "No active salvage node available")
+		report(player, "Private salvage isolation", false, "No active owned salvage node available")
 		return
 	end
 
 	local firstData = DataService.GetData(player)
 	local secondData = DataService.GetData(secondPlayer)
 	if firstData == nil or secondData == nil then
-		report(player, "Same-node salvage race", false, "Profiles unavailable")
+		report(player, "Private salvage isolation", false, "Profiles unavailable")
 		return
 	end
 
 	suiteRunning[player] = true
-	suiteStatus(player, "Running synchronized salvage race...")
+	suiteStatus(player, "Running private salvage isolation test...")
 
 	local firstCharacter = saveCharacter(player)
 	local secondCharacter = saveCharacter(secondPlayer)
@@ -679,7 +686,7 @@ local function runSalvageRace(player: Player)
 
 	report(
 		player,
-		"Same-node salvage race",
+		"Private salvage isolation",
 		passed,
 		("P1 materials=%d, P2 materials=%d, nodeConsumed=%s"):format(
 			firstTotal,
@@ -687,7 +694,7 @@ local function runSalvageRace(player: Player)
 			tostring(nodeConsumed)
 		)
 	)
-	suiteStatus(player, "Salvage race complete")
+	suiteStatus(player, "Private salvage isolation complete")
 	suiteRunning[player] = nil
 end
 

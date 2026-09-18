@@ -4,21 +4,31 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
 local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
+local WorldLayout = require(ReplicatedStorage.Shared.Config.WorldLayout)
 local Zones = require(ReplicatedStorage.Shared.Config.Zones)
 
 local WorldService = {}
 local initialized = false
 local root: Folder? = nil
+
 local salvageNodes: { [string]: BasePart } = {}
 local processorControls: { BasePart } = {}
 local processorControlByRecipe: { [string]: BasePart } = {}
 local assemblerPart: BasePart? = nil
+
 local plotModels: { [number]: Model } = {}
 local plotProcessorControls: { [number]: { [string]: BasePart } } = {}
 local plotAssemblers: { [number]: BasePart } = {}
 local plotWorkPads: { [number]: { [string]: BasePart } } = {}
+local plotWorkNodes: { [number]: { [string]: BasePart } } = {}
 local plotSigns: { [number]: BasePart } = {}
 local plotEntries: { [number]: BasePart } = {}
+local plotZoneGates: { [number]: { [number]: BasePart } } = {}
+local plotZoneArrivals: { [number]: { [number]: BasePart } } = {}
+local plotZoneReturns: { [number]: { [number]: BasePart } } = {}
+local allZoneGates: { BasePart } = {}
+local allZoneReturns: { BasePart } = {}
+
 local zoneGateByTarget: { [number]: BasePart } = {}
 local zoneArrivalById: { [number]: BasePart } = {}
 local zoneReturnById: { [number]: BasePart } = {}
@@ -33,6 +43,15 @@ local function makePart(parent: Instance, name: string, size: Vector3, position:
 	part.BottomSurface = Enum.SurfaceType.Smooth
 	part.Parent = parent
 	return part
+end
+
+local function makeMarker(parent: Instance, name: string, position: Vector3): Part
+	local marker = makePart(parent, name, Vector3.new(2, 0.4, 2), position)
+	marker.Transparency = 1
+	marker.CanCollide = false
+	marker.CanTouch = false
+	marker.CanQuery = false
+	return marker
 end
 
 local function addPrompt(part: BasePart, actionText: string, objectText: string): ProximityPrompt
@@ -77,12 +96,14 @@ end
 local function registerProcessorControl(plotId: number, part: BasePart, recipeId: string)
 	part:SetAttribute("ProcessorRecipeId", recipeId)
 	tagPlotPart(part, plotId)
+
 	local controls = plotProcessorControls[plotId]
 	if controls == nil then
 		controls = {}
 		plotProcessorControls[plotId] = controls
 	end
 	controls[recipeId] = part
+
 	if plotId == 1 then
 		processorControlByRecipe[recipeId] = part
 	end
@@ -93,14 +114,184 @@ local function registerSalvageNode(
 	parent: Instance,
 	nodeId: string,
 	position: Vector3,
-	zoneId: number
+	zoneId: number,
+	plotId: number?
 )
 	local node = makePart(parent, nodeId, Vector3.new(7, 3, 7), position)
 	node.Material = Enum.Material.Metal
+	node.Color = if zoneId == 1 then Color3.fromRGB(93, 84, 73) else Color3.fromRGB(67, 92, 104)
 	node:SetAttribute("SalvageNodeId", nodeId)
 	node:SetAttribute("ZoneId", zoneId)
-	addPrompt(node, "Collect", if zoneId == 1 then "Scrap Pile" else "Circuit Scrap")
+	if plotId ~= nil then
+		tagPlotPart(node, plotId)
+		node:SetAttribute("PrivateSalvage", true)
+	end
+
+	addPrompt(node, "Collect", if zoneId == 1 then "Your Scrap Pile" else "Your Circuit Scrap")
 	salvageNodes[nodeId] = node
+end
+
+local function registerWorkNode(
+	folder: Folder,
+	plotId: number,
+	nodeName: string,
+	position: Vector3
+): BasePart
+	local node = makeMarker(folder, nodeName, position)
+	tagPlotPart(node, plotId)
+	node:SetAttribute("BotWorkNode", true)
+	node:SetAttribute("WorkNodeKind", nodeName)
+	plotWorkNodes[plotId][nodeName] = node
+	return node
+end
+
+local function buildPlotPerimeter(plot: Model, plotId: number, center: Vector3)
+	local halfX = WorldLayout.Plot.Size.X / 2
+	local halfZ = WorldLayout.Plot.Size.Z / 2
+	local wallColor = Color3.fromRGB(67, 72, 78)
+
+	local north = makePart(
+		plot,
+		"NorthBoundary",
+		Vector3.new(WorldLayout.Plot.Size.X, 7, 4),
+		center + Vector3.new(0, 3.5, halfZ - 2)
+	)
+	north.Material = Enum.Material.Metal
+	north.Color = wallColor
+	tagPlotPart(north, plotId)
+
+	for _, side in { -1, 1 } do
+		local wall = makePart(
+			plot,
+			if side < 0 then "WestBoundary" else "EastBoundary",
+			Vector3.new(4, 7, WorldLayout.Plot.Size.Z),
+			center + Vector3.new(side * (halfX - 2), 3.5, 0)
+		)
+		wall.Material = Enum.Material.Metal
+		wall.Color = wallColor
+		tagPlotPart(wall, plotId)
+	end
+
+	for _, side in { -1, 1 } do
+		local wall = makePart(
+			plot,
+			if side < 0 then "SouthBoundaryLeft" else "SouthBoundaryRight",
+			Vector3.new(100, 7, 4),
+			center + Vector3.new(side * 70, 3.5, -(halfZ - 2))
+		)
+		wall.Material = Enum.Material.Metal
+		wall.Color = wallColor
+		tagPlotPart(wall, plotId)
+	end
+end
+
+local function buildPrivateSalvage(plot: Model, plotId: number, center: Vector3)
+	local starterFolder = Instance.new("Folder")
+	starterFolder.Name = "StarterSalvage"
+	starterFolder.Parent = plot
+
+	for index, offset in WorldLayout.StarterSalvageOffsets do
+		registerSalvageNode(
+			starterFolder,
+			("P%02d_Scrap%02d"):format(plotId, index),
+			center + offset,
+			1,
+			plotId
+		)
+	end
+
+	local starterSign = makePart(
+		plot,
+		"StarterSalvageSign",
+		Vector3.new(10, 5, 1),
+		center + Vector3.new(-66, 3, 83)
+	)
+	starterSign.Material = Enum.Material.Metal
+	tagPlotPart(starterSign, plotId)
+	addBillboard(starterSign, "YOUR SCRAP FIELD")
+
+	local circuitFolder = Instance.new("Folder")
+	circuitFolder.Name = "CircuitSalvage"
+	circuitFolder.Parent = plot
+
+	for index, offset in WorldLayout.CircuitSalvageOffsets do
+		registerSalvageNode(
+			circuitFolder,
+			("P%02d_Circuit%02d"):format(plotId, index),
+			center + offset,
+			2,
+			plotId
+		)
+	end
+
+	local circuitSign =
+		makePart(plot, "CircuitSalvageSign", Vector3.new(10, 5, 1), center + Vector3.new(73, 3, 88))
+	circuitSign.Material = Enum.Material.Metal
+	tagPlotPart(circuitSign, plotId)
+	addBillboard(circuitSign, "PRIVATE CIRCUIT FIELD")
+end
+
+local function buildBotWorkNodes(plot: Model, plotId: number, center: Vector3)
+	local folder = Instance.new("Folder")
+	folder.Name = "BotWorkNodes"
+	folder.Parent = plot
+
+	for nodeName, offset in WorldLayout.BotWorkOffsets do
+		registerWorkNode(folder, plotId, nodeName, center + offset)
+	end
+end
+
+local function buildPlotZoneAccess(plot: Model, plotId: number, center: Vector3)
+	local zoneTwo = Zones[2]
+
+	local gate = makePart(
+		plot,
+		"CircuitYardGate",
+		Vector3.new(8, 10, 3),
+		center + WorldLayout.CircuitGateOffset
+	)
+	gate.Material = Enum.Material.Metal
+	gate.Color = Color3.fromRGB(103, 80, 67)
+	gate:SetAttribute("TargetZone", 2)
+	tagPlotPart(gate, plotId)
+	addPrompt(gate, "Unlock / Travel", zoneTwo.DisplayName)
+	addBillboard(
+		gate,
+		("%s\n%d Credits • Build %d Bots"):format(
+			zoneTwo.DisplayName,
+			zoneTwo.UnlockCredits,
+			zoneTwo.RequiredLifetimeRobots
+		)
+	)
+
+	local arrival =
+		makeMarker(plot, "CircuitYardArrival", center + WorldLayout.CircuitArrivalOffset)
+	tagPlotPart(arrival, plotId)
+	arrival:SetAttribute("ZoneId", 2)
+
+	local returnPortal = makePart(
+		plot,
+		"CircuitYardReturn",
+		Vector3.new(7, 7, 3),
+		center + WorldLayout.CircuitReturnOffset
+	)
+	returnPortal.Material = Enum.Material.Metal
+	returnPortal.Color = Color3.fromRGB(64, 82, 92)
+	returnPortal:SetAttribute("CurrentZone", 2)
+	tagPlotPart(returnPortal, plotId)
+	addPrompt(returnPortal, "Return", Zones[1].DisplayName)
+
+	plotZoneGates[plotId] = { [2] = gate }
+	plotZoneArrivals[plotId] = { [2] = arrival }
+	plotZoneReturns[plotId] = { [2] = returnPortal }
+	table.insert(allZoneGates, gate)
+	table.insert(allZoneReturns, returnPortal)
+
+	if plotId == 1 then
+		zoneGateByTarget[2] = gate
+		zoneArrivalById[2] = arrival
+		zoneReturnById[2] = returnPortal
+	end
 end
 
 local function buildFactoryPlot(parent: Folder, plotId: number, center: Vector3)
@@ -108,45 +299,55 @@ local function buildFactoryPlot(parent: Folder, plotId: number, center: Vector3)
 	plot.Name = ("Plot%02d"):format(plotId)
 	plot:SetAttribute("PlotId", plotId)
 	plot:SetAttribute("OwnerUserId", 0)
+	plot:SetAttribute("PlotWidth", WorldLayout.Plot.Size.X)
+	plot:SetAttribute("PlotDepth", WorldLayout.Plot.Size.Z)
 	plot.Parent = parent
+
 	plotModels[plotId] = plot
 	plotWorkPads[plotId] = {}
+	plotWorkNodes[plotId] = {}
 
-	local floor = makePart(plot, "Floor", Vector3.new(56, 1, 40), center)
+	local floor = makePart(plot, "Floor", WorldLayout.Plot.Size, center)
 	floor.Material = Enum.Material.Concrete
+	floor.Color = Color3.fromRGB(116, 116, 112)
 	tagPlotPart(floor, plotId)
 
-	local entry = makePart(plot, "Entry", Vector3.new(5, 1, 5), center + Vector3.new(0, 1, -16))
-	entry.Transparency = 1
-	entry.CanCollide = false
+	local entry = makeMarker(plot, "Entry", center + WorldLayout.Plot.EntryOffset)
 	tagPlotPart(entry, plotId)
 	plotEntries[plotId] = entry
 
-	local sign = makePart(plot, "OwnerSign", Vector3.new(6, 5, 1), center + Vector3.new(0, 3, -18))
+	local sign =
+		makePart(plot, "OwnerSign", Vector3.new(8, 6, 1), center + WorldLayout.Plot.SignOffset)
 	sign.Material = Enum.Material.Metal
 	tagPlotPart(sign, plotId)
-	addBillboard(sign, ("Factory Plot %d\nUnclaimed"):format(plotId), "OwnerLabel")
+	addBillboard(sign, ("Private Factory %d\nUnclaimed"):format(plotId), "OwnerLabel")
 	plotSigns[plotId] = sign
 
+	local factoryCenter = center + WorldLayout.Plot.FactoryOffset
+
 	local processor =
-		makePart(plot, "Processor", Vector3.new(11, 8, 9), center + Vector3.new(-15, 4.5, 4))
+		makePart(plot, "Processor", Vector3.new(11, 8, 9), factoryCenter + Vector3.new(-30, 4.5, 0))
 	processor.Material = Enum.Material.Metal
 	processor.Color = Color3.fromRGB(54, 94, 112)
 	tagPlotPart(processor, plotId)
 	addBillboard(processor, "PROCESSOR")
 
 	local wiringControl =
-		makePart(plot, "MakeWiring", Vector3.new(5, 2, 4), center + Vector3.new(-18, 2, -5))
+		makePart(plot, "MakeWiring", Vector3.new(5, 2, 4), factoryCenter + Vector3.new(-33, 2, -10))
 	registerProcessorControl(plotId, wiringControl, "MakeWiring")
 	addPrompt(wiringControl, "Process", "Make Wiring")
 
-	local coreControl =
-		makePart(plot, "RecoverCore", Vector3.new(5, 2, 4), center + Vector3.new(-12, 2, -5))
+	local coreControl = makePart(
+		plot,
+		"RecoverCore",
+		Vector3.new(5, 2, 4),
+		factoryCenter + Vector3.new(-27, 2, -10)
+	)
 	registerProcessorControl(plotId, coreControl, "RecoverCore")
 	addPrompt(coreControl, "Process", "Recover Core")
 
 	local assembler =
-		makePart(plot, "Assembler", Vector3.new(11, 8, 9), center + Vector3.new(0, 4.5, 4))
+		makePart(plot, "Assembler", Vector3.new(11, 8, 9), factoryCenter + Vector3.new(-5, 4.5, 0))
 	assembler.Material = Enum.Material.Metal
 	assembler.Color = Color3.fromRGB(129, 89, 52)
 	tagPlotPart(assembler, plotId)
@@ -167,13 +368,18 @@ local function buildFactoryPlot(parent: Folder, plotId: number, center: Vector3)
 		local pad = makePart(
 			padsFolder,
 			padId,
-			Vector3.new(7, 0.5, 7),
-			center + Vector3.new(15 + column * 9, 0.75, -3 + row * 11)
+			Vector3.new(8, 0.5, 8),
+			factoryCenter + Vector3.new(24 + column * 11, 0.75, -8 + row * 12)
 		)
 		pad:SetAttribute("WorkPadId", padId)
 		tagPlotPart(pad, plotId)
 		plotWorkPads[plotId][padId] = pad
 	end
+
+	buildPlotPerimeter(plot, plotId, center)
+	buildPrivateSalvage(plot, plotId, center)
+	buildBotWorkNodes(plot, plotId, center)
+	buildPlotZoneAccess(plot, plotId, center)
 end
 
 local function buildPlots(folder: Folder)
@@ -181,103 +387,32 @@ local function buildPlots(folder: Folder)
 	plotsFolder.Name = "FactoryPlots"
 	plotsFolder.Parent = folder
 
-	local columns = 4
 	for plotId = 1, GameConfig.World.PlotCount do
-		local column = (plotId - 1) % columns
-		local row = math.floor((plotId - 1) / columns)
-		local center = Vector3.new(-90 + column * 60, 0, 28 + row * 50)
-		buildFactoryPlot(plotsFolder, plotId, center)
+		buildFactoryPlot(plotsFolder, plotId, WorldLayout.GetPlotCenter(plotId))
 	end
 end
 
-local function buildStarterZone(folder: Folder)
-	local floor =
-		makePart(folder, "StarterYardFloor", Vector3.new(260, 1, 190), Vector3.new(0, 0, 10))
+local function buildHub(folder: Folder)
+	local hubCenter = Vector3.new(0, 0, -820)
+	local floor = makePart(folder, "HubFloor", Vector3.new(120, 1, 90), hubCenter)
 	floor.Material = Enum.Material.Concrete
+	floor.Color = Color3.fromRGB(105, 108, 110)
 
 	local spawn = Instance.new("SpawnLocation")
 	spawn.Name = "GrayboxSpawn"
 	spawn.Anchored = true
 	spawn.Neutral = true
 	spawn.Size = Vector3.new(8, 1, 8)
-	spawn.Position = Vector3.new(0, 1, -18)
+	spawn.Position = hubCenter + Vector3.new(0, 1, 0)
 	spawn.Parent = folder
 
-	local arrival = makePart(folder, "Zone1Arrival", Vector3.new(5, 1, 5), Vector3.new(0, 1, -16))
-	arrival.Transparency = 1
-	arrival.CanCollide = false
+	local arrival = makeMarker(folder, "Zone1Arrival", spawn.Position + Vector3.new(0, 0, 6))
 	zoneArrivalById[1] = arrival
 
-	local salvageFolder = Instance.new("Folder")
-	salvageFolder.Name = "SalvageNodes"
-	salvageFolder.Parent = folder
-
-	local salvagePositions = {
-		Vector3.new(-60, 2, -68),
-		Vector3.new(-40, 2, -72),
-		Vector3.new(-20, 2, -68),
-		Vector3.new(0, 2, -72),
-		Vector3.new(20, 2, -68),
-		Vector3.new(40, 2, -72),
-		Vector3.new(60, 2, -68),
-	}
-	for index, position in salvagePositions do
-		registerSalvageNode(salvageFolder, ("Scrap%02d"):format(index), position, 1)
-	end
-
-	buildPlots(folder)
-
-	local zoneTwo = Zones[2]
-	local gate =
-		makePart(folder, "CircuitYardGate", Vector3.new(8, 10, 3), Vector3.new(118, 5.5, -24))
-	gate.Material = Enum.Material.Metal
-	gate:SetAttribute("TargetZone", 2)
-	addPrompt(gate, "Unlock / Travel", zoneTwo.DisplayName)
-	addBillboard(
-		gate,
-		("%s\n%d Credits • Build %d Bots"):format(
-			zoneTwo.DisplayName,
-			zoneTwo.UnlockCredits,
-			zoneTwo.RequiredLifetimeRobots
-		)
-	)
-	zoneGateByTarget[2] = gate
-end
-
-local function buildCircuitYard(folder: Folder)
-	local zoneFolder = Instance.new("Folder")
-	zoneFolder.Name = "CircuitYard"
-	zoneFolder.Parent = folder
-
-	local floor = makePart(zoneFolder, "Floor", Vector3.new(110, 1, 100), Vector3.new(335, 0, 0))
-	floor.Material = Enum.Material.Concrete
-
-	local arrival = makePart(zoneFolder, "Arrival", Vector3.new(5, 1, 5), Vector3.new(294, 1, 0))
-	arrival.Transparency = 1
-	arrival.CanCollide = false
-	zoneArrivalById[2] = arrival
-
-	local returnPortal =
-		makePart(zoneFolder, "ReturnPortal", Vector3.new(7, 7, 3), Vector3.new(287, 3.5, 0))
-	returnPortal.Material = Enum.Material.Metal
-	addPrompt(returnPortal, "Return", Zones[1].DisplayName)
-	zoneReturnById[2] = returnPortal
-
-	local salvageFolder = Instance.new("Folder")
-	salvageFolder.Name = "SalvageNodes"
-	salvageFolder.Parent = zoneFolder
-
-	local positions = {
-		Vector3.new(316, 2, -28),
-		Vector3.new(334, 2, -31),
-		Vector3.new(352, 2, -28),
-		Vector3.new(316, 2, 28),
-		Vector3.new(334, 2, 31),
-		Vector3.new(352, 2, 28),
-	}
-	for index, position in positions do
-		registerSalvageNode(salvageFolder, ("Circuit%02d"):format(index), position, 2)
-	end
+	local sign =
+		makePart(folder, "HubSign", Vector3.new(12, 7, 1), hubCenter + Vector3.new(0, 4, -18))
+	sign.Material = Enum.Material.Metal
+	addBillboard(sign, "SCRAP-TO-BOT FACTORY\nPRIVATE YARDS")
 end
 
 local function buildWorld(): Folder
@@ -287,12 +422,32 @@ local function buildWorld(): Folder
 		existing:Destroy()
 	end
 
+	table.clear(salvageNodes)
+	table.clear(processorControls)
+	table.clear(processorControlByRecipe)
+	table.clear(plotModels)
+	table.clear(plotProcessorControls)
+	table.clear(plotAssemblers)
+	table.clear(plotWorkPads)
+	table.clear(plotWorkNodes)
+	table.clear(plotSigns)
+	table.clear(plotEntries)
+	table.clear(plotZoneGates)
+	table.clear(plotZoneArrivals)
+	table.clear(plotZoneReturns)
+	table.clear(allZoneGates)
+	table.clear(allZoneReturns)
+	table.clear(zoneGateByTarget)
+	table.clear(zoneArrivalById)
+	table.clear(zoneReturnById)
+	assemblerPart = nil
+
 	local folder = Instance.new("Folder")
 	folder.Name = "ScrapToBotGraybox"
 	folder.Parent = Workspace
 
-	buildStarterZone(folder)
-	buildCircuitYard(folder)
+	buildHub(folder)
+	buildPlots(folder)
 	return folder
 end
 
@@ -348,6 +503,15 @@ function WorldService.GetPlotWorkPad(plotId: number, padId: string): BasePart?
 	return if pads then pads[padId] else nil
 end
 
+function WorldService.GetPlotWorkNode(plotId: number, nodeName: string): BasePart?
+	local nodes = plotWorkNodes[plotId]
+	return if nodes then nodes[nodeName] else nil
+end
+
+function WorldService.GetPlotWorkNodes(plotId: number): { [string]: BasePart }?
+	return plotWorkNodes[plotId]
+end
+
 function WorldService.GetPlotSign(plotId: number): BasePart?
 	return plotSigns[plotId]
 end
@@ -368,6 +532,34 @@ function WorldService.GetPlotIdForInstance(instance: Instance): number?
 	return nil
 end
 
+function WorldService.GetPlotZoneGate(plotId: number, targetZone: number): BasePart?
+	local gates = plotZoneGates[plotId]
+	return if gates then gates[targetZone] else nil
+end
+
+function WorldService.GetAllZoneGates(): { BasePart }
+	return allZoneGates
+end
+
+function WorldService.GetPlotZoneArrival(plotId: number, zoneId: number): BasePart?
+	if zoneId == 1 then
+		return plotEntries[plotId]
+	end
+	local arrivals = plotZoneArrivals[plotId]
+	return if arrivals then arrivals[zoneId] else nil
+end
+
+function WorldService.GetPlotZoneReturn(plotId: number, zoneId: number): BasePart?
+	local portals = plotZoneReturns[plotId]
+	return if portals then portals[zoneId] else nil
+end
+
+function WorldService.GetAllZoneReturnPortals(): { BasePart }
+	return allZoneReturns
+end
+
+-- Legacy accessors remain for Studio security probes and old tests. Plot-aware gameplay
+-- uses the accessors above so a player can never travel through another player's yard.
 function WorldService.GetZoneGate(targetZone: number): BasePart?
 	return zoneGateByTarget[targetZone]
 end

@@ -52,11 +52,12 @@ local function makePart(
 ): Part
 	local part = Instance.new("Part")
 	part.Name = name
-	part.Anchored = true
+	part.Anchored = false
 	part.CanCollide = false
 	part.CanTouch = false
 	part.CanQuery = false
-	part.CastShadow = false
+	part.CastShadow = true
+	part.Massless = true
 	part.Material = Enum.Material.Metal
 	part.Size = size
 	part.CFrame = cframe
@@ -68,129 +69,283 @@ local function makePart(
 	return part
 end
 
+local function makeRoot(model: Model): Part
+	local root = Instance.new("Part")
+	root.Name = "MotionRoot"
+	root.Anchored = true
+	root.CanCollide = false
+	root.CanTouch = false
+	root.CanQuery = false
+	root.CastShadow = false
+	root.Transparency = 1
+	root.Size = Vector3.new(0.5, 0.5, 0.5)
+	root.CFrame = CFrame.new()
+	root.Parent = model
+	model.PrimaryPart = root
+	return root
+end
+
 local function bodySize(bodyType: string): Vector3
 	if bodyType == "Heavy" then
-		return Vector3.new(3.8, 2.8, 3.1)
+		return Vector3.new(4.1, 3.1, 3.3)
 	elseif bodyType == "Command" then
-		return Vector3.new(4, 3.2, 3.2)
+		return Vector3.new(4.2, 3.4, 3.4)
 	elseif bodyType == "Utility" then
-		return Vector3.new(3.4, 2.5, 2.8)
+		return Vector3.new(3.6, 2.7, 3)
 	elseif bodyType == "Orb" then
-		return Vector3.new(3, 3, 3)
+		return Vector3.new(3.2, 3.2, 3.2)
 	end
-	return Vector3.new(3, 2.4, 2.5)
+	return Vector3.new(3.2, 2.6, 2.7)
+end
+
+local function buildBody(model: Model, bodyType: string, accent: Color3, baseColor: Color3): Vector3
+	local size = bodySize(bodyType)
+	local bodyShape = if bodyType == "Orb" then Enum.PartType.Ball else nil
+	makePart(model, "Body", size, CFrame.new(), baseColor, bodyShape)
+
+	if bodyType ~= "Orb" then
+		makePart(
+			model,
+			"ChestPlate",
+			Vector3.new(size.X * 0.72, size.Y * 0.58, 0.28),
+			CFrame.new(0, 0.1, -(size.Z / 2 + 0.12)),
+			accent,
+			nil
+		)
+		makePart(
+			model,
+			"BackPack",
+			Vector3.new(size.X * 0.52, size.Y * 0.52, 0.55),
+			CFrame.new(0, 0, size.Z / 2 + 0.28),
+			Color3.fromRGB(54, 59, 68),
+			nil
+		)
+	end
+
+	return size
 end
 
 local function buildHead(model: Model, headType: string, accent: Color3, bodyHeight: number)
-	local headCFrame = CFrame.new(0, bodyHeight / 2 + 1.1, 0)
+	local headCFrame = CFrame.new(0, bodyHeight / 2 + 1.15, 0)
 	if headType == "Round" then
-		makePart(model, "Head", Vector3.new(1.8, 1.8, 1.8), headCFrame, accent, Enum.PartType.Ball)
+		makePart(model, "Head", Vector3.new(1.9, 1.9, 1.9), headCFrame, accent, Enum.PartType.Ball)
 	elseif headType == "Lens" then
-		makePart(model, "Head", Vector3.new(1.9, 1.5, 1.5), headCFrame, accent, Enum.PartType.Ball)
-		makePart(
+		makePart(model, "Head", Vector3.new(2, 1.6, 1.6), headCFrame, accent, Enum.PartType.Ball)
+		local lens = makePart(
 			model,
 			"Lens",
-			Vector3.new(0.55, 0.55, 0.25),
-			headCFrame * CFrame.new(0, 0, -0.8),
+			Vector3.new(0.65, 0.65, 0.25),
+			headCFrame * CFrame.new(0, 0, -0.86),
 			Color3.fromRGB(211, 242, 255),
 			Enum.PartType.Ball
 		)
+		lens.Material = Enum.Material.Neon
 	elseif headType == "Visor" then
-		makePart(model, "Head", Vector3.new(2.1, 1.5, 1.6), headCFrame, accent, nil)
-		makePart(
+		makePart(model, "Head", Vector3.new(2.2, 1.6, 1.7), headCFrame, accent, nil)
+		local visor = makePart(
 			model,
 			"Visor",
-			Vector3.new(1.55, 0.45, 0.18),
-			headCFrame * CFrame.new(0, 0.1, -0.88),
+			Vector3.new(1.65, 0.48, 0.2),
+			headCFrame * CFrame.new(0, 0.1, -0.92),
 			Color3.fromRGB(121, 226, 255),
 			nil
 		)
+		visor.Material = Enum.Material.Neon
 	else
-		makePart(model, "Head", Vector3.new(2, 1.6, 1.6), headCFrame, accent, nil)
+		makePart(model, "Head", Vector3.new(2.1, 1.7, 1.7), headCFrame, accent, nil)
+		local eye = makePart(
+			model,
+			"StatusEye",
+			Vector3.new(1.2, 0.38, 0.18),
+			headCFrame * CFrame.new(0, 0.1, -0.94),
+			Color3.fromRGB(126, 230, 255),
+			nil
+		)
+		eye.Material = Enum.Material.Neon
 	end
+
+	makePart(
+		model,
+		"Antenna",
+		Vector3.new(0.2, 1.15, 0.2),
+		headCFrame * CFrame.new(0.55, 1.1, 0),
+		Color3.fromRGB(73, 78, 88),
+		nil
+	)
+	local tip = makePart(
+		model,
+		"AntennaLight",
+		Vector3.new(0.36, 0.36, 0.36),
+		headCFrame * CFrame.new(0.55, 1.75, 0),
+		accent,
+		Enum.PartType.Ball
+	)
+	tip.Material = Enum.Material.Neon
 end
 
 local function buildLocomotion(
 	model: Model,
 	locomotion: string,
 	bodySizeValue: Vector3,
-	baseColor: Color3
+	baseColor: Color3,
+	accent: Color3
 )
-	local y = -(bodySizeValue.Y / 2 + 0.55)
+	local y = -(bodySizeValue.Y / 2 + 0.62)
 	if locomotion == "Hover" then
-		makePart(
+		local ring = makePart(
 			model,
 			"HoverRing",
-			Vector3.new(0.55, bodySizeValue.X * 0.9, bodySizeValue.X * 0.9),
+			Vector3.new(0.55, bodySizeValue.X * 0.95, bodySizeValue.X * 0.95),
 			CFrame.new(0, y, 0) * CFrame.Angles(0, 0, math.rad(90)),
-			Color3.fromRGB(87, 200, 224),
+			accent,
 			Enum.PartType.Cylinder
 		)
+		ring.Material = Enum.Material.Neon
 	elseif locomotion == "Tracks" then
 		makePart(
 			model,
 			"LeftTrack",
-			Vector3.new(1, 0.8, 3),
-			CFrame.new(-1.25, y, 0),
+			Vector3.new(1, 0.9, 3.2),
+			CFrame.new(-1.4, y, 0),
 			baseColor,
 			nil
 		)
 		makePart(
 			model,
 			"RightTrack",
-			Vector3.new(1, 0.8, 3),
-			CFrame.new(1.25, y, 0),
+			Vector3.new(1, 0.9, 3.2),
+			CFrame.new(1.4, y, 0),
 			baseColor,
+			nil
+		)
+		makePart(
+			model,
+			"TrackAxle",
+			Vector3.new(2.7, 0.45, 1.8),
+			CFrame.new(0, y + 0.15, 0),
+			accent,
 			nil
 		)
 	elseif locomotion == "Legs" then
 		makePart(
 			model,
 			"LeftLeg",
-			Vector3.new(0.75, 1.3, 0.75),
-			CFrame.new(-0.9, y, 0),
+			Vector3.new(0.8, 1.45, 0.8),
+			CFrame.new(-0.95, y, 0),
 			baseColor,
 			nil
 		)
 		makePart(
 			model,
 			"RightLeg",
-			Vector3.new(0.75, 1.3, 0.75),
-			CFrame.new(0.9, y, 0),
+			Vector3.new(0.8, 1.45, 0.8),
+			CFrame.new(0.95, y, 0),
 			baseColor,
+			nil
+		)
+		makePart(
+			model,
+			"LeftFoot",
+			Vector3.new(1.05, 0.4, 1.4),
+			CFrame.new(-0.95, y - 0.82, -0.15),
+			accent,
+			nil
+		)
+		makePart(
+			model,
+			"RightFoot",
+			Vector3.new(1.05, 0.4, 1.4),
+			CFrame.new(0.95, y - 0.82, -0.15),
+			accent,
 			nil
 		)
 	else
 		makePart(
 			model,
 			"LeftWheel",
-			Vector3.new(0.75, 1.35, 1.35),
-			CFrame.new(-1.45, y, 0) * CFrame.Angles(0, 0, math.rad(90)),
+			Vector3.new(0.75, 1.5, 1.5),
+			CFrame.new(-1.55, y, 0) * CFrame.Angles(0, 0, math.rad(90)),
 			baseColor,
 			Enum.PartType.Cylinder
 		)
 		makePart(
 			model,
 			"RightWheel",
-			Vector3.new(0.75, 1.35, 1.35),
-			CFrame.new(1.45, y, 0) * CFrame.Angles(0, 0, math.rad(90)),
+			Vector3.new(0.75, 1.5, 1.5),
+			CFrame.new(1.55, y, 0) * CFrame.Angles(0, 0, math.rad(90)),
 			baseColor,
 			Enum.PartType.Cylinder
+		)
+		makePart(
+			model,
+			"WheelGuard",
+			Vector3.new(2.5, 0.45, 1.2),
+			CFrame.new(0, y + 0.55, 0),
+			accent,
+			nil
 		)
 	end
 end
 
-local function buildTool(model: Model, toolType: string, accent: Color3, bodySizeValue: Vector3)
-	local front = -(bodySizeValue.Z / 2 + 0.75)
+local function buildArms(model: Model, accent: Color3, bodySizeValue: Vector3)
+	local x = bodySizeValue.X / 2 + 0.45
+	makePart(
+		model,
+		"LeftArm",
+		Vector3.new(0.65, 1.9, 0.65),
+		CFrame.new(-x, -0.15, -0.2) * CFrame.Angles(0, 0, math.rad(-8)),
+		accent,
+		nil
+	)
+	makePart(
+		model,
+		"RightArm",
+		Vector3.new(0.65, 1.9, 0.65),
+		CFrame.new(x, -0.15, -0.2) * CFrame.Angles(0, 0, math.rad(8)),
+		accent,
+		nil
+	)
+end
+
+local function buildTool(
+	model: Model,
+	toolType: string,
+	accent: Color3,
+	bodySizeValue: Vector3
+): Part
+	local front = -(bodySizeValue.Z / 2 + 1)
 	local toolSize = if toolType == "Drill"
-		then Vector3.new(0.9, 0.9, 1.7)
+		then Vector3.new(1, 1, 2)
 		elseif toolType == "TwinMagnet" or toolType == "MultiTool" then Vector3.new(
-			2.2,
-			0.75,
-			1
+			2.3,
+			0.8,
+			1.1
 		)
-		else Vector3.new(1.2, 0.8, 1.2)
-	makePart(model, "Tool", toolSize, CFrame.new(0, 0, front), accent, nil)
+		else Vector3.new(1.3, 0.9, 1.35)
+
+	local tool = makePart(model, "Tool", toolSize, CFrame.new(0, -0.15, front), accent, nil)
+	tool.Material = if toolType == "ArcTool" then Enum.Material.Neon else Enum.Material.Metal
+	return tool
+end
+
+local function rigModel(model: Model, rootPart: Part, tool: Part)
+	for _, child in model:GetChildren() do
+		if child:IsA("BasePart") and child ~= rootPart and child ~= tool then
+			local weld = Instance.new("WeldConstraint")
+			weld.Name = ("Weld_%s"):format(child.Name)
+			weld.Part0 = rootPart
+			weld.Part1 = child
+			weld.Parent = rootPart
+		end
+	end
+
+	local motor = Instance.new("Motor6D")
+	motor.Name = "ToolMotor"
+	motor.Part0 = rootPart
+	motor.Part1 = tool
+	motor.C0 = rootPart.CFrame:ToObjectSpace(tool.CFrame)
+	motor.C1 = CFrame.new()
+	motor.Parent = rootPart
 end
 
 local function addLabel(model: Model, definition: any, bodyHeight: number)
@@ -204,11 +359,12 @@ local function addLabel(model: Model, definition: any, bodyHeight: number)
 	billboard.Adornee = adornee
 	billboard.AlwaysOnTop = true
 	billboard.Size = UDim2.fromOffset(180, 52)
-	billboard.StudsOffset = Vector3.new(0, bodyHeight / 2 + 3.2, 0)
+	billboard.StudsOffset = Vector3.new(0, bodyHeight / 2 + 3.6, 0)
+	billboard.MaxDistance = 55
 	billboard.Parent = model
 
 	local label = Instance.new("TextLabel")
-	label.BackgroundTransparency = 0.25
+	label.BackgroundTransparency = 0.2
 	label.BackgroundColor3 = Color3.fromRGB(22, 25, 31)
 	label.BorderSizePixel = 0
 	label.Font = Enum.Font.GothamBold
@@ -229,17 +385,19 @@ local function createRobotVisual(robotUid: string, definition: any): Model
 	model.Name = "RobotVisual"
 	model:SetAttribute("RobotUid", robotUid)
 	model:SetAttribute("RobotId", definition.Id)
+	model:SetAttribute("RobotFamily", definition.Family)
+	model:SetAttribute("RobotLocomotion", definition.Visual.Locomotion)
+	model:SetAttribute("PresentationState", "Assigned")
 
+	local rootPart = makeRoot(model)
 	local accent = accentColors[definition.Visual.Accent] or Color3.fromRGB(150, 160, 175)
-	local baseColor = Color3.fromRGB(70, 76, 87)
-	local size = bodySize(definition.Visual.Body)
-	local bodyShape = if definition.Visual.Body == "Orb" then Enum.PartType.Ball else nil
-	local body = makePart(model, "Body", size, CFrame.new(), baseColor, bodyShape)
-	model.PrimaryPart = body
-
+	local baseColor = Color3.fromRGB(62, 68, 78)
+	local size = buildBody(model, definition.Visual.Body, accent, baseColor)
 	buildHead(model, definition.Visual.Head, accent, size.Y)
-	buildLocomotion(model, definition.Visual.Locomotion, size, baseColor)
-	buildTool(model, definition.Visual.Tool, accent, size)
+	buildLocomotion(model, definition.Visual.Locomotion, size, baseColor, accent)
+	buildArms(model, accent, size)
+	local tool = buildTool(model, definition.Visual.Tool, accent, size)
+	rigModel(model, rootPart, tool)
 	addLabel(model, definition, size.Y)
 	return model
 end
@@ -265,7 +423,13 @@ local function clearVisuals(plot: Model)
 	folder:ClearAllChildren()
 end
 
-local function syncPad(folder: Folder, pad: BasePart, robotUid: string?, data: ProfileData)
+local function syncPad(
+	folder: Folder,
+	pad: BasePart,
+	robotUid: string?,
+	data: ProfileData,
+	plotId: number
+)
 	local padId = pad:GetAttribute("WorkPadId")
 	if typeof(padId) ~= "string" then
 		return
@@ -302,8 +466,10 @@ local function syncPad(folder: Folder, pad: BasePart, robotUid: string?, data: P
 
 	local visual = createRobotVisual(robotUid, definition)
 	visual.Name = padId
+	visual:SetAttribute("HomePadId", padId)
+	visual:SetAttribute("PlotId", plotId)
 	visual.Parent = folder
-	visual:PivotTo(pad.CFrame * CFrame.new(0, 2.5, 0))
+	visual:PivotTo(pad.CFrame * CFrame.new(0, 3, 0))
 end
 
 local function syncPlayer(player: Player)
@@ -327,7 +493,7 @@ local function syncPlayer(player: Player)
 			local assignedUid = if index <= unlockedSlots
 				then data.Assignments.WorkPads[padId]
 				else nil
-			syncPad(folder, pad, assignedUid, data)
+			syncPad(folder, pad, assignedUid, data, plotId)
 		end
 	end
 end
