@@ -14,6 +14,7 @@ local PlotController = require(script.Parent.Controllers.PlotController)
 local StudioToolsController = require(script.Parent.Controllers.StudioToolsController)
 local UIController = require(script.Parent.Controllers.UIController)
 local WorldInteractionController = require(script.Parent.Controllers.WorldInteractionController)
+local WorldLabelController = require(script.Parent.Controllers.WorldLabelController)
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 
 for _, remoteName in
@@ -31,6 +32,7 @@ end
 
 PlotController.Init()
 WorldInteractionController.Init()
+WorldLabelController.Init()
 UIController.Init()
 AnnouncementController.Init()
 FactoryClubCosmeticController.Init()
