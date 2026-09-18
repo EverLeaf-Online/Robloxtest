@@ -8,6 +8,8 @@ local Theme = require(script.Parent.Theme)
 local COLORS = Theme.Colors
 local Components = {}
 
+type ResourceIconKind = "Credits" | "Scrap" | "Wiring" | "Cores"
+
 function Components.Corner(radius: number): any
 	return React.createElement("UICorner", {
 		CornerRadius = UDim.new(0, radius),
@@ -85,8 +87,196 @@ function Components.StatCard(title: string, value: string): any
 	})
 end
 
+local function circleCorner(): any
+	return React.createElement("UICorner", {
+		CornerRadius = UDim.new(1, 0),
+	})
+end
+
+local function resourceIcon(kind: ResourceIconKind, accent: Color3): any
+	local white = Color3.fromRGB(247, 249, 252)
+	local dark = Color3.fromRGB(34, 39, 47)
+
+	if kind == "Credits" then
+		return React.createElement("Frame", {
+			BackgroundTransparency = 1,
+			Size = UDim2.fromScale(1, 1),
+		}, {
+			CoinBack = React.createElement("Frame", {
+				BackgroundColor3 = Color3.fromRGB(215, 162, 48),
+				BorderSizePixel = 0,
+				Position = UDim2.fromScale(0.18, 0.22),
+				Size = UDim2.fromScale(0.48, 0.48),
+			}, {
+				Corner = circleCorner(),
+				Stroke = React.createElement("UIStroke", {
+					Color = white,
+					Transparency = 0.48,
+					Thickness = 1,
+				}),
+			}),
+			CoinFront = React.createElement("Frame", {
+				BackgroundColor3 = Color3.fromRGB(242, 194, 67),
+				BorderSizePixel = 0,
+				Position = UDim2.fromScale(0.36, 0.36),
+				Size = UDim2.fromScale(0.48, 0.48),
+			}, {
+				Corner = circleCorner(),
+				Stroke = React.createElement("UIStroke", {
+					Color = white,
+					Transparency = 0.2,
+					Thickness = 1.25,
+				}),
+				Inset = React.createElement("Frame", {
+					AnchorPoint = Vector2.new(0.5, 0.5),
+					BackgroundColor3 = Color3.fromRGB(255, 221, 105),
+					BorderSizePixel = 0,
+					Position = UDim2.fromScale(0.5, 0.5),
+					Size = UDim2.fromScale(0.54, 0.54),
+				}, {
+					Corner = circleCorner(),
+				}),
+			}),
+		})
+	elseif kind == "Scrap" then
+		return React.createElement("Frame", {
+			BackgroundTransparency = 1,
+			Size = UDim2.fromScale(1, 1),
+		}, {
+			Plate = React.createElement("Frame", {
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				BackgroundColor3 = Color3.fromRGB(181, 190, 199),
+				BorderSizePixel = 0,
+				Position = UDim2.fromScale(0.5, 0.5),
+				Rotation = -12,
+				Size = UDim2.fromScale(0.62, 0.48),
+			}, {
+				Corner = Components.Corner(4),
+				Stroke = React.createElement("UIStroke", {
+					Color = Color3.fromRGB(235, 239, 244),
+					Transparency = 0.28,
+					Thickness = 1,
+				}),
+			}),
+			Bolt = React.createElement("Frame", {
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				BackgroundColor3 = dark,
+				BorderSizePixel = 0,
+				Position = UDim2.fromScale(0.5, 0.5),
+				Size = UDim2.fromScale(0.24, 0.24),
+			}, {
+				Corner = circleCorner(),
+				Core = React.createElement("Frame", {
+					AnchorPoint = Vector2.new(0.5, 0.5),
+					BackgroundColor3 = accent,
+					BorderSizePixel = 0,
+					Position = UDim2.fromScale(0.5, 0.5),
+					Size = UDim2.fromScale(0.42, 0.42),
+				}, {
+					Corner = circleCorner(),
+				}),
+			}),
+			RivetOne = React.createElement("Frame", {
+				BackgroundColor3 = white,
+				BorderSizePixel = 0,
+				Position = UDim2.fromScale(0.25, 0.32),
+				Size = UDim2.fromScale(0.09, 0.09),
+			}, {
+				Corner = circleCorner(),
+			}),
+			RivetTwo = React.createElement("Frame", {
+				BackgroundColor3 = white,
+				BorderSizePixel = 0,
+				Position = UDim2.fromScale(0.66, 0.58),
+				Size = UDim2.fromScale(0.09, 0.09),
+			}, {
+				Corner = circleCorner(),
+			}),
+		})
+	elseif kind == "Wiring" then
+		return React.createElement("Frame", {
+			BackgroundTransparency = 1,
+			Size = UDim2.fromScale(1, 1),
+		}, {
+			Cable = React.createElement("Frame", {
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				BackgroundColor3 = Color3.fromRGB(247, 214, 92),
+				BorderSizePixel = 0,
+				Position = UDim2.fromScale(0.5, 0.52),
+				Rotation = -18,
+				Size = UDim2.fromScale(0.58, 0.12),
+			}, {
+				Corner = Components.Corner(3),
+			}),
+			PlugLeft = React.createElement("Frame", {
+				BackgroundColor3 = white,
+				BorderSizePixel = 0,
+				Position = UDim2.fromScale(0.16, 0.54),
+				Rotation = -18,
+				Size = UDim2.fromScale(0.22, 0.24),
+			}, {
+				Corner = Components.Corner(3),
+			}),
+			PlugRight = React.createElement("Frame", {
+				BackgroundColor3 = white,
+				BorderSizePixel = 0,
+				Position = UDim2.fromScale(0.61, 0.22),
+				Rotation = -18,
+				Size = UDim2.fromScale(0.22, 0.24),
+			}, {
+				Corner = Components.Corner(3),
+			}),
+			Node = React.createElement("Frame", {
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				BackgroundColor3 = accent,
+				BorderSizePixel = 0,
+				Position = UDim2.fromScale(0.5, 0.5),
+				Size = UDim2.fromScale(0.2, 0.2),
+			}, {
+				Corner = circleCorner(),
+				Stroke = React.createElement("UIStroke", {
+					Color = white,
+					Transparency = 0.08,
+					Thickness = 1.5,
+				}),
+			}),
+		})
+	else
+		return React.createElement("Frame", {
+			BackgroundTransparency = 1,
+			Size = UDim2.fromScale(1, 1),
+		}, {
+			Outer = React.createElement("Frame", {
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				BackgroundColor3 = Color3.fromRGB(87, 184, 244),
+				BorderSizePixel = 0,
+				Position = UDim2.fromScale(0.5, 0.5),
+				Rotation = 45,
+				Size = UDim2.fromScale(0.58, 0.58),
+			}, {
+				Corner = Components.Corner(5),
+				Stroke = React.createElement("UIStroke", {
+					Color = white,
+					Transparency = 0.1,
+					Thickness = 1.5,
+				}),
+			}),
+			Inner = React.createElement("Frame", {
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				BackgroundColor3 = Color3.fromRGB(198, 238, 255),
+				BorderSizePixel = 0,
+				Position = UDim2.fromScale(0.5, 0.5),
+				Rotation = 45,
+				Size = UDim2.fromScale(0.3, 0.3),
+			}, {
+				Corner = Components.Corner(3),
+			}),
+		})
+	end
+end
+
 function Components.ResourceChip(
-	icon: string,
+	iconKind: ResourceIconKind,
 	title: string,
 	value: string,
 	accent: Color3,
@@ -109,22 +299,18 @@ function Components.ResourceChip(
 		}),
 		IconPlate = React.createElement("Frame", {
 			AnchorPoint = Vector2.new(0, 0.5),
-			BackgroundColor3 = accent,
+			BackgroundColor3 = accent:Lerp(COLORS.Panel, 0.45),
 			BorderSizePixel = 0,
 			Position = UDim2.new(0, 6, 0.5, 0),
 			Size = UDim2.fromOffset(iconSize, iconSize),
 		}, {
-			Corner = React.createElement("UICorner", {
-				CornerRadius = UDim.new(1, 0),
+			Corner = circleCorner(),
+			Stroke = React.createElement("UIStroke", {
+				Color = accent,
+				Transparency = 0.08,
+				Thickness = 1.25,
 			}),
-			Icon = React.createElement("TextLabel", {
-				BackgroundTransparency = 1,
-				Font = Enum.Font.GothamBold,
-				Size = UDim2.fromScale(1, 1),
-				Text = icon,
-				TextColor3 = Color3.fromRGB(255, 255, 255),
-				TextSize = if compact then 16 else 19,
-			}),
+			Visual = resourceIcon(iconKind, accent),
 		}),
 		Title = titleVisible and React.createElement("TextLabel", {
 			BackgroundTransparency = 1,
