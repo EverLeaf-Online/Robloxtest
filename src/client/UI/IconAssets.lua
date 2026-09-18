@@ -15,6 +15,8 @@ local IconAssets = {
 	Shop = "rbxassetid://17368188494", -- Menus/Shop
 	Admin = "rbxassetid://15402956142", -- Misc/Exclaim
 	Tools = "rbxassetid://17368089841", -- Menus/Settings
+	Processor = "rbxassetid://17368087730", -- Stats/Power2
+	Assembler = "rbxassetid://17368402884", -- RNG/Crate
 }
 
 return table.freeze(IconAssets)
