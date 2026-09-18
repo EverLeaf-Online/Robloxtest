@@ -1,5 +1,6 @@
 --!strict
 
+local AssetService = game:GetService("AssetService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
@@ -93,94 +94,11 @@ local function tagPlotPart(part: BasePart, plotId: number)
 	part:SetAttribute("PlotId", plotId)
 end
 
-local function buildCircuitUnlockControl(
-	plot: Model,
-	plotId: number,
-	anchor: BasePart,
-	zoneTwo: any
-)
-	local visual = Instance.new("Model")
-	visual.Name = "CircuitUnlockControlVisual"
-	visual:SetAttribute("RequiredZone", 2)
-	visual.Parent = plot
+local CIRCUIT_UNLOCK_ASSET_ID = 8449863568
+local CIRCUIT_UNLOCK_TARGET_FOOTPRINT = 7
+local CIRCUIT_UNLOCK_MAX_PARTS = 64
 
-	local frame = anchor.CFrame
-	local dark = Color3.fromRGB(38, 43, 49)
-	local steel = Color3.fromRGB(83, 94, 103)
-	local safety = Color3.fromRGB(224, 174, 57)
-	local locked = Color3.fromRGB(214, 76, 62)
-
-	local function piece(
-		name: string,
-		size: Vector3,
-		offset: Vector3,
-		color: Color3,
-		material: Enum.Material,
-		shape: Enum.PartType?
-	): Part
-		local item = makePart(visual, name, size, frame:PointToWorldSpace(offset))
-		item.CFrame = frame * CFrame.new(offset)
-		item.Color = color
-		item.Material = material
-		if shape ~= nil then
-			item.Shape = shape
-		end
-		item.CanCollide = false
-		item.CanTouch = false
-		item.CanQuery = false
-		item:SetAttribute("PresentationPart", true)
-		tagPlotPart(item, plotId)
-		return item
-	end
-
-	piece(
-		"Foundation",
-		Vector3.new(8, 0.45, 8),
-		Vector3.new(0, -0.55, 0),
-		dark,
-		Enum.Material.DiamondPlate,
-		nil
-	)
-	piece(
-		"InsetPlate",
-		Vector3.new(5.8, 0.24, 5.8),
-		Vector3.new(0, -0.25, 0),
-		steel,
-		Enum.Material.Metal,
-		nil
-	)
-	for _, offset in
-		{
-			Vector3.new(-3.2, -0.14, -3.2),
-			Vector3.new(3.2, -0.14, -3.2),
-			Vector3.new(-3.2, -0.14, 3.2),
-			Vector3.new(3.2, -0.14, 3.2),
-		}
-	do
-		piece("HazardCorner", Vector3.new(1.1, 0.2, 1.1), offset, safety, Enum.Material.Neon, nil)
-	end
-
-	local buttonBase = piece(
-		"ButtonBase",
-		Vector3.new(1.5, 4.6, 4.6),
-		Vector3.new(0, 0.15, 0),
-		dark,
-		Enum.Material.Metal,
-		Enum.PartType.Cylinder
-	)
-	buttonBase.CFrame = frame * CFrame.new(0, 0.15, 0) * CFrame.Angles(0, 0, math.rad(90))
-
-	local button = piece(
-		"UnlockButton",
-		Vector3.new(0.8, 3.2, 3.2),
-		Vector3.new(0, 0.62, 0),
-		locked,
-		Enum.Material.Neon,
-		Enum.PartType.Cylinder
-	)
-	button.CFrame = frame * CFrame.new(0, 0.62, 0) * CFrame.Angles(0, 0, math.rad(90))
-	button:SetAttribute("CircuitUnlockButton", true)
-
+local function addCircuitUnlockLabel(anchor: BasePart, zoneTwo: any)
 	local billboard = Instance.new("BillboardGui")
 	billboard.Name = "CircuitUnlockLabel"
 	billboard.Adornee = anchor
@@ -209,6 +127,172 @@ local function buildCircuitUnlockControl(
 	local corner = Instance.new("UICorner")
 	corner.CornerRadius = UDim.new(0, 8)
 	corner.Parent = label
+end
+
+local function sanitizeCircuitUnlockAsset(model: Model, plotId: number): boolean
+	local partCount = 0
+
+	for _, descendant in model:GetDescendants() do
+		if
+			descendant:IsA("Script")
+			or descendant:IsA("LocalScript")
+			or descendant:IsA("ModuleScript")
+			or descendant:IsA("ProximityPrompt")
+			or descendant:IsA("ClickDetector")
+			or descendant:IsA("DragDetector")
+			or descendant:IsA("RemoteEvent")
+			or descendant:IsA("RemoteFunction")
+			or descendant:IsA("BindableEvent")
+			or descendant:IsA("BindableFunction")
+		then
+			descendant:Destroy()
+		elseif descendant:IsA("BasePart") then
+			partCount += 1
+			if partCount > CIRCUIT_UNLOCK_MAX_PARTS then
+				return false
+			end
+
+			descendant.Anchored = true
+			descendant.CanCollide = false
+			descendant.CanTouch = false
+			descendant.CanQuery = false
+			descendant:SetAttribute("PlotId", plotId)
+			descendant:SetAttribute("PresentationPart", true)
+		end
+	end
+
+	return partCount > 0
+end
+
+local function placeCircuitUnlockAsset(model: Model, anchor: BasePart): boolean
+	local _, initialSize = model:GetBoundingBox()
+	local footprint = math.max(initialSize.X, initialSize.Z)
+	if footprint <= 0.01 then
+		return false
+	end
+
+	local scale = CIRCUIT_UNLOCK_TARGET_FOOTPRINT / footprint
+	if scale < 0.05 or scale > 20 then
+		return false
+	end
+
+	model:ScaleTo(scale)
+
+	local boxCFrame, boxSize = model:GetBoundingBox()
+	local boxToPivot = boxCFrame:ToObjectSpace(model:GetPivot())
+	local floorY = anchor.Position.Y - (anchor.Size.Y / 2) + 0.4
+	local targetBox = CFrame.new(anchor.Position.X, floorY + (boxSize.Y / 2), anchor.Position.Z)
+	model:PivotTo(targetBox * boxToPivot)
+	return true
+end
+
+local function buildNativeCircuitUnlockFallback(
+	plot: Model,
+	plotId: number,
+	anchor: BasePart
+): Model
+	local visual = Instance.new("Model")
+	visual.Name = "CircuitUnlockControlVisual"
+	visual:SetAttribute("RequiredZone", 2)
+	visual:SetAttribute("CreatorStoreFallback", true)
+	visual.Parent = plot
+
+	local frame = anchor.CFrame
+	local dark = Color3.fromRGB(38, 43, 49)
+	local safety = Color3.fromRGB(224, 174, 57)
+	local locked = Color3.fromRGB(214, 76, 62)
+
+	local foundation = makePart(
+		visual,
+		"Foundation",
+		Vector3.new(7, 0.45, 7),
+		frame:PointToWorldSpace(Vector3.new(0, -0.55, 0))
+	)
+	foundation.CFrame = frame * CFrame.new(0, -0.55, 0)
+	foundation.Color = dark
+	foundation.Material = Enum.Material.DiamondPlate
+	foundation.CanCollide = false
+	foundation.CanTouch = false
+	foundation.CanQuery = false
+	foundation:SetAttribute("PlotId", plotId)
+	foundation:SetAttribute("PresentationPart", true)
+
+	for _, offset in
+		{
+			Vector3.new(-2.8, -0.22, -2.8),
+			Vector3.new(2.8, -0.22, -2.8),
+			Vector3.new(-2.8, -0.22, 2.8),
+			Vector3.new(2.8, -0.22, 2.8),
+		}
+	do
+		local corner = makePart(
+			visual,
+			"HazardCorner",
+			Vector3.new(0.9, 0.18, 0.9),
+			frame:PointToWorldSpace(offset)
+		)
+		corner.CFrame = frame * CFrame.new(offset)
+		corner.Color = safety
+		corner.Material = Enum.Material.Neon
+		corner.CanCollide = false
+		corner.CanTouch = false
+		corner.CanQuery = false
+		corner:SetAttribute("PlotId", plotId)
+		corner:SetAttribute("PresentationPart", true)
+	end
+
+	local button = makePart(
+		visual,
+		"UnlockButton",
+		Vector3.new(0.85, 3, 3),
+		frame:PointToWorldSpace(Vector3.new(0, 0.55, 0))
+	)
+	button.CFrame = frame * CFrame.new(0, 0.55, 0) * CFrame.Angles(0, 0, math.rad(90))
+	button.Shape = Enum.PartType.Cylinder
+	button.Color = locked
+	button.Material = Enum.Material.Neon
+	button.CanCollide = false
+	button.CanTouch = false
+	button.CanQuery = false
+	button:SetAttribute("PlotId", plotId)
+	button:SetAttribute("PresentationPart", true)
+	return visual
+end
+
+local function buildCircuitUnlockControl(
+	plot: Model,
+	plotId: number,
+	anchor: BasePart,
+	zoneTwo: any
+)
+	addCircuitUnlockLabel(anchor, zoneTwo)
+
+	local ok, loaded = pcall(function()
+		return AssetService:LoadAssetAsync(CIRCUIT_UNLOCK_ASSET_ID)
+	end)
+
+	if ok and loaded ~= nil and loaded:IsA("Model") then
+		loaded.Name = "CircuitUnlockControlVisual"
+		loaded:SetAttribute("RequiredZone", 2)
+		loaded:SetAttribute("CreatorStoreAssetId", CIRCUIT_UNLOCK_ASSET_ID)
+
+		if
+			sanitizeCircuitUnlockAsset(loaded, plotId)
+			and placeCircuitUnlockAsset(loaded, anchor)
+		then
+			loaded.Parent = plot
+			return
+		end
+
+		loaded:Destroy()
+	end
+
+	warn(
+		("[WorldService] Failed to load Creator Store Circuit unlock asset %d; using safe native fallback"):format(
+			CIRCUIT_UNLOCK_ASSET_ID
+		)
+	)
+	buildNativeCircuitUnlockFallback(plot, plotId, anchor)
 end
 
 local function registerProcessorControl(plotId: number, part: BasePart, recipeId: string)
