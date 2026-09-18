@@ -343,11 +343,20 @@ local function createUi()
 			toggle.Position = if phone then UDim2.new(0, 10, 0.66, 0) else UDim2.new(0, 18, 0.72, 0)
 			toggle.Size = if phone then UDim2.fromOffset(132, 48) else UDim2.fromOffset(158, 54)
 			icon.Size = if phone then UDim2.fromOffset(42, 42) else UDim2.fromOffset(50, 50)
-			toggleLabel.Position = if phone then UDim2.fromOffset(48, 5) else UDim2.fromOffset(56, 8)
-			toggleHint.Position = if phone then UDim2.fromOffset(48, 23) else UDim2.fromOffset(56, 27)
-			shopPanel.Position = if phone then UDim2.new(0, 154, 0.58, 0) else UDim2.new(0, 188, 0.63, 0)
+			toggleLabel.Position = if phone
+				then UDim2.fromOffset(48, 5)
+				else UDim2.fromOffset(56, 8)
+			toggleHint.Position = if phone
+				then UDim2.fromOffset(48, 23)
+				else UDim2.fromOffset(56, 27)
+			shopPanel.Position = if phone
+				then UDim2.new(0, 154, 0.58, 0)
+				else UDim2.new(0, 188, 0.63, 0)
 			shopPanel.Size = if phone
-				then UDim2.fromOffset(if panelOpen then 286 else 0, math.max(300, camera.ViewportSize.Y - 150))
+				then UDim2.fromOffset(
+					if panelOpen then 286 else 0,
+					math.max(300, camera.ViewportSize.Y - 150)
+				)
 				else UDim2.fromOffset(if panelOpen then 310 else 0, 356)
 		end
 
