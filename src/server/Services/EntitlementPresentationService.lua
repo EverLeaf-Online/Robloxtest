@@ -102,9 +102,9 @@ local function applyNameplate(player: Player)
 		billboard.Name = NAMEPLATE_NAME
 		billboard.Adornee = head
 		billboard.AlwaysOnTop = true
-		billboard.Size = UDim2.fromOffset(220, 30)
+		billboard.Size = UDim2.fromOffset(170, 24)
 		billboard.StudsOffset = Vector3.new(0, 2.8, 0)
-		billboard.MaxDistance = 80
+		billboard.MaxDistance = 36
 		billboard.Parent = head
 
 		label = Instance.new("TextLabel")

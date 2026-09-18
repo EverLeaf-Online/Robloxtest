@@ -35,9 +35,9 @@ local function addLabel(part: BasePart, text: string)
 	local billboard = Instance.new("BillboardGui")
 	billboard.Name = "StationLabel"
 	billboard.Adornee = part
-	billboard.Size = UDim2.fromOffset(140, 30)
+	billboard.Size = UDim2.fromOffset(118, 26)
 	billboard.StudsOffset = Vector3.new(0, part.Size.Y / 2 + 1.5, 0)
-	billboard.MaxDistance = 55
+	billboard.MaxDistance = 30
 	billboard.Parent = part
 
 	local label = Instance.new("TextLabel")
