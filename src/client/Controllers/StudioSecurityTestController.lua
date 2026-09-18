@@ -34,8 +34,41 @@ local function makeButton(parent: Instance, label: string, order: number, callba
 	button.Activated:Connect(callback)
 end
 
+type CapturedActionResult = {
+	Action: string,
+	Success: boolean,
+	Code: string,
+}
+
 local function fireClientDone(remote: RemoteEvent, token: string, response: any?)
 	remote:FireServer("ClientDone", token, response)
+end
+
+local function captureActionResults(
+	actionResult: RemoteEvent,
+	actions: { [string]: boolean },
+	fireRequests: () -> ()
+): { CapturedActionResult }
+	local results: { CapturedActionResult } = {}
+	local connection = actionResult.OnClientEvent:Connect(function(result)
+		if typeof(result) ~= "table" then
+			return
+		end
+		local action = result.Action
+		if typeof(action) ~= "string" or actions[action] ~= true then
+			return
+		end
+		table.insert(results, {
+			Action = action,
+			Success = result.Success == true,
+			Code = tostring(result.Code),
+		})
+	end)
+
+	fireRequests()
+	task.wait(0.35)
+	connection:Disconnect()
+	return results
 end
 
 function StudioSecurityTestController.Mount(parent: Instance): Frame?
@@ -210,19 +243,32 @@ function StudioSecurityTestController.Mount(parent: Instance): Frame?
 				task.wait(0.15)
 				fireClientDone(testRemote, token, { Completed = true })
 			elseif caseName == "ForgeVictimRobot" then
-				if typeof(payload) == "table" and typeof(payload.RobotUid) == "string" then
-					requestAssignRobot:FireServer(payload.RobotUid, "Pad1")
-					requestSellRobot:FireServer(payload.RobotUid)
-				end
-				task.wait(0.2)
-				fireClientDone(testRemote, token, { Completed = true })
+				local results = captureActionResults(
+					actionResult,
+					{
+						[RemoteNames.RequestAssignRobot] = true,
+						[RemoteNames.RequestSellRobot] = true,
+					},
+					function()
+						if typeof(payload) == "table" and typeof(payload.RobotUid) == "string" then
+							requestAssignRobot:FireServer(payload.RobotUid, "Pad1")
+							requestSellRobot:FireServer(payload.RobotUid)
+						end
+					end
+				)
+				fireClientDone(testRemote, token, { Results = results })
 			elseif caseName == "DuplicateSell" then
-				if typeof(payload) == "table" and typeof(payload.RobotUid) == "string" then
-					requestSellRobot:FireServer(payload.RobotUid)
-					requestSellRobot:FireServer(payload.RobotUid)
-				end
-				task.wait(0.2)
-				fireClientDone(testRemote, token, { Completed = true })
+				local results = captureActionResults(
+					actionResult,
+					{ [RemoteNames.RequestSellRobot] = true },
+					function()
+						if typeof(payload) == "table" and typeof(payload.RobotUid) == "string" then
+							requestSellRobot:FireServer(payload.RobotUid)
+							requestSellRobot:FireServer(payload.RobotUid)
+						end
+					end
+				)
+				fireClientDone(testRemote, token, { Results = results })
 			elseif caseName == "DoubleUpgrade" then
 				if typeof(payload) == "table" and typeof(payload.UpgradeId) == "string" then
 					requestUpgrade:FireServer(payload.UpgradeId)
