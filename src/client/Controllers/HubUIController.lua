@@ -427,7 +427,7 @@ local function createTopStatus(gui: ScreenGui)
 	population.AnchorPoint = Vector2.new(1, 0)
 	population.BackgroundTransparency = 1
 	population.BorderSizePixel = 0
-	population.Position = UDim2.new(1, 0, 0, 0)
+	population.Position = UDim2.fromScale(1, 0)
 	population.Size = UDim2.fromOffset(145, 52)
 	population.Parent = cluster
 
