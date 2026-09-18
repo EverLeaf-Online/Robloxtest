@@ -124,15 +124,13 @@ function ZoneService.UseGate(player: Player, targetZone: any)
 		return
 	end
 	if currentData.Progression.Zone >= authoritativeTarget then
-		if teleportToZone(player, authoritativeTarget) then
-			StateService.ActionResult(
-				player,
-				RemoteNames.RequestUnlockZone,
-				true,
-				"ZONE_TRAVELLED",
-				{ TargetZone = authoritativeTarget }
-			)
-		end
+		StateService.ActionResult(
+			player,
+			RemoteNames.RequestUnlockZone,
+			true,
+			"ZONE_ALREADY_UNLOCKED",
+			{ TargetZone = authoritativeTarget }
+		)
 		return
 	end
 
@@ -191,7 +189,6 @@ function ZoneService.UseGate(player: Player, targetZone: any)
 	sendTransactionResult(player, executed, transactionResult)
 	if executed and typeof(transactionResult) == "table" and transactionResult.Success == true then
 		PlotService.RefreshPresentation(player)
-		teleportToZone(player, authoritativeTarget)
 	end
 end
 

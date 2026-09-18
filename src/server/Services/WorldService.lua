@@ -93,100 +93,101 @@ local function tagPlotPart(part: BasePart, plotId: number)
 	part:SetAttribute("PlotId", plotId)
 end
 
-local function buildTransitBotVisual(
+local function buildCircuitUnlockControl(
 	plot: Model,
 	plotId: number,
 	anchor: BasePart,
-	name: string,
-	labelText: string,
-	accent: Color3
+	zoneTwo: any
 )
 	local visual = Instance.new("Model")
-	visual.Name = name
+	visual.Name = "CircuitUnlockControlVisual"
+	visual:SetAttribute("RequiredZone", 2)
 	visual.Parent = plot
 
-	local dark = Color3.fromRGB(43, 49, 58)
-	local steel = Color3.fromRGB(89, 101, 113)
-	local orange = Color3.fromRGB(224, 140, 63)
 	local frame = anchor.CFrame
+	local dark = Color3.fromRGB(38, 43, 49)
+	local steel = Color3.fromRGB(83, 94, 103)
+	local safety = Color3.fromRGB(224, 174, 57)
+	local locked = Color3.fromRGB(214, 76, 62)
 
 	local function piece(
-		partName: string,
+		name: string,
 		size: Vector3,
 		offset: Vector3,
 		color: Color3,
-		material: Enum.Material
-	)
-		local item = makePart(visual, partName, size, frame:PointToWorldSpace(offset))
+		material: Enum.Material,
+		shape: Enum.PartType?
+	): Part
+		local item = makePart(visual, name, size, frame:PointToWorldSpace(offset))
 		item.CFrame = frame * CFrame.new(offset)
 		item.Color = color
 		item.Material = material
+		if shape ~= nil then
+			item.Shape = shape
+		end
 		item.CanCollide = false
 		item.CanTouch = false
 		item.CanQuery = false
 		item:SetAttribute("PresentationPart", true)
 		tagPlotPart(item, plotId)
+		return item
 	end
 
 	piece(
-		"Base",
-		Vector3.new(5.5, 0.45, 5.5),
-		Vector3.new(0, -3.2, 0),
+		"Foundation",
+		Vector3.new(8, 0.45, 8),
+		Vector3.new(0, -0.55, 0),
 		dark,
-		Enum.Material.DiamondPlate
-	)
-	piece("Body", Vector3.new(3.2, 3.8, 2.4), Vector3.new(0, -0.9, 0), steel, Enum.Material.Metal)
-	piece(
-		"ChestPanel",
-		Vector3.new(2.3, 1.2, 0.24),
-		Vector3.new(0, -0.8, -1.32),
-		accent,
-		Enum.Material.Neon
-	)
-	piece("Head", Vector3.new(2.6, 1.8, 2.1), Vector3.new(0, 1.9, 0), dark, Enum.Material.Metal)
-	piece(
-		"Visor",
-		Vector3.new(1.9, 0.48, 0.2),
-		Vector3.new(0, 2.05, -1.12),
-		accent,
-		Enum.Material.Neon
+		Enum.Material.DiamondPlate,
+		nil
 	)
 	piece(
-		"LeftArm",
-		Vector3.new(0.65, 2.7, 0.65),
-		Vector3.new(-2, -0.6, 0),
-		orange,
-		Enum.Material.Metal
+		"InsetPlate",
+		Vector3.new(5.8, 0.24, 5.8),
+		Vector3.new(0, -0.25, 0),
+		steel,
+		Enum.Material.Metal,
+		nil
 	)
-	piece(
-		"RightArm",
-		Vector3.new(0.65, 2.7, 0.65),
-		Vector3.new(2, -0.6, 0),
-		orange,
-		Enum.Material.Metal
-	)
-	piece(
-		"LeftFoot",
-		Vector3.new(1.15, 0.6, 1.8),
-		Vector3.new(-0.9, -2.75, -0.1),
+	for _, offset in
+		{
+			Vector3.new(-3.2, -0.14, -3.2),
+			Vector3.new(3.2, -0.14, -3.2),
+			Vector3.new(-3.2, -0.14, 3.2),
+			Vector3.new(3.2, -0.14, 3.2),
+		}
+	do
+		piece("HazardCorner", Vector3.new(1.1, 0.2, 1.1), offset, safety, Enum.Material.Neon, nil)
+	end
+
+	local buttonBase = piece(
+		"ButtonBase",
+		Vector3.new(1.5, 4.6, 4.6),
+		Vector3.new(0, 0.15, 0),
 		dark,
-		Enum.Material.Metal
+		Enum.Material.Metal,
+		Enum.PartType.Cylinder
 	)
-	piece(
-		"RightFoot",
-		Vector3.new(1.15, 0.6, 1.8),
-		Vector3.new(0.9, -2.75, -0.1),
-		dark,
-		Enum.Material.Metal
+	buttonBase.CFrame = frame * CFrame.new(0, 0.15, 0) * CFrame.Angles(0, 0, math.rad(90))
+
+	local button = piece(
+		"UnlockButton",
+		Vector3.new(0.8, 3.2, 3.2),
+		Vector3.new(0, 0.62, 0),
+		locked,
+		Enum.Material.Neon,
+		Enum.PartType.Cylinder
 	)
+	button.CFrame = frame * CFrame.new(0, 0.62, 0) * CFrame.Angles(0, 0, math.rad(90))
+	button:SetAttribute("CircuitUnlockButton", true)
 
 	local billboard = Instance.new("BillboardGui")
-	billboard.Name = "TransitLabel"
+	billboard.Name = "CircuitUnlockLabel"
 	billboard.Adornee = anchor
 	billboard.AlwaysOnTop = true
-	billboard.Size = UDim2.fromOffset(190, 58)
-	billboard.StudsOffset = Vector3.new(0, 5.7, 0)
-	billboard.MaxDistance = 55
+	billboard.Size = UDim2.fromOffset(210, 58)
+	billboard.StudsOffset = Vector3.new(0, 3.8, 0)
+	billboard.MaxDistance = 48
 	billboard.Parent = anchor
 
 	local label = Instance.new("TextLabel")
@@ -196,8 +197,11 @@ local function buildTransitBotVisual(
 	label.BorderSizePixel = 0
 	label.Font = Enum.Font.GothamBold
 	label.Size = UDim2.fromScale(1, 1)
-	label.Text = labelText
-	label.TextColor3 = Color3.fromRGB(235, 245, 250)
+	label.Text = ("CIRCUIT YARD ACCESS\n%d CREDITS • BUILD %d BOTS"):format(
+		zoneTwo.UnlockCredits,
+		zoneTwo.RequiredLifetimeRobots
+	)
+	label.TextColor3 = Color3.fromRGB(245, 247, 250)
 	label.TextScaled = true
 	label.TextWrapped = true
 	label.Parent = billboard
@@ -424,28 +428,25 @@ local function buildPlotZoneAccess(plot: Model, plotId: number, center: Vector3)
 	local gate = makePart(
 		plot,
 		"CircuitYardGate",
-		Vector3.new(5, 7, 5),
+		Vector3.new(8, 2, 8),
 		center + WorldLayout.CircuitGateOffset
 	)
-	gate.CFrame = CFrame.lookAt(gate.Position, Vector3.new(center.X, gate.Position.Y, center.Z))
+	gate.CFrame = CFrame.new(gate.Position)
 	gate.Transparency = 1
 	gate.CanCollide = false
 	gate.CanTouch = false
 	gate.CanQuery = false
 	gate:SetAttribute("TargetZone", 2)
 	tagPlotPart(gate, plotId)
-	addPrompt(gate, "Unlock / Travel", zoneTwo.DisplayName)
-	buildTransitBotVisual(
-		plot,
-		plotId,
-		gate,
-		"CircuitTransitBotVisual",
-		("CIRCUIT TRANSIT\n%d CREDITS • BUILD %d BOTS"):format(
-			zoneTwo.UnlockCredits,
-			zoneTwo.RequiredLifetimeRobots
-		),
-		Color3.fromRGB(225, 180, 84)
+
+	local prompt = addPrompt(gate, "Unlock", zoneTwo.DisplayName)
+	prompt.ObjectText = ("%s • %d Credits • Build %d Bots"):format(
+		zoneTwo.DisplayName,
+		zoneTwo.UnlockCredits,
+		zoneTwo.RequiredLifetimeRobots
 	)
+
+	buildCircuitUnlockControl(plot, plotId, gate, zoneTwo)
 
 	local arrival =
 		makeMarker(plot, "CircuitYardArrival", center + WorldLayout.CircuitArrivalOffset)

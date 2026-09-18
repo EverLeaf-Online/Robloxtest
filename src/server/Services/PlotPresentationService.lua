@@ -308,6 +308,36 @@ local function applyCircuitBridge(plot: Model, unlockedZone: number)
 	end
 end
 
+local function applyCircuitUnlockControl(plot: Model, unlockedZone: number)
+	local unlocked = unlockedZone >= 2
+	local gate = plot:FindFirstChild("CircuitYardGate")
+	if gate ~= nil and gate:IsA("BasePart") then
+		local prompt = gate:FindFirstChildOfClass("ProximityPrompt")
+		if prompt ~= nil then
+			prompt.Enabled = not unlocked
+		end
+
+		local billboard = gate:FindFirstChild("CircuitUnlockLabel")
+		if billboard ~= nil and billboard:IsA("BillboardGui") then
+			billboard.Enabled = not unlocked
+		end
+	end
+
+	local visual = plot:FindFirstChild("CircuitUnlockControlVisual")
+	if visual == nil then
+		return
+	end
+
+	for _, descendant in visual:GetDescendants() do
+		if descendant:IsA("BasePart") then
+			descendant.Transparency = if unlocked then 1 else 0
+			descendant.CanCollide = false
+			descendant.CanTouch = false
+			descendant.CanQuery = false
+		end
+	end
+end
+
 local function setWorldLabel(part: BasePart, text: string)
 	local label = part:FindFirstChild("Label", true)
 	if label ~= nil and label:IsA("TextLabel") then
@@ -351,6 +381,7 @@ local function applyPlotPresentation(plot: Model)
 	applyTierModel(plot:FindFirstChild("AssemblerVisual"), assemblerLevel, assemblerBusy)
 	applyTierModel(plot:FindFirstChild("StorageVisual"), storageLevel, false)
 	applyCircuitBridge(plot, unlockedZone)
+	applyCircuitUnlockControl(plot, unlockedZone)
 
 	local workPads = plot:FindFirstChild("WorkPads")
 	if workPads ~= nil then
