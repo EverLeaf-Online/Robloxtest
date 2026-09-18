@@ -108,7 +108,7 @@ local function buildTransitBotVisual(
 	local dark = Color3.fromRGB(43, 49, 58)
 	local steel = Color3.fromRGB(89, 101, 113)
 	local orange = Color3.fromRGB(224, 140, 63)
-	local center = anchor.Position
+	local frame = anchor.CFrame
 
 	local function piece(
 		partName: string,
@@ -117,7 +117,8 @@ local function buildTransitBotVisual(
 		color: Color3,
 		material: Enum.Material
 	)
-		local item = makePart(visual, partName, size, center + offset)
+		local item = makePart(visual, partName, size, frame:PointToWorldSpace(offset))
+		item.CFrame = frame * CFrame.new(offset)
 		item.Color = color
 		item.Material = material
 		item.CanCollide = false
@@ -189,6 +190,7 @@ local function buildTransitBotVisual(
 	billboard.Parent = anchor
 
 	local label = Instance.new("TextLabel")
+	label.Name = "Label"
 	label.BackgroundColor3 = Color3.fromRGB(21, 25, 31)
 	label.BackgroundTransparency = 0.08
 	label.BorderSizePixel = 0
@@ -290,12 +292,22 @@ local function buildPlotPerimeter(plot: Model, plotId: number, center: Vector3)
 		tagPlotPart(wall, plotId)
 	end
 
-	for _, side in { -1, 1 } do
+	local openingCenter = WorldLayout.CircuitIsland.BoundaryOpeningCenterX
+	local openingHalfWidth = WorldLayout.CircuitIsland.BoundaryOpeningWidth / 2
+	local leftMax = openingCenter - openingHalfWidth
+	local rightMin = openingCenter + openingHalfWidth
+
+	local function southBoundary(name: string, minX: number, maxX: number)
+		local width = maxX - minX
+		if width <= 0 then
+			return
+		end
+
 		local wall = makePart(
 			plot,
-			if side < 0 then "SouthBoundaryLeft" else "SouthBoundaryRight",
-			Vector3.new(100, 7, 4),
-			center + Vector3.new(side * 70, 3.5, -(halfZ - 2))
+			name,
+			Vector3.new(width, 7, 4),
+			center + Vector3.new((minX + maxX) / 2, 3.5, -(halfZ - 2))
 		)
 		wall.Material = Enum.Material.SmoothPlastic
 		wall.Color = wallColor
@@ -303,6 +315,85 @@ local function buildPlotPerimeter(plot: Model, plotId: number, center: Vector3)
 		wall.CanTouch = false
 		wall.CanQuery = false
 		tagPlotPart(wall, plotId)
+	end
+
+	southBoundary("SouthBoundaryLeft", -halfX, leftMax)
+	southBoundary("SouthBoundaryRight", rightMin, halfX)
+end
+
+local function buildCircuitIsland(plot: Model, plotId: number, center: Vector3)
+	local islandConfig = WorldLayout.CircuitIsland
+	local island = makePart(
+		plot,
+		"CircuitIsland",
+		islandConfig.Size,
+		center + islandConfig.CenterOffset
+	)
+	island.Material = Enum.Material.Concrete
+	island.Color = Color3.fromRGB(96, 102, 105)
+	island:SetAttribute("ZoneId", 2)
+	tagPlotPart(island, plotId)
+
+	local bridgeFolder = Instance.new("Folder")
+	bridgeFolder.Name = "CircuitBridge"
+	bridgeFolder:SetAttribute("RequiredZone", 2)
+	bridgeFolder.Parent = plot
+
+	local bridgeCenter = center + islandConfig.BridgeCenterOffset
+	local bridge = makePart(
+		bridgeFolder,
+		"BridgeDeck",
+		islandConfig.BridgeSize,
+		bridgeCenter
+	)
+	bridge.Material = Enum.Material.DiamondPlate
+	bridge.Color = Color3.fromRGB(64, 72, 81)
+	bridge.Transparency = 1
+	bridge.CanCollide = false
+	bridge.CanTouch = false
+	bridge.CanQuery = false
+	bridge:SetAttribute("BridgeCollidable", true)
+	tagPlotPart(bridge, plotId)
+
+	for _, side in { -1, 1 } do
+		local rail = makePart(
+			bridgeFolder,
+			if side < 0 then "BridgeRailLeft" else "BridgeRailRight",
+			Vector3.new(0.45, 2.8, islandConfig.BridgeSize.Z),
+			bridgeCenter
+				+ Vector3.new(
+					side * (islandConfig.BridgeSize.X / 2 - 0.25),
+					1.7,
+					0
+				)
+		)
+		rail.Material = Enum.Material.Metal
+		rail.Color = Color3.fromRGB(91, 104, 117)
+		rail.Transparency = 1
+		rail.CanCollide = false
+		rail.CanTouch = false
+		rail.CanQuery = false
+		rail:SetAttribute("BridgeCollidable", true)
+		tagPlotPart(rail, plotId)
+
+		local glow = makePart(
+			bridgeFolder,
+			if side < 0 then "BridgeGlowLeft" else "BridgeGlowRight",
+			Vector3.new(0.14, 0.14, islandConfig.BridgeSize.Z),
+			bridgeCenter
+				+ Vector3.new(
+					side * (islandConfig.BridgeSize.X / 2 - 0.3),
+					0.45,
+					0
+				)
+		)
+		glow.Material = Enum.Material.Neon
+		glow.Color = Color3.fromRGB(71, 211, 226)
+		glow.Transparency = 1
+		glow.CanCollide = false
+		glow.CanTouch = false
+		glow.CanQuery = false
+		tagPlotPart(glow, plotId)
 	end
 end
 
@@ -345,11 +436,15 @@ local function buildPrivateSalvage(plot: Model, plotId: number, center: Vector3)
 		)
 	end
 
-	local circuitSign =
-		makePart(plot, "CircuitSalvageSign", Vector3.new(10, 5, 1), center + Vector3.new(56, 3, 88))
+	local circuitSign = makePart(
+		plot,
+		"CircuitSalvageSign",
+		Vector3.new(12, 5, 1),
+		center + WorldLayout.CircuitIsland.CenterOffset + Vector3.new(0, 3, -27)
+	)
 	circuitSign.Material = Enum.Material.Metal
 	tagPlotPart(circuitSign, plotId)
-	addBillboard(circuitSign, "PRIVATE CIRCUIT FIELD")
+	addBillboard(circuitSign, "CIRCUIT YARD")
 end
 
 local function buildBotWorkNodes(plot: Model, plotId: number, center: Vector3)
@@ -370,6 +465,10 @@ local function buildPlotZoneAccess(plot: Model, plotId: number, center: Vector3)
 		"CircuitYardGate",
 		Vector3.new(5, 7, 5),
 		center + WorldLayout.CircuitGateOffset
+	)
+	gate.CFrame = CFrame.lookAt(
+		gate.Position,
+		Vector3.new(center.X, gate.Position.Y, center.Z)
 	)
 	gate.Transparency = 1
 	gate.CanCollide = false
@@ -442,13 +541,6 @@ local function buildFactoryPlot(parent: Folder, plotId: number, center: Vector3)
 	spawn.CanCollide = false
 	spawn.Parent = plot
 
-	local sign =
-		makePart(plot, "OwnerSign", Vector3.new(8, 6, 1), center + WorldLayout.Plot.SignOffset)
-	sign.Material = Enum.Material.Metal
-	tagPlotPart(sign, plotId)
-	addBillboard(sign, ("Private Factory %d\nUnclaimed"):format(plotId), "OwnerLabel")
-	plotSigns[plotId] = sign
-
 	local factoryCenter = center + WorldLayout.Plot.FactoryOffset
 
 	local processor =
@@ -503,6 +595,7 @@ local function buildFactoryPlot(parent: Folder, plotId: number, center: Vector3)
 	end
 
 	buildPlotPerimeter(plot, plotId, center)
+	buildCircuitIsland(plot, plotId, center)
 	buildPrivateSalvage(plot, plotId, center)
 	buildBotWorkNodes(plot, plotId, center)
 	buildPlotZoneAccess(plot, plotId, center)
