@@ -83,6 +83,10 @@ local function buildAttendant(): BasePart
 	assert(floor ~= nil and floor:IsA("BasePart"), "Factory floor missing")
 
 	local center = floor.Position + WorldLayout.Plot.HubReturnAttendantOffset
+	local frame = CFrame.lookAt(
+		center,
+		Vector3.new(floor.Position.X, center.Y, floor.Position.Z)
+	)
 	local anchor = Instance.new("Part")
 	anchor.Name = "HubReturnAttendant"
 	anchor.Anchored = true
@@ -91,7 +95,7 @@ local function buildAttendant(): BasePart
 	anchor.CanQuery = false
 	anchor.Transparency = 1
 	anchor.Size = Vector3.new(5, 7, 5)
-	anchor.Position = center
+	anchor.CFrame = frame
 	anchor:SetAttribute("PlotId", 1)
 	anchor.Parent = plot
 
@@ -108,7 +112,7 @@ local function buildAttendant(): BasePart
 		visual,
 		"Base",
 		Vector3.new(5.5, 0.45, 5.5),
-		CFrame.new(center + Vector3.new(0, -3.2, 0)),
+		frame * CFrame.new(0, -3.2, 0),
 		dark,
 		Enum.Material.DiamondPlate,
 		nil
@@ -117,7 +121,7 @@ local function buildAttendant(): BasePart
 		visual,
 		"Body",
 		Vector3.new(3.2, 3.8, 2.4),
-		CFrame.new(center + Vector3.new(0, -0.9, 0)),
+		frame * CFrame.new(0, -0.9, 0),
 		steel,
 		Enum.Material.Metal,
 		nil
@@ -126,7 +130,7 @@ local function buildAttendant(): BasePart
 		visual,
 		"ChestPanel",
 		Vector3.new(2.3, 1.2, 0.24),
-		CFrame.new(center + Vector3.new(0, -0.8, -1.32)),
+		frame * CFrame.new(0, -0.8, -1.32),
 		cyan,
 		Enum.Material.Neon,
 		nil
@@ -135,7 +139,7 @@ local function buildAttendant(): BasePart
 		visual,
 		"Head",
 		Vector3.new(2.6, 1.8, 2.1),
-		CFrame.new(center + Vector3.new(0, 1.9, 0)),
+		frame * CFrame.new(0, 1.9, 0),
 		dark,
 		Enum.Material.Metal,
 		nil
@@ -144,7 +148,7 @@ local function buildAttendant(): BasePart
 		visual,
 		"Visor",
 		Vector3.new(1.9, 0.48, 0.2),
-		CFrame.new(center + Vector3.new(0, 2.05, -1.12)),
+		frame * CFrame.new(0, 2.05, -1.12),
 		cyan,
 		Enum.Material.Neon,
 		nil
@@ -153,7 +157,7 @@ local function buildAttendant(): BasePart
 		visual,
 		"LeftArm",
 		Vector3.new(0.65, 2.7, 0.65),
-		CFrame.new(center + Vector3.new(-2, -0.6, 0)),
+		frame * CFrame.new(-2, -0.6, 0),
 		orange,
 		Enum.Material.Metal,
 		nil
@@ -162,7 +166,7 @@ local function buildAttendant(): BasePart
 		visual,
 		"RightArm",
 		Vector3.new(0.65, 2.7, 0.65),
-		CFrame.new(center + Vector3.new(2, -0.6, 0)),
+		frame * CFrame.new(2, -0.6, 0),
 		orange,
 		Enum.Material.Metal,
 		nil
@@ -171,7 +175,7 @@ local function buildAttendant(): BasePart
 		visual,
 		"LeftFoot",
 		Vector3.new(1.15, 0.6, 1.8),
-		CFrame.new(center + Vector3.new(-0.9, -2.75, -0.1)),
+		frame * CFrame.new(-0.9, -2.75, -0.1),
 		dark,
 		Enum.Material.Metal,
 		nil
@@ -180,7 +184,7 @@ local function buildAttendant(): BasePart
 		visual,
 		"RightFoot",
 		Vector3.new(1.15, 0.6, 1.8),
-		CFrame.new(center + Vector3.new(0.9, -2.75, -0.1)),
+		frame * CFrame.new(0.9, -2.75, -0.1),
 		dark,
 		Enum.Material.Metal,
 		nil
