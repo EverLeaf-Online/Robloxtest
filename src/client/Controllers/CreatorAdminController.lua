@@ -5,6 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
 local RemoteNames = require(ReplicatedStorage.Shared.Networking.RemoteNames)
+local HUDIconFactory = require(script.Parent.Parent.UI.HUDIconFactory)
 
 local CreatorAdminController = {}
 local initialized = false
@@ -52,24 +53,7 @@ local function createGui(): (TextBox, TextButton, TextLabel)
 	launcher.AutoButtonColor = false
 	launcher.Parent = gui
 
-	local launcherIcon = Instance.new("Frame")
-	launcherIcon.Name = "Icon"
-	launcherIcon.AnchorPoint = Vector2.new(0.5, 0)
-	launcherIcon.Position = UDim2.fromScale(0.5, 0)
-	launcherIcon.Size = UDim2.fromOffset(48, 48)
-	launcherIcon.BackgroundColor3 = Color3.fromRGB(45, 112, 205)
-	launcherIcon.BorderSizePixel = 0
-	launcherIcon.Parent = launcher
-	round(launcherIcon, 24)
-
-	local launcherGlyph = Instance.new("TextLabel")
-	launcherGlyph.Size = UDim2.fromScale(1, 1)
-	launcherGlyph.BackgroundTransparency = 1
-	launcherGlyph.Font = Enum.Font.GothamBold
-	launcherGlyph.Text = "A"
-	launcherGlyph.TextColor3 = Color3.fromRGB(255, 255, 255)
-	launcherGlyph.TextSize = 22
-	launcherGlyph.Parent = launcherIcon
+	local launcherIcon = HUDIconFactory.CreateAdmin(launcher, 48)
 
 	local launcherLabel = Instance.new("TextLabel")
 	launcherLabel.AnchorPoint = Vector2.new(0.5, 1)
