@@ -225,12 +225,3 @@ The runtime visual layer should later:
 6. swap only the decorative model when an upgrade completes.
 
 This keeps visual iteration independent from economy and security logic.
-
-## Current external blocker
-
-The Meshy plugin is installed in ChatGPT, but its callable generation actions are not exposed to this
-conversation's tool runtime. The batch specification therefore stays generation-ready without fabricating
-asset IDs or pretending models were produced.
-
-When Meshy actions become callable, start with the four style-lock assets and record generated/imported IDs
-back into the config rather than changing the gameplay services.
