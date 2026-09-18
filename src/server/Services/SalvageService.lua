@@ -36,8 +36,15 @@ local function setNodeActive(nodeId: string, active: boolean)
 		return
 	end
 	nodeActive[nodeId] = active
-	node.Transparency = if active then 0 else 0.75
+	node.Transparency = 1
 	node.CanCollide = active
+
+	for _, descendant in node:GetDescendants() do
+		if descendant:IsA("BasePart") and descendant:GetAttribute("PresentationPart") == true then
+			descendant.Transparency = if active then 0 else 1
+		end
+	end
+
 	local prompt = node:FindFirstChildOfClass("ProximityPrompt")
 	if prompt then
 		prompt.Enabled = active
