@@ -257,9 +257,7 @@ local function createUi()
 		local viewport = camera.ViewportSize
 		local phone = viewport.X <= 760
 		toggle.Size = if phone then UDim2.fromOffset(80, 30) else UDim2.fromOffset(92, 34)
-		shopPanel.Size = if phone
-			then UDim2.new(0.48, 0, 1, -64)
-			else UDim2.fromOffset(310, 356)
+		shopPanel.Size = if phone then UDim2.new(0.48, 0, 1, -64) else UDim2.fromOffset(310, 356)
 	end
 	refreshLayout()
 	local camera = Workspace.CurrentCamera
