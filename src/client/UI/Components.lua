@@ -138,7 +138,7 @@ function Components.ResourceChip(
 			BackgroundTransparency = 1,
 			BorderSizePixel = 0,
 			Image = image,
-			Position = UDim2.new(0, 0, 0.5, 0),
+			Position = UDim2.fromScale(0, 0.5),
 			ScaleType = Enum.ScaleType.Fit,
 			Size = UDim2.fromOffset(iconSize, iconSize),
 			ZIndex = 3,
