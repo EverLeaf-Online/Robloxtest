@@ -218,13 +218,7 @@ function RobotService.Sell(player: Player, robotUid: any)
 		return
 	end
 	if not isNear(player, botConsole) and not isNear(player, recycleStation) then
-		StateService.ActionResult(
-			player,
-			RemoteNames.RequestSellRobot,
-			false,
-			"TOO_FAR_AWAY",
-			nil
-		)
+		StateService.ActionResult(player, RemoteNames.RequestSellRobot, false, "TOO_FAR_AWAY", nil)
 		return
 	end
 
