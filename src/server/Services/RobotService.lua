@@ -53,10 +53,6 @@ local function requireBotConsole(player: Player, actionName: string): boolean
 	return requireStation(player, actionName, PlotService.GetBotConsole(player))
 end
 
-local function requireRecycleStation(player: Player, actionName: string): boolean
-	return requireStation(player, actionName, PlotService.GetRecycleStation(player))
-end
-
 local function parsePadIndex(padId: string): number?
 	local match = string.match(padId, "^Pad(%d+)$")
 	if match == nil then
