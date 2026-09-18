@@ -34,11 +34,20 @@ end
 
 local function topBarSize(mode: LayoutMode): UDim2
 	if mode == "Phone" then
-		return UDim2.new(0.62, 0, 0, 40)
+		return UDim2.new(0.48, 0, 0, 40)
 	elseif mode == "Tablet" then
-		return UDim2.new(0.64, 0, 0, 42)
+		return UDim2.new(0.58, 0, 0, 42)
 	end
 	return UDim2.fromOffset(720, 44)
+end
+
+local function topBarPosition(mode: LayoutMode): UDim2
+	if mode == "Phone" then
+		return UDim2.new(0.55, 0, 0, 10)
+	elseif mode == "Tablet" then
+		return UDim2.new(0.52, 0, 0, 10)
+	end
+	return UDim2.new(0.5, 0, 0, 10)
 end
 
 local function objectiveSize(mode: LayoutMode): UDim2
@@ -237,7 +246,7 @@ local function App()
 			BackgroundColor3 = COLORS.Panel,
 			BackgroundTransparency = 0.04,
 			BorderSizePixel = 0,
-			Position = UDim2.new(0.5, 0, 0, 10),
+			Position = topBarPosition(layoutMode),
 			Size = topBarSize(layoutMode),
 		}, {
 			Corner = Components.Corner(10),
@@ -265,27 +274,29 @@ local function App()
 			),
 		}),
 
-		MachineStatus = React.createElement("Frame", {
-			BackgroundColor3 = COLORS.Panel,
-			BackgroundTransparency = 0.08,
-			BorderSizePixel = 0,
-			Position = UDim2.fromOffset(14, 72),
-			Size = UDim2.fromOffset(machineStatusWidth, machineStatusHeight),
-		}, {
-			Corner = Components.Corner(9),
-			Text = React.createElement("TextLabel", {
-				BackgroundTransparency = 1,
-				Font = Enum.Font.GothamMedium,
-				Position = UDim2.fromOffset(10, 5),
-				Size = UDim2.new(1, -20, 1, -10),
-				Text = StateHelpers.MachineStatus(snapshot, now),
-				TextColor3 = COLORS.Text,
-				TextSize = if isPhone then 10 else 11,
-				TextWrapped = true,
-				TextXAlignment = Enum.TextXAlignment.Left,
-				TextYAlignment = Enum.TextYAlignment.Center,
+		MachineStatus = if isPhone
+			then nil
+			else React.createElement("Frame", {
+				BackgroundColor3 = COLORS.Panel,
+				BackgroundTransparency = 0.08,
+				BorderSizePixel = 0,
+				Position = UDim2.fromOffset(14, 72),
+				Size = UDim2.fromOffset(machineStatusWidth, machineStatusHeight),
+			}, {
+				Corner = Components.Corner(9),
+				Text = React.createElement("TextLabel", {
+					BackgroundTransparency = 1,
+					Font = Enum.Font.GothamMedium,
+					Position = UDim2.fromOffset(10, 5),
+					Size = UDim2.new(1, -20, 1, -10),
+					Text = StateHelpers.MachineStatus(snapshot, now),
+					TextColor3 = COLORS.Text,
+					TextSize = 11,
+					TextWrapped = true,
+					TextXAlignment = Enum.TextXAlignment.Left,
+					TextYAlignment = Enum.TextYAlignment.Center,
+				}),
 			}),
-		}),
 
 		Objective = React.createElement("Frame", {
 			AnchorPoint = Vector2.new(0.5, 1),
