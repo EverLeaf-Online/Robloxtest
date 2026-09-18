@@ -137,6 +137,7 @@ local function sanitizeCircuitUnlockAsset(model: Model, plotId: number): boolean
 			descendant:IsA("Script")
 			or descendant:IsA("LocalScript")
 			or descendant:IsA("ModuleScript")
+			or descendant:IsA("LayerCollector")
 			or descendant:IsA("ProximityPrompt")
 			or descendant:IsA("ClickDetector")
 			or descendant:IsA("DragDetector")
@@ -144,6 +145,8 @@ local function sanitizeCircuitUnlockAsset(model: Model, plotId: number): boolean
 			or descendant:IsA("RemoteFunction")
 			or descendant:IsA("BindableEvent")
 			or descendant:IsA("BindableFunction")
+			or descendant:IsA("Highlight")
+			or descendant:IsA("SelectionBox")
 		then
 			descendant:Destroy()
 		elseif descendant:IsA("BasePart") then
@@ -165,8 +168,27 @@ local function sanitizeCircuitUnlockAsset(model: Model, plotId: number): boolean
 end
 
 local function placeCircuitUnlockAsset(model: Model, anchor: BasePart): boolean
-	local _, initialSize = model:GetBoundingBox()
-	local footprint = math.max(initialSize.X, initialSize.Z)
+	local _, nativeSize = model:GetBoundingBox()
+	if nativeSize.X <= 0.01 or nativeSize.Y <= 0.01 or nativeSize.Z <= 0.01 then
+		return false
+	end
+
+	-- Creator Store models do not guarantee that their authored "up" axis is Y.
+	-- The linked tycoon button is authored standing vertically. Treat the thinnest
+	-- bounding-box axis as the button's thickness and rotate that axis onto world Y.
+	local flattenRotation = CFrame.identity
+	if nativeSize.Z <= nativeSize.X and nativeSize.Z <= nativeSize.Y then
+		flattenRotation = CFrame.Angles(math.rad(90), 0, 0)
+	elseif nativeSize.X <= nativeSize.Y and nativeSize.X <= nativeSize.Z then
+		flattenRotation = CFrame.Angles(0, 0, math.rad(90))
+	end
+
+	if flattenRotation ~= CFrame.identity then
+		model:PivotTo(model:GetPivot() * flattenRotation)
+	end
+
+	local _, flattenedSize = model:GetBoundingBox()
+	local footprint = math.max(flattenedSize.X, flattenedSize.Z)
 	if footprint <= 0.01 then
 		return false
 	end
@@ -175,14 +197,15 @@ local function placeCircuitUnlockAsset(model: Model, anchor: BasePart): boolean
 	if scale < 0.05 or scale > 20 then
 		return false
 	end
-
 	model:ScaleTo(scale)
 
+	-- Translate only after rotation/scaling so the imported model keeps its corrected
+	-- floor orientation. Ground the visual on the factory floor beneath the prompt.
 	local boxCFrame, boxSize = model:GetBoundingBox()
-	local boxToPivot = boxCFrame:ToObjectSpace(model:GetPivot())
 	local floorY = anchor.Position.Y - (anchor.Size.Y / 2) + 0.4
-	local targetBox = CFrame.new(anchor.Position.X, floorY + (boxSize.Y / 2), anchor.Position.Z)
-	model:PivotTo(targetBox * boxToPivot)
+	local targetCenter = Vector3.new(anchor.Position.X, floorY + (boxSize.Y / 2), anchor.Position.Z)
+	local translation = targetCenter - boxCFrame.Position
+	model:PivotTo(CFrame.new(translation) * model:GetPivot())
 	return true
 end
 
