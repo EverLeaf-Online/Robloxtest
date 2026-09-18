@@ -234,7 +234,6 @@ local function App()
 
 	local objectiveTitle, objectiveBody = StateHelpers.GetObjective(snapshot)
 	local isPhone = layoutMode == "Phone"
-	local objectiveHeight = if isPhone then 58 else 64
 	local processorJob = snapshot.Machines.ProcessorJob
 	local assemblerJob = snapshot.Machines.AssemblerJob
 	local processorStatus = if processorJob.Active
@@ -296,7 +295,7 @@ local function App()
 			AnchorPoint = Vector2.new(0, 0.5),
 			BackgroundTransparency = 1,
 			BorderSizePixel = 0,
-			Position = if isPhone then UDim2.new(0, 10, 0.46, 0) else UDim2.new(0, 18, 0.5, 0),
+			Position = if isPhone then UDim2.new(0, 10, 0.38, 0) else UDim2.new(0, 18, 0.42, 0),
 			Size = if isPhone then UDim2.fromOffset(132, 98) else UDim2.fromOffset(158, 114),
 		}, {
 			Layout = React.createElement("UIListLayout", {
@@ -327,38 +326,30 @@ local function App()
 			Size = objectiveSize(layoutMode),
 		}, {
 			Corner = Components.Corner(11),
-			Accent = React.createElement("Frame", {
-				BackgroundColor3 = COLORS.Accent,
-				BorderSizePixel = 0,
-				Position = UDim2.fromOffset(0, 0),
-				Size = UDim2.fromOffset(5, objectiveHeight),
-			}, {
-				Corner = Components.Corner(11),
-			}),
 			Title = React.createElement("TextLabel", {
 				BackgroundTransparency = 1,
 				Font = Enum.Font.GothamBold,
-				Position = UDim2.fromOffset(16, 7),
-				Size = UDim2.new(1, -30, 0, 18),
+				Position = UDim2.fromOffset(0, 7),
+				Size = UDim2.new(1, 0, 0, 18),
 				Text = objectiveTitle,
 				TextColor3 = COLORS.Accent,
 				TextSize = if isPhone then 12 else 14,
 				TextStrokeColor3 = Color3.new(0, 0, 0),
 				TextStrokeTransparency = 0.3,
-				TextXAlignment = Enum.TextXAlignment.Left,
+				TextXAlignment = Enum.TextXAlignment.Center,
 			}),
 			Body = React.createElement("TextLabel", {
 				BackgroundTransparency = 1,
 				Font = Enum.Font.Gotham,
-				Position = UDim2.fromOffset(16, 27),
-				Size = UDim2.new(1, -30, 1, -32),
+				Position = UDim2.fromOffset(0, 27),
+				Size = UDim2.new(1, 0, 1, -32),
 				Text = objectiveBody,
 				TextColor3 = COLORS.Text,
 				TextSize = if isPhone then 10 else 11,
 				TextStrokeColor3 = Color3.new(0, 0, 0),
 				TextStrokeTransparency = 0.35,
 				TextWrapped = true,
-				TextXAlignment = Enum.TextXAlignment.Left,
+				TextXAlignment = Enum.TextXAlignment.Center,
 				TextYAlignment = Enum.TextYAlignment.Top,
 			}),
 		}),
