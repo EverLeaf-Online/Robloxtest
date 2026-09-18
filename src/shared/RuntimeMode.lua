@@ -12,8 +12,9 @@ function RuntimeMode.Resolve(): Mode
 		return override
 	end
 
-	-- Studio stays in Factory mode by default so existing gameplay/OCALE workflows
-	-- remain usable without TeleportService, which Roblox does not support in Studio.
+	-- Bootstrap.server uses an interactive Hub/Factory selector in Studio when no
+	-- override exists. This remains the safe fallback for direct module consumers
+	-- and server-only Studio runs that do not create a LocalPlayer.
 	if RunService:IsStudio() then
 		return "Factory"
 	end

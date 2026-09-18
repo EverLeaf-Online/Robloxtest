@@ -61,7 +61,6 @@ local function teleportOwner(player: Player)
 	busy[player] = true
 
 	if RunService:IsStudio() then
-		warn("[HubFactoryPortalService] TeleportService is unavailable in Studio")
 		busy[player] = nil
 		return
 	end
@@ -116,6 +115,10 @@ function HubFactoryPortalService.Init()
 	local portal = HubWorldService.GetFactoryPortal()
 	local prompt = portal:FindFirstChildOfClass("ProximityPrompt")
 	assert(prompt ~= nil, "Factory portal prompt missing")
+	if RunService:IsStudio() then
+		prompt.ActionText = "Live Only"
+		prompt.ObjectText = "Factory Teleport"
+	end
 
 	prompt.Triggered:Connect(teleportOwner)
 	TeleportService.TeleportInitFailed:Connect(function(player)
