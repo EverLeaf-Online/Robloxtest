@@ -7,6 +7,7 @@ local Workspace = game:GetService("Workspace")
 
 local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
 local Robots = require(ReplicatedStorage.Shared.Config.Robots)
+local RemoteNames = require(ReplicatedStorage.Shared.Networking.RemoteNames)
 local Upgrades = require(ReplicatedStorage.Shared.Config.Upgrades)
 
 local ProfileTypes = require(script.Parent.Parent.Data.ProfileTypes)
@@ -216,6 +217,39 @@ local function responseTimedOut(response: any?): boolean
 	return typeof(response) == "table" and response.TimedOut == true
 end
 
+local function countCapturedResults(
+	response: any?,
+	action: string,
+	success: boolean,
+	code: string
+): number
+	if typeof(response) ~= "table" or typeof(response.Results) ~= "table" then
+		return 0
+	end
+
+	local count = 0
+	for _, result in response.Results do
+		if
+			typeof(result) == "table"
+			and result.Action == action
+			and result.Success == success
+			and result.Code == code
+		then
+			count += 1
+		end
+	end
+	return count
+end
+
+local function hasAssignedRobot(data: ProfileData, robotUid: string): boolean
+	for _, assignedUid in data.Assignments.WorkPads do
+		if assignedUid == robotUid then
+			return true
+		end
+	end
+	return false
+end
+
 local function mutateProfile(player: Player, callback: (ProfileData) -> ())
 	DataService.Transaction(player, function(data)
 		callback(data)
@@ -307,29 +341,53 @@ local function runForgedRobotCase(player: Player)
 	end)
 
 	RateLimiter.Forget(player)
-	local attackerBefore = fingerprint(player)
 	local response = dispatchClient(player, "ForgeVictimRobot", { RobotUid = tempUid })
-	task.wait(0.2)
-	local attackerAfter = fingerprint(player)
+	local currentAttackerData = DataService.GetData(player)
 	local currentVictimData = DataService.GetData(victim)
 	local victimStillOwns = currentVictimData ~= nil
 		and currentVictimData.Robots.OwnedByUid[tempUid] ~= nil
+	local attackerDoesNotOwn = currentAttackerData ~= nil
+		and currentAttackerData.Robots.OwnedByUid[tempUid] == nil
+	local attackerDidNotAssign = currentAttackerData ~= nil
+		and not hasAssignedRobot(currentAttackerData, tempUid)
+	local assignRejected = countCapturedResults(
+		response,
+		RemoteNames.RequestAssignRobot,
+		false,
+		"ROBOT_NOT_OWNED"
+	) == 1
+	local sellRejected = countCapturedResults(
+		response,
+		RemoteNames.RequestSellRobot,
+		false,
+		"ROBOT_NOT_OWNED"
+	) == 1
 
 	mutateProfile(victim, function(data)
 		data.Robots.OwnedByUid[tempUid] = nil
 	end)
 	restoreCharacter(characterState)
 
-	local passed = sameFingerprint(attackerBefore, attackerAfter)
-		and victimStillOwns
+	local passed = victimStillOwns
+		and attackerDoesNotOwn
+		and attackerDidNotAssign
+		and assignRejected
+		and sellRejected
 		and not responseTimedOut(response)
 	report(
 		player,
 		"Cross-player robot ownership",
 		passed,
 		if passed
-			then "Forged assign/sell was rejected"
-			else "Ownership boundary failed or timed out"
+			then "Victim kept robot; forged assign/sell both returned ROBOT_NOT_OWNED"
+			else ("victimOwns=%s attackerOwns=%s attackerAssigned=%s assignRejected=%s sellRejected=%s timeout=%s"):format(
+				tostring(victimStillOwns),
+				tostring(not attackerDoesNotOwn),
+				tostring(not attackerDidNotAssign),
+				tostring(assignRejected),
+				tostring(sellRejected),
+				tostring(responseTimedOut(response))
+			)
 	)
 end
 
@@ -348,13 +406,10 @@ local function runDuplicateSellCase(player: Player)
 		return
 	end
 
-	local originalCredits = data.Currencies.Credits
-	local originalLifetimeCredits = data.Stats.LifetimeCredits
 	local tempUid = ("StudioSell%d"):format(player.UserId)
 	local originalRobot = data.Robots.OwnedByUid[tempUid]
 
 	mutateProfile(player, function(profile)
-		profile.Currencies.Credits = 0
 		profile.Robots.OwnedByUid[tempUid] = {
 			RobotId = TEMP_ROBOT_ID,
 			AcquiredAt = os.time(),
@@ -363,16 +418,26 @@ local function runDuplicateSellCase(player: Player)
 
 	RateLimiter.Forget(player)
 	local response = dispatchClient(player, "DuplicateSell", { RobotUid = tempUid })
-	task.wait(0.25)
 	local after = DataService.GetData(player)
-	local passed = after ~= nil
-		and after.Robots.OwnedByUid[tempUid] == nil
-		and after.Currencies.Credits == definition.RecycleCredits
+	local robotRemoved = after ~= nil and after.Robots.OwnedByUid[tempUid] == nil
+	local recycleSuccesses = countCapturedResults(
+		response,
+		RemoteNames.RequestSellRobot,
+		true,
+		"ROBOT_RECYCLED"
+	)
+	local duplicateRejections = countCapturedResults(
+		response,
+		RemoteNames.RequestSellRobot,
+		false,
+		"ROBOT_NOT_OWNED"
+	)
+	local passed = robotRemoved
+		and recycleSuccesses == 1
+		and duplicateRejections == 1
 		and not responseTimedOut(response)
 
 	mutateProfile(player, function(profile)
-		profile.Currencies.Credits = originalCredits
-		profile.Stats.LifetimeCredits = originalLifetimeCredits
 		profile.Robots.OwnedByUid[tempUid] = originalRobot
 	end)
 	restoreCharacter(characterState)
@@ -381,8 +446,13 @@ local function runDuplicateSellCase(player: Player)
 		"Duplicate robot sell",
 		passed,
 		if passed
-			then "Exactly one recycle grant applied"
-			else "Duplicate grant detected or client timed out"
+			then "One ROBOT_RECYCLED success followed by one ROBOT_NOT_OWNED rejection"
+			else ("robotRemoved=%s recycled=%d rejected=%d timeout=%s"):format(
+				tostring(robotRemoved),
+				recycleSuccesses,
+				duplicateRejections,
+				tostring(responseTimedOut(response))
+			)
 	)
 end
 
