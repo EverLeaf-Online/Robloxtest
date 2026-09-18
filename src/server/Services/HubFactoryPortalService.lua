@@ -11,6 +11,8 @@ local HubFactoryPortalService = {}
 local initialized = false
 local busy: { [Player]: boolean } = {}
 
+local ENTER_FACTORY_REMOTE = "HubEnterFactory"
+
 local function makeOptions(token: string, accessCode: string): TeleportOptions
 	local options = Instance.new("TeleportOptions")
 	options.ReservedServerAccessCode = accessCode
@@ -120,7 +122,16 @@ function HubFactoryPortalService.Init()
 		prompt.ObjectText = "Factory Teleport"
 	end
 
+	local existingRemote = game:GetService("ReplicatedStorage"):FindFirstChild(ENTER_FACTORY_REMOTE)
+	if existingRemote ~= nil then
+		existingRemote:Destroy()
+	end
+	local enterRemote = Instance.new("RemoteEvent")
+	enterRemote.Name = ENTER_FACTORY_REMOTE
+	enterRemote.Parent = game:GetService("ReplicatedStorage")
+
 	prompt.Triggered:Connect(teleportOwner)
+	enterRemote.OnServerEvent:Connect(teleportOwner)
 	TeleportService.TeleportInitFailed:Connect(function(player)
 		if busy[player] then
 			FactoryRouteRegistry.ClearFactoryAccessCode(player.UserId)

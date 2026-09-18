@@ -9,6 +9,9 @@ local StudioRuntimeSelectorController =
 local mode = StudioRuntimeSelectorController.ResolveMode()
 
 local function startHubClient()
+	local HubUIController = require(script.Parent.Controllers.HubUIController)
+
+	HubUIController.Init()
 	print("[ScrapToBotFactory] Hub client initialized")
 end
 
