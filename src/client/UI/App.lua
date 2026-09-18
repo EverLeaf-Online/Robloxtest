@@ -34,18 +34,18 @@ end
 
 local function resourceClusterSize(mode: LayoutMode): UDim2
 	if mode == "Phone" then
-		return UDim2.fromOffset(356, 40)
+		return UDim2.fromOffset(360, 44)
 	elseif mode == "Tablet" then
-		return UDim2.fromOffset(470, 44)
+		return UDim2.fromOffset(570, 52)
 	end
-	return UDim2.fromOffset(560, 48)
+	return UDim2.fromOffset(700, 58)
 end
 
 local function resourceClusterPosition(mode: LayoutMode): UDim2
 	if mode == "Phone" then
 		return UDim2.new(0.61, 0, 0, 8)
 	elseif mode == "Tablet" then
-		return UDim2.new(0.56, 0, 0, 9)
+		return UDim2.new(0.55, 0, 0, 9)
 	end
 	return UDim2.new(0.5, 0, 0, 10)
 end
@@ -250,7 +250,7 @@ local function App()
 		}, {
 			Layout = React.createElement("UIListLayout", {
 				FillDirection = Enum.FillDirection.Horizontal,
-				Padding = UDim.new(0, 6),
+				Padding = UDim.new(0, if isPhone then 6 else 9),
 				SortOrder = Enum.SortOrder.LayoutOrder,
 			}),
 			Credits = Components.ResourceChip(
