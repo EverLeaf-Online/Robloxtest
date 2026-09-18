@@ -17,8 +17,46 @@ local COLORS = Theme.Colors
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 local LocalPlayer = Players.LocalPlayer
 
+type LayoutMode = "Desktop" | "Tablet" | "Phone"
+
 local function getRemote(name: string): RemoteEvent
 	return Remotes:WaitForChild(name) :: RemoteEvent
+end
+
+local function layoutModeForWidth(width: number): LayoutMode
+	if width <= 760 then
+		return "Phone"
+	elseif width <= 1120 then
+		return "Tablet"
+	end
+	return "Desktop"
+end
+
+local function topBarSize(mode: LayoutMode): UDim2
+	if mode == "Phone" then
+		return UDim2.new(0.62, 0, 0, 40)
+	elseif mode == "Tablet" then
+		return UDim2.new(0.64, 0, 0, 42)
+	end
+	return UDim2.fromOffset(720, 44)
+end
+
+local function objectiveSize(mode: LayoutMode): UDim2
+	if mode == "Phone" then
+		return UDim2.new(0.62, 0, 0, 58)
+	elseif mode == "Tablet" then
+		return UDim2.fromOffset(480, 62)
+	end
+	return UDim2.fromOffset(520, 64)
+end
+
+local function modalSize(mode: LayoutMode): UDim2
+	if mode == "Phone" then
+		return UDim2.new(0.92, 0, 0.78, 0)
+	elseif mode == "Tablet" then
+		return UDim2.new(0.76, 0, 0.78, 0)
+	end
+	return UDim2.fromOffset(560, 520)
 end
 
 local function App()
@@ -28,7 +66,7 @@ local function App()
 	local actionMessage, setActionMessage = React.useState("")
 	local actionSuccess, setActionSuccess = React.useState(true)
 	local now, setNow = React.useState(Workspace:GetServerTimeNow())
-	local compact, setCompact = React.useState(false)
+	local layoutMode, setLayoutMode = React.useState("Desktop" :: LayoutMode)
 	local extraWorkSlots, setExtraWorkSlots =
 		React.useState(if LocalPlayer:GetAttribute("PassBotWorkSlots2") == true then 2 else 0)
 
@@ -94,13 +132,11 @@ local function App()
 
 	React.useEffect(function()
 		local function refreshExtraWorkSlots()
-			setExtraWorkSlots(
-				if LocalPlayer:GetAttribute("PassBotWorkSlots2") == true then 2 else 0
-			)
+			setExtraWorkSlots(if LocalPlayer:GetAttribute("PassBotWorkSlots2") == true then 2 else 0)
 		end
 		refreshExtraWorkSlots()
-		local connection = LocalPlayer:GetAttributeChangedSignal("PassBotWorkSlots2")
-			:Connect(refreshExtraWorkSlots)
+		local connection =
+			LocalPlayer:GetAttributeChangedSignal("PassBotWorkSlots2"):Connect(refreshExtraWorkSlots)
 		return function()
 			connection:Disconnect()
 		end
@@ -131,17 +167,36 @@ local function App()
 	end, {})
 
 	React.useEffect(function()
-		local camera = Workspace.CurrentCamera
-		if camera == nil then
-			return nil
+		local viewportConnection: RBXScriptConnection? = nil
+		local cameraConnection: RBXScriptConnection? = nil
+
+		local function bindCamera()
+			if viewportConnection ~= nil then
+				viewportConnection:Disconnect()
+				viewportConnection = nil
+			end
+
+			local camera = Workspace.CurrentCamera
+			if camera == nil then
+				return
+			end
+
+			local function refresh()
+				setLayoutMode(layoutModeForWidth(camera.ViewportSize.X))
+			end
+			refresh()
+			viewportConnection = camera:GetPropertyChangedSignal("ViewportSize"):Connect(refresh)
 		end
-		local function refreshCompact()
-			setCompact(camera.ViewportSize.X < 760)
-		end
-		refreshCompact()
-		local connection = camera:GetPropertyChangedSignal("ViewportSize"):Connect(refreshCompact)
+
+		bindCamera()
+		cameraConnection = Workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(bindCamera)
 		return function()
-			connection:Disconnect()
+			if viewportConnection ~= nil then
+				viewportConnection:Disconnect()
+			end
+			if cameraConnection ~= nil then
+				cameraConnection:Disconnect()
+			end
 		end
 	end, {})
 
@@ -166,92 +221,108 @@ local function App()
 	end
 
 	local objectiveTitle, objectiveBody = StateHelpers.GetObjective(snapshot)
-	local objectiveWidth = if compact then UDim2.new(1, -24, 0, 70) else UDim2.fromOffset(330, 70)
-	local modalSize = if compact then UDim2.new(1, -24, 0.72, 0) else UDim2.fromOffset(560, 520)
+	local isPhone = layoutMode == "Phone"
+	local machineStatusWidth = if isPhone then 204 else 246
+	local machineStatusHeight = if isPhone then 48 else 54
+	local objectiveHeight = if isPhone then 58 else 64
 
 	return React.createElement("Frame", {
 		BackgroundTransparency = 1,
 		Size = UDim2.fromScale(1, 1),
 	}, {
 		TopBar = React.createElement("Frame", {
+			AnchorPoint = Vector2.new(0.5, 0),
 			BackgroundColor3 = COLORS.Panel,
+			BackgroundTransparency = 0.04,
 			BorderSizePixel = 0,
-			Position = UDim2.fromOffset(12, 12),
-			Size = UDim2.new(1, -24, 0, 46),
+			Position = UDim2.new(0.5, 0, 0, 10),
+			Size = topBarSize(layoutMode),
 		}, {
-			Corner = Components.Corner(9),
-			Padding = Components.Padding(5),
+			Corner = Components.Corner(10),
+			Padding = Components.Padding(4),
 			Layout = React.createElement("UIListLayout", {
 				FillDirection = Enum.FillDirection.Horizontal,
-				Padding = UDim.new(0, 6),
+				Padding = UDim.new(0, 4),
 				SortOrder = Enum.SortOrder.LayoutOrder,
 			}),
-			Credits = Components.StatCard(
-				"CREDITS",
-				StateHelpers.FormatNumber(snapshot.Currencies.Credits)
+			Wiring = Components.StatCard(
+				"WIRING",
+				StateHelpers.FormatNumber(snapshot.Materials.Wiring)
 			),
 			Scrap = Components.StatCard(
 				"SCRAP",
 				StateHelpers.FormatNumber(snapshot.Materials.ScrapMetal)
 			),
-			Wiring = Components.StatCard(
-				"WIRING",
-				StateHelpers.FormatNumber(snapshot.Materials.Wiring)
-			),
 			Cores = Components.StatCard(
 				"CORES",
 				StateHelpers.FormatNumber(snapshot.Materials.PowerCoreFragments)
 			),
-		}),
-
-		Objective = React.createElement("Frame", {
-			BackgroundColor3 = COLORS.Panel,
-			BorderSizePixel = 0,
-			Position = UDim2.fromOffset(12, 68),
-			Size = objectiveWidth,
-		}, {
-			Corner = Components.Corner(9),
-			Title = React.createElement("TextLabel", {
-				BackgroundTransparency = 1,
-				Font = Enum.Font.GothamBold,
-				Position = UDim2.fromOffset(12, 8),
-				Size = UDim2.new(1, -24, 0, 18),
-				Text = objectiveTitle,
-				TextColor3 = COLORS.Accent,
-				TextSize = 14,
-				TextXAlignment = Enum.TextXAlignment.Left,
-			}),
-			Body = React.createElement("TextLabel", {
-				BackgroundTransparency = 1,
-				Font = Enum.Font.Gotham,
-				Position = UDim2.fromOffset(12, 28),
-				Size = UDim2.new(1, -24, 0, 34),
-				Text = objectiveBody,
-				TextColor3 = COLORS.Text,
-				TextSize = 11,
-				TextWrapped = true,
-				TextXAlignment = Enum.TextXAlignment.Left,
-				TextYAlignment = Enum.TextYAlignment.Top,
-			}),
+			Credits = Components.StatCard(
+				"CREDITS",
+				StateHelpers.FormatNumber(snapshot.Currencies.Credits)
+			),
 		}),
 
 		MachineStatus = React.createElement("Frame", {
 			BackgroundColor3 = COLORS.Panel,
+			BackgroundTransparency = 0.08,
 			BorderSizePixel = 0,
-			Position = UDim2.fromOffset(12, 146),
-			Size = if compact then UDim2.new(1, -24, 0, 66) else UDim2.fromOffset(330, 66),
+			Position = UDim2.fromOffset(14, 72),
+			Size = UDim2.fromOffset(machineStatusWidth, machineStatusHeight),
 		}, {
 			Corner = Components.Corner(9),
 			Text = React.createElement("TextLabel", {
 				BackgroundTransparency = 1,
 				Font = Enum.Font.GothamMedium,
-				Position = UDim2.fromOffset(12, 7),
-				Size = UDim2.new(1, -24, 1, -14),
+				Position = UDim2.fromOffset(10, 5),
+				Size = UDim2.new(1, -20, 1, -10),
 				Text = StateHelpers.MachineStatus(snapshot, now),
 				TextColor3 = COLORS.Text,
-				TextSize = 11,
+				TextSize = if isPhone then 10 else 11,
+				TextWrapped = true,
 				TextXAlignment = Enum.TextXAlignment.Left,
 				TextYAlignment = Enum.TextYAlignment.Center,
+			}),
+		}),
+
+		Objective = React.createElement("Frame", {
+			AnchorPoint = Vector2.new(0.5, 1),
+			BackgroundColor3 = COLORS.Panel,
+			BackgroundTransparency = 0.04,
+			BorderSizePixel = 0,
+			Position = UDim2.new(0.5, 0, 1, -18),
+			Size = objectiveSize(layoutMode),
+		}, {
+			Corner = Components.Corner(11),
+			Accent = React.createElement("Frame", {
+				BackgroundColor3 = COLORS.Accent,
+				BorderSizePixel = 0,
+				Position = UDim2.fromOffset(0, 0),
+				Size = UDim2.fromOffset(5, objectiveHeight),
+			}, {
+				Corner = Components.Corner(11),
+			}),
+			Title = React.createElement("TextLabel", {
+				BackgroundTransparency = 1,
+				Font = Enum.Font.GothamBold,
+				Position = UDim2.fromOffset(16, 7),
+				Size = UDim2.new(1, -30, 0, 18),
+				Text = objectiveTitle,
+				TextColor3 = COLORS.Accent,
+				TextSize = if isPhone then 12 else 14,
+				TextXAlignment = Enum.TextXAlignment.Left,
+			}),
+			Body = React.createElement("TextLabel", {
+				BackgroundTransparency = 1,
+				Font = Enum.Font.Gotham,
+				Position = UDim2.fromOffset(16, 27),
+				Size = UDim2.new(1, -30, 1, -32),
+				Text = objectiveBody,
+				TextColor3 = COLORS.Text,
+				TextSize = if isPhone then 10 else 11,
+				TextWrapped = true,
+				TextXAlignment = Enum.TextXAlignment.Left,
+				TextYAlignment = Enum.TextYAlignment.Top,
 			}),
 		}),
 
@@ -268,7 +339,7 @@ local function App()
 					BackgroundColor3 = COLORS.Panel,
 					BorderSizePixel = 0,
 					Position = UDim2.fromScale(0.5, 0.5),
-					Size = modalSize,
+					Size = modalSize(layoutMode),
 					ZIndex = 21,
 				}, {
 					Corner = Components.Corner(12),
@@ -279,7 +350,7 @@ local function App()
 						Size = UDim2.new(1, -100, 0, 24),
 						Text = PanelContent.Title(openPanel :: string, snapshot),
 						TextColor3 = COLORS.Text,
-						TextSize = 18,
+						TextSize = if isPhone then 16 else 18,
 						TextXAlignment = Enum.TextXAlignment.Left,
 						ZIndex = 22,
 					}),
@@ -329,8 +400,8 @@ local function App()
 				AnchorPoint = Vector2.new(0.5, 1),
 				BackgroundColor3 = if actionSuccess then COLORS.AccentDark else COLORS.Danger,
 				BorderSizePixel = 0,
-				Position = UDim2.new(0.5, 0, 1, -16),
-				Size = UDim2.fromOffset(300, 38),
+				Position = UDim2.new(0.5, 0, 1, if isPhone then -86 else -94),
+				Size = if isPhone then UDim2.fromOffset(250, 34) else UDim2.fromOffset(300, 38),
 				ZIndex = 30,
 			}, {
 				Corner = Components.Corner(9),
@@ -340,7 +411,7 @@ local function App()
 					Size = UDim2.fromScale(1, 1),
 					Text = actionMessage,
 					TextColor3 = COLORS.Text,
-					TextSize = 13,
+					TextSize = if isPhone then 11 else 13,
 					ZIndex = 31,
 				}),
 			})
