@@ -148,14 +148,6 @@ function PlotService.GetUpgradeConsole(player: Player): BasePart?
 	return getOwnedStation(player, "UpgradeConsole")
 end
 
-function PlotService.GetStorageStation(player: Player): BasePart?
-	return getOwnedStation(player, "StorageBin2")
-end
-
-function PlotService.GetRecycleStation(player: Player): BasePart?
-	return getOwnedStation(player, "RecycleStation")
-end
-
 function PlotService.Init()
 	if initialized then
 		return
