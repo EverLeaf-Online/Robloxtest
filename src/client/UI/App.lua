@@ -32,20 +32,20 @@ local function layoutModeForWidth(width: number): LayoutMode
 	return "Desktop"
 end
 
-local function topBarSize(mode: LayoutMode): UDim2
+local function resourceClusterSize(mode: LayoutMode): UDim2
 	if mode == "Phone" then
-		return UDim2.new(0.48, 0, 0, 40)
+		return UDim2.fromOffset(356, 40)
 	elseif mode == "Tablet" then
-		return UDim2.new(0.58, 0, 0, 42)
+		return UDim2.fromOffset(470, 44)
 	end
-	return UDim2.fromOffset(720, 44)
+	return UDim2.fromOffset(560, 48)
 end
 
-local function topBarPosition(mode: LayoutMode): UDim2
+local function resourceClusterPosition(mode: LayoutMode): UDim2
 	if mode == "Phone" then
-		return UDim2.new(0.55, 0, 0, 10)
+		return UDim2.new(0.61, 0, 0, 8)
 	elseif mode == "Tablet" then
-		return UDim2.new(0.52, 0, 0, 10)
+		return UDim2.new(0.56, 0, 0, 9)
 	end
 	return UDim2.new(0.5, 0, 0, 10)
 end
@@ -241,36 +241,45 @@ local function App()
 		BackgroundTransparency = 1,
 		Size = UDim2.fromScale(1, 1),
 	}, {
-		TopBar = React.createElement("Frame", {
+		ResourceCluster = React.createElement("Frame", {
 			AnchorPoint = Vector2.new(0.5, 0),
-			BackgroundColor3 = COLORS.Panel,
-			BackgroundTransparency = 0.04,
+			BackgroundTransparency = 1,
 			BorderSizePixel = 0,
-			Position = topBarPosition(layoutMode),
-			Size = topBarSize(layoutMode),
+			Position = resourceClusterPosition(layoutMode),
+			Size = resourceClusterSize(layoutMode),
 		}, {
-			Corner = Components.Corner(10),
-			Padding = Components.Padding(4),
 			Layout = React.createElement("UIListLayout", {
 				FillDirection = Enum.FillDirection.Horizontal,
-				Padding = UDim.new(0, 4),
+				Padding = UDim.new(0, 6),
 				SortOrder = Enum.SortOrder.LayoutOrder,
 			}),
-			Wiring = Components.StatCard(
-				"WIRING",
-				StateHelpers.FormatNumber(snapshot.Materials.Wiring)
-			),
-			Scrap = Components.StatCard(
-				"SCRAP",
-				StateHelpers.FormatNumber(snapshot.Materials.ScrapMetal)
-			),
-			Cores = Components.StatCard(
-				"CORES",
-				StateHelpers.FormatNumber(snapshot.Materials.PowerCoreFragments)
-			),
-			Credits = Components.StatCard(
+			Credits = Components.ResourceChip(
+				"$",
 				"CREDITS",
-				StateHelpers.FormatNumber(snapshot.Currencies.Credits)
+				StateHelpers.FormatNumber(snapshot.Currencies.Credits),
+				Color3.fromRGB(86, 190, 103),
+				isPhone
+			),
+			Scrap = Components.ResourceChip(
+				"▰",
+				"SCRAP",
+				StateHelpers.FormatNumber(snapshot.Materials.ScrapMetal),
+				Color3.fromRGB(190, 132, 77),
+				isPhone
+			),
+			Wiring = Components.ResourceChip(
+				"⚡",
+				"WIRING",
+				StateHelpers.FormatNumber(snapshot.Materials.Wiring),
+				Color3.fromRGB(235, 192, 75),
+				isPhone
+			),
+			Cores = Components.ResourceChip(
+				"◆",
+				"CORES",
+				StateHelpers.FormatNumber(snapshot.Materials.PowerCoreFragments),
+				Color3.fromRGB(82, 169, 232),
+				isPhone
 			),
 		}),
 

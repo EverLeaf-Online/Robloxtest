@@ -160,20 +160,55 @@ local function createUi()
 
 	local toggle = Instance.new("TextButton")
 	toggle.Name = "ShopButton"
-	toggle.AnchorPoint = Vector2.new(1, 0)
-	toggle.Position = UDim2.new(1, -14, 0, 10)
-	toggle.Size = UDim2.fromOffset(92, 34)
-	toggle.BackgroundColor3 = Color3.fromRGB(38, 126, 91)
+	toggle.Position = UDim2.fromOffset(16, 118)
+	toggle.Size = UDim2.fromOffset(70, 78)
+	toggle.BackgroundTransparency = 1
 	toggle.BorderSizePixel = 0
-	toggle.Font = Enum.Font.GothamBold
-	toggle.Text = "SHOP"
-	toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
-	toggle.TextSize = 13
+	toggle.Text = ""
+	toggle.AutoButtonColor = false
 	toggle.Parent = gui
 
-	local toggleCorner = Instance.new("UICorner")
-	toggleCorner.CornerRadius = UDim.new(0, 8)
-	toggleCorner.Parent = toggle
+	local iconPlate = Instance.new("Frame")
+	iconPlate.Name = "Icon"
+	iconPlate.AnchorPoint = Vector2.new(0.5, 0)
+	iconPlate.Position = UDim2.fromScale(0.5, 0)
+	iconPlate.Size = UDim2.fromOffset(54, 54)
+	iconPlate.BackgroundColor3 = Color3.fromRGB(38, 126, 91)
+	iconPlate.BorderSizePixel = 0
+	iconPlate.Parent = toggle
+
+	local iconCorner = Instance.new("UICorner")
+	iconCorner.CornerRadius = UDim.new(1, 0)
+	iconCorner.Parent = iconPlate
+
+	local iconStroke = Instance.new("UIStroke")
+	iconStroke.Color = Color3.fromRGB(104, 214, 156)
+	iconStroke.Thickness = 2
+	iconStroke.Transparency = 0.15
+	iconStroke.Parent = iconPlate
+
+	local icon = Instance.new("TextLabel")
+	icon.Name = "Glyph"
+	icon.Size = UDim2.fromScale(1, 1)
+	icon.BackgroundTransparency = 1
+	icon.Font = Enum.Font.GothamBold
+	icon.Text = "$"
+	icon.TextColor3 = Color3.fromRGB(255, 255, 255)
+	icon.TextSize = 30
+	icon.Parent = iconPlate
+
+	local toggleLabel = Instance.new("TextLabel")
+	toggleLabel.Name = "Label"
+	toggleLabel.AnchorPoint = Vector2.new(0.5, 1)
+	toggleLabel.Position = UDim2.fromScale(0.5, 1)
+	toggleLabel.Size = UDim2.new(1, 0, 0, 20)
+	toggleLabel.BackgroundTransparency = 1
+	toggleLabel.Font = Enum.Font.GothamBold
+	toggleLabel.Text = "SHOP"
+	toggleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+	toggleLabel.TextSize = 12
+	toggleLabel.TextStrokeTransparency = 0.35
+	toggleLabel.Parent = toggle
 
 	local shopPanel = Instance.new("ScrollingFrame")
 	shopPanel.Name = "Panel"
@@ -256,7 +291,9 @@ local function createUi()
 		end
 		local viewport = camera.ViewportSize
 		local phone = viewport.X <= 760
-		toggle.Size = if phone then UDim2.fromOffset(80, 30) else UDim2.fromOffset(92, 34)
+		toggle.Position = if phone then UDim2.fromOffset(12, 104) else UDim2.fromOffset(16, 118)
+		toggle.Size = if phone then UDim2.fromOffset(62, 70) else UDim2.fromOffset(70, 78)
+		iconPlate.Size = if phone then UDim2.fromOffset(48, 48) else UDim2.fromOffset(54, 54)
 		shopPanel.Size = if phone then UDim2.new(0.48, 0, 1, -64) else UDim2.fromOffset(310, 356)
 	end
 	refreshLayout()

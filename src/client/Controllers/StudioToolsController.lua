@@ -59,17 +59,44 @@ function StudioToolsController.Init()
 	local launcher = Instance.new("TextButton")
 	launcher.Name = "Launcher"
 	launcher.AnchorPoint = Vector2.new(1, 0)
-	launcher.Position = UDim2.new(1, -14, 0, 90)
-	launcher.Size = UDim2.fromOffset(110, 30)
-	launcher.BackgroundColor3 = Color3.fromRGB(45, 52, 64)
+	launcher.Position = UDim2.new(1, -14, 0, 132)
+	launcher.Size = UDim2.fromOffset(64, 70)
+	launcher.BackgroundTransparency = 1
 	launcher.BorderSizePixel = 0
-	launcher.Font = Enum.Font.GothamBold
-	launcher.Text = "STUDIO TOOLS"
-	launcher.TextColor3 = Color3.fromRGB(245, 247, 250)
-	launcher.TextSize = 12
-	launcher.AutoButtonColor = true
+	launcher.Text = ""
+	launcher.AutoButtonColor = false
 	launcher.Parent = gui
-	round(launcher, 8)
+
+	local launcherIcon = Instance.new("Frame")
+	launcherIcon.Name = "Icon"
+	launcherIcon.AnchorPoint = Vector2.new(0.5, 0)
+	launcherIcon.Position = UDim2.fromScale(0.5, 0)
+	launcherIcon.Size = UDim2.fromOffset(48, 48)
+	launcherIcon.BackgroundColor3 = Color3.fromRGB(45, 52, 64)
+	launcherIcon.BorderSizePixel = 0
+	launcherIcon.Parent = launcher
+	round(launcherIcon, 24)
+
+	local launcherGlyph = Instance.new("TextLabel")
+	launcherGlyph.Size = UDim2.fromScale(1, 1)
+	launcherGlyph.BackgroundTransparency = 1
+	launcherGlyph.Font = Enum.Font.GothamBold
+	launcherGlyph.Text = "</>"
+	launcherGlyph.TextColor3 = Color3.fromRGB(245, 247, 250)
+	launcherGlyph.TextSize = 15
+	launcherGlyph.Parent = launcherIcon
+
+	local launcherLabel = Instance.new("TextLabel")
+	launcherLabel.AnchorPoint = Vector2.new(0.5, 1)
+	launcherLabel.Position = UDim2.fromScale(0.5, 1)
+	launcherLabel.Size = UDim2.new(1, 0, 0, 18)
+	launcherLabel.BackgroundTransparency = 1
+	launcherLabel.Font = Enum.Font.GothamBold
+	launcherLabel.Text = "TOOLS"
+	launcherLabel.TextColor3 = Color3.fromRGB(245, 247, 250)
+	launcherLabel.TextSize = 10
+	launcherLabel.TextStrokeTransparency = 0.35
+	launcherLabel.Parent = launcher
 
 	local panel = Instance.new("Frame")
 	panel.Name = "Panel"
@@ -180,7 +207,9 @@ function StudioToolsController.Init()
 			return
 		end
 		local phone = camera.ViewportSize.X <= 760
-		launcher.Size = if phone then UDim2.fromOffset(96, 28) else UDim2.fromOffset(110, 30)
+		launcher.Position = UDim2.new(1, -12, 0, if phone then 116 else 132)
+		launcher.Size = if phone then UDim2.fromOffset(58, 64) else UDim2.fromOffset(64, 70)
+		launcherIcon.Size = if phone then UDim2.fromOffset(44, 44) else UDim2.fromOffset(48, 48)
 		panel.Size = if phone then UDim2.fromScale(0.82, 0.78) else UDim2.fromScale(0.68, 0.76)
 	end
 	refreshLayout()
