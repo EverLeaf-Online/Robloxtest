@@ -315,6 +315,19 @@ local function buildFactoryPlot(parent: Folder, plotId: number, center: Vector3)
 	local entry = makeMarker(plot, "Entry", center + WorldLayout.Plot.EntryOffset)
 	tagPlotPart(entry, plotId)
 	plotEntries[plotId] = entry
+	if plotId == 1 then
+		zoneArrivalById[1] = entry
+	end
+
+	local spawn = Instance.new("SpawnLocation")
+	spawn.Name = "FactorySpawn"
+	spawn.Anchored = true
+	spawn.Neutral = true
+	spawn.Size = Vector3.new(8, 1, 8)
+	spawn.Position = entry.Position + Vector3.new(0, 0.8, 0)
+	spawn.Transparency = 1
+	spawn.CanCollide = false
+	spawn.Parent = plot
 
 	local sign =
 		makePart(plot, "OwnerSign", Vector3.new(8, 6, 1), center + WorldLayout.Plot.SignOffset)
@@ -387,32 +400,9 @@ local function buildPlots(folder: Folder)
 	plotsFolder.Name = "FactoryPlots"
 	plotsFolder.Parent = folder
 
-	for plotId = 1, GameConfig.World.PlotCount do
-		buildFactoryPlot(plotsFolder, plotId, WorldLayout.GetPlotCenter(plotId))
-	end
-end
-
-local function buildHub(folder: Folder)
-	local hubCenter = Vector3.new(0, 0, -820)
-	local floor = makePart(folder, "HubFloor", Vector3.new(120, 1, 90), hubCenter)
-	floor.Material = Enum.Material.Concrete
-	floor.Color = Color3.fromRGB(105, 108, 110)
-
-	local spawn = Instance.new("SpawnLocation")
-	spawn.Name = "GrayboxSpawn"
-	spawn.Anchored = true
-	spawn.Neutral = true
-	spawn.Size = Vector3.new(8, 1, 8)
-	spawn.Position = hubCenter + Vector3.new(0, 1, 0)
-	spawn.Parent = folder
-
-	local arrival = makeMarker(folder, "Zone1Arrival", spawn.Position + Vector3.new(0, 0, 6))
-	zoneArrivalById[1] = arrival
-
-	local sign =
-		makePart(folder, "HubSign", Vector3.new(12, 7, 1), hubCenter + Vector3.new(0, 4, -18))
-	sign.Material = Enum.Material.Metal
-	addBillboard(sign, "SCRAP-TO-BOT FACTORY\nPRIVATE YARDS")
+	-- Instanced-factory runtime owns one large production yard. Public social servers
+	-- never initialize WorldService; they initialize HubWorldService instead.
+	buildFactoryPlot(plotsFolder, 1, Vector3.zero)
 end
 
 local function buildWorld(): Folder
@@ -446,7 +436,6 @@ local function buildWorld(): Folder
 	folder.Name = "ScrapToBotGraybox"
 	folder.Parent = Workspace
 
-	buildHub(folder)
 	buildPlots(folder)
 	return folder
 end

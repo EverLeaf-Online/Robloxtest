@@ -3,7 +3,6 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
-local Workspace = game:GetService("Workspace")
 
 local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
 local Robots = require(ReplicatedStorage.Shared.Config.Robots)
@@ -14,6 +13,7 @@ local ProfileTypes = require(script.Parent.Parent.Data.ProfileTypes)
 local DataService = require(script.Parent.DataService)
 local PlotService = require(script.Parent.PlotService)
 local RateLimiter = require(script.Parent.RateLimiter)
+local SalvageService = require(script.Parent.SalvageService)
 local WorldService = require(script.Parent.WorldService)
 
 local StudioSecurityTestService = {}
@@ -21,7 +21,6 @@ local initialized = false
 
 local REMOTE_NAME = "StudioSecurityTest"
 local CLIENT_TIMEOUT_SECONDS = 4
-local RACE_SETTLE_SECONDS = 1.25
 local TEMP_ROBOT_ID = "TinScout"
 
 local suiteRunning: { [Player]: boolean } = {}
@@ -182,9 +181,9 @@ local function findActiveSalvageNode(plotId: number?): (string?, BasePart?)
 	return nil, nil
 end
 
-local function findOtherReadyPlayer(player: Player): Player?
+local function findOtherPlayer(player: Player): Player?
 	for _, candidate in Players:GetPlayers() do
-		if candidate ~= player and DataService.IsReady(candidate) then
+		if candidate ~= player then
 			return candidate
 		end
 	end
@@ -308,55 +307,29 @@ local function runDistantSalvageCase(player: Player)
 end
 
 local function runForgedRobotCase(player: Player)
-	local victim = findOtherReadyPlayer(player)
 	local console = PlotService.GetBotConsole(player)
-	if victim == nil then
-		report(player, "Cross-player robot ownership", false, "Requires a second local client")
-		return
-	end
-	if console == nil then
-		report(player, "Cross-player robot ownership", false, "Attacker plot is unavailable")
-		return
-	end
-
 	local attackerData = DataService.GetData(player)
-	local victimData = DataService.GetData(victim)
-	if attackerData == nil or victimData == nil then
-		report(player, "Cross-player robot ownership", false, "Profiles unavailable")
+	if console == nil or attackerData == nil then
+		report(player, "Foreign robot UID rejection", false, "Owner factory is unavailable")
 		return
 	end
 
 	local characterState = saveCharacter(player)
 	if not moveNear(player, console) then
-		report(player, "Cross-player robot ownership", false, "Character unavailable")
+		report(player, "Foreign robot UID rejection", false, "Character unavailable")
 		return
 	end
 
-	local tempUid = ("StudioVictim%d"):format(victim.UserId)
-	while
-		attackerData.Robots.OwnedByUid[tempUid] ~= nil
-		or victimData.Robots.OwnedByUid[tempUid] ~= nil
-	do
+	local tempUid = ("ForeignRobot%d"):format(player.UserId)
+	while attackerData.Robots.OwnedByUid[tempUid] ~= nil do
 		tempUid ..= "X"
 	end
 
-	mutateProfile(victim, function(data)
-		data.Robots.OwnedByUid[tempUid] = {
-			RobotId = TEMP_ROBOT_ID,
-			AcquiredAt = os.time(),
-		}
-	end)
-
 	RateLimiter.Forget(player)
 	local response = dispatchClient(player, "ForgeVictimRobot", { RobotUid = tempUid })
-	local currentAttackerData = DataService.GetData(player)
-	local currentVictimData = DataService.GetData(victim)
-	local victimStillOwns = currentVictimData ~= nil
-		and currentVictimData.Robots.OwnedByUid[tempUid] ~= nil
-	local attackerDoesNotOwn = currentAttackerData ~= nil
-		and currentAttackerData.Robots.OwnedByUid[tempUid] == nil
-	local attackerDidNotAssign = currentAttackerData ~= nil
-		and not hasAssignedRobot(currentAttackerData, tempUid)
+	local currentData = DataService.GetData(player)
+	local stillNotOwned = currentData ~= nil and currentData.Robots.OwnedByUid[tempUid] == nil
+	local notAssigned = currentData ~= nil and not hasAssignedRobot(currentData, tempUid)
 	local assignRejected = countCapturedResults(
 		response,
 		RemoteNames.RequestAssignRobot,
@@ -370,27 +343,22 @@ local function runForgedRobotCase(player: Player)
 		"ROBOT_NOT_OWNED"
 	) == 1
 
-	mutateProfile(victim, function(data)
-		data.Robots.OwnedByUid[tempUid] = nil
-	end)
 	restoreCharacter(characterState)
 
-	local passed = victimStillOwns
-		and attackerDoesNotOwn
-		and attackerDidNotAssign
+	local passed = stillNotOwned
+		and notAssigned
 		and assignRejected
 		and sellRejected
 		and not responseTimedOut(response)
 	report(
 		player,
-		"Cross-player robot ownership",
+		"Foreign robot UID rejection",
 		passed,
 		if passed
-			then "Victim kept robot; forged assign/sell both returned ROBOT_NOT_OWNED"
-			else ("victimOwns=%s attackerOwns=%s attackerAssigned=%s assignRejected=%s sellRejected=%s timeout=%s"):format(
-				tostring(victimStillOwns),
-				tostring(not attackerDoesNotOwn),
-				tostring(not attackerDidNotAssign),
+			then "Forged assign/sell both returned ROBOT_NOT_OWNED"
+			else ("notOwned=%s notAssigned=%s assignRejected=%s sellRejected=%s timeout=%s"):format(
+				tostring(stillNotOwned),
+				tostring(notAssigned),
 				tostring(assignRejected),
 				tostring(sellRejected),
 				tostring(responseTimedOut(response))
@@ -620,10 +588,10 @@ local function runSalvageRace(player: Player)
 		return
 	end
 
-	local secondPlayer = findOtherReadyPlayer(player)
+	local visitor = findOtherPlayer(player)
 	local ownedPlotId = PlotService.GetPlotId(player)
 	local nodeId, node = findActiveSalvageNode(ownedPlotId)
-	if secondPlayer == nil then
+	if visitor == nil then
 		report(player, "Private salvage isolation", false, "Start a 2-player local server first")
 		return
 	end
@@ -632,68 +600,64 @@ local function runSalvageRace(player: Player)
 		return
 	end
 
-	local firstData = DataService.GetData(player)
-	local secondData = DataService.GetData(secondPlayer)
-	if firstData == nil or secondData == nil then
-		report(player, "Private salvage isolation", false, "Profiles unavailable")
+	local ownerData = DataService.GetData(player)
+	if ownerData == nil then
+		report(player, "Private salvage isolation", false, "Owner profile unavailable")
 		return
 	end
 
 	suiteRunning[player] = true
 	suiteStatus(player, "Running private salvage isolation test...")
 
-	local firstCharacter = saveCharacter(player)
-	local secondCharacter = saveCharacter(secondPlayer)
-	local firstMaterials = copyMaterials(firstData)
-	local secondMaterials = copyMaterials(secondData)
-	local firstMilestone = firstData.Tutorial.Milestones.FirstScrap
-	local secondMilestone = secondData.Tutorial.Milestones.FirstScrap
+	local ownerCharacter = saveCharacter(player)
+	local visitorCharacter = saveCharacter(visitor)
+	local ownerMaterials = copyMaterials(ownerData)
+	local ownerMilestone = ownerData.Tutorial.Milestones.FirstScrap
 
 	mutateProfile(player, function(data)
 		zeroMaterials(data)
 		data.Tutorial.Milestones.FirstScrap = false
 	end)
-	mutateProfile(secondPlayer, function(data)
-		zeroMaterials(data)
-		data.Tutorial.Milestones.FirstScrap = false
-	end)
+
+	moveNear(visitor, node)
+	SalvageService.Collect(visitor, nodeId)
+	task.wait(0.15)
+
+	local visitorHasNoPlot = PlotService.GetPlotId(visitor) == nil
+	local visitorHasNoProfile = DataService.GetData(visitor) == nil
+	local visitorCouldNotConsume = node.CanCollide
+
 	moveNear(player, node)
-	moveNear(secondPlayer, node)
 	RateLimiter.Forget(player)
-	RateLimiter.Forget(secondPlayer)
+	SalvageService.Collect(player, nodeId)
+	task.wait(0.2)
 
-	local targetTime = Workspace:GetServerTimeNow() + 0.75
-	getRemote():FireClient(player, "RaceGo", nodeId, targetTime)
-	getRemote():FireClient(secondPlayer, "RaceGo", nodeId, targetTime)
-	task.wait(RACE_SETTLE_SECONDS)
-
-	local firstAfter = DataService.GetData(player)
-	local secondAfter = DataService.GetData(secondPlayer)
-	local firstTotal = if firstAfter then materialTotal(firstAfter) else 0
-	local secondTotal = if secondAfter then materialTotal(secondAfter) else 0
-	local exactlyOneWinner = (firstTotal > 0) ~= (secondTotal > 0)
-	local nodeConsumed = not node.CanCollide
-	local passed = exactlyOneWinner and nodeConsumed
+	local ownerAfter = DataService.GetData(player)
+	local ownerReceived = ownerAfter ~= nil and materialTotal(ownerAfter) > 0
+	local ownerConsumedNode = not node.CanCollide
+	local passed = visitorHasNoPlot
+		and visitorHasNoProfile
+		and visitorCouldNotConsume
+		and ownerReceived
+		and ownerConsumedNode
 
 	mutateProfile(player, function(data)
-		restoreMaterials(data, firstMaterials)
-		data.Tutorial.Milestones.FirstScrap = firstMilestone
+		restoreMaterials(data, ownerMaterials)
+		data.Tutorial.Milestones.FirstScrap = ownerMilestone
 	end)
-	mutateProfile(secondPlayer, function(data)
-		restoreMaterials(data, secondMaterials)
-		data.Tutorial.Milestones.FirstScrap = secondMilestone
-	end)
-	restoreCharacter(firstCharacter)
-	restoreCharacter(secondCharacter)
+	restoreCharacter(ownerCharacter)
+	restoreCharacter(visitorCharacter)
 
 	report(
 		player,
 		"Private salvage isolation",
 		passed,
-		("P1 materials=%d, P2 materials=%d, nodeConsumed=%s"):format(
-			firstTotal,
-			secondTotal,
-			tostring(nodeConsumed)
+		("visitorPlot=%s visitorProfile=%s visitorCouldNotConsume=%s ownerReceived=%s ownerConsumed=%s"):format(
+			tostring(PlotService.GetPlotId(visitor)),
+			tostring(DataService.GetData(visitor) ~= nil),
+			tostring(visitorCouldNotConsume),
+			tostring(ownerReceived),
+			tostring(ownerConsumedNode)
 		)
 	)
 	suiteStatus(player, "Private salvage isolation complete")

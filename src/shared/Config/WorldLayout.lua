@@ -2,11 +2,7 @@
 
 local WorldLayout = {
 	Plot = {
-		Columns = 2,
-		CenterSpacingX = 480,
-		CenterSpacingZ = 400,
 		Size = Vector3.new(240, 1, 200),
-		Origin = Vector3.new(-240, 0, -600),
 		FactoryOffset = Vector3.new(0, 0, -18),
 		EntryOffset = Vector3.new(0, 1, -88),
 		SignOffset = Vector3.new(0, 3, -95),
@@ -43,18 +39,5 @@ local WorldLayout = {
 	CircuitArrivalOffset = Vector3.new(47, 1, 36),
 	CircuitReturnOffset = Vector3.new(37, 3.5, 43),
 }
-
-function WorldLayout.GetPlotCenter(plotId: number): Vector3
-	local zeroBased = math.max(0, plotId - 1)
-	local column = zeroBased % WorldLayout.Plot.Columns
-	local row = math.floor(zeroBased / WorldLayout.Plot.Columns)
-
-	return WorldLayout.Plot.Origin
-		+ Vector3.new(
-			column * WorldLayout.Plot.CenterSpacingX,
-			0,
-			row * WorldLayout.Plot.CenterSpacingZ
-		)
-end
 
 return table.freeze(WorldLayout)

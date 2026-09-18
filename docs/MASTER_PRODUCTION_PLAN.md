@@ -3,6 +3,8 @@
 Status: **Production planning lock**  
 Baseline: **2026-09-16**
 
+> **Architecture override — 2026-09-18:** production now uses a shared public Hub plus reserved personal Factory instances. Any older section in this document that assumes multiple persistent player plots inside one production server is superseded by `docs/INSTANCED_FACTORY_ARCHITECTURE.md`.
+
 This document turns the research phase into an execution plan. Gameplay implementation should follow this plan unless playtest data justifies a deliberate change.
 
 ## 1. Product lock
