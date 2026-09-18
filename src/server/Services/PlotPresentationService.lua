@@ -103,6 +103,7 @@ local function buildStations(plot: Model, plotId: number, center: Vector3)
 	)
 	addLabel(recycle, "RECYCLE")
 	addUIPrompt(recycle, "Recycle", "Recycle Bots")
+	addUIPrompt(recycle, "Recycle", "Recycle Bots")
 
 	local indexTerminal = makePart(
 		plot,
