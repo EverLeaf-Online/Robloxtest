@@ -68,7 +68,7 @@ describe("WorldLayout", function()
 		expect(WorldLayout.Plot.EntryOffset.Z - southEdge >= 25).toBe(true)
 	end)
 
-	it("keeps both transit attendants in the visual top-right corner", function()
+	it("keeps both transit controls in the visual top-right corner", function()
 		local attendant = WorldLayout.Plot.HubReturnAttendantOffset
 		local circuitGate = WorldLayout.CircuitGateOffset
 
@@ -77,6 +77,19 @@ describe("WorldLayout", function()
 		expect(circuitGate.X < -60).toBe(true)
 		expect(circuitGate.Z < -70).toBe(true)
 		expect((attendant - circuitGate).Magnitude >= 18).toBe(true)
+	end)
+
+	it("keeps the Hub return kiosk tight to the corner and square to the perimeter", function()
+		local halfX = WorldLayout.Plot.Size.X / 2
+		local halfZ = WorldLayout.Plot.Size.Z / 2
+		local attendant = WorldLayout.Plot.HubReturnAttendantOffset
+		local facing = WorldLayout.Plot.HubReturnAttendantFacing
+
+		expect(halfX - math.abs(attendant.X) <= 10).toBe(true)
+		expect(halfZ - math.abs(attendant.Z) <= 10).toBe(true)
+		expect(facing.X).toBe(0)
+		expect(facing.Y).toBe(0)
+		expect(facing.Z).toBe(1)
 	end)
 
 	it(
