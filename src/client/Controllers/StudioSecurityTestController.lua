@@ -254,13 +254,16 @@ function StudioSecurityTestController.Mount(parent: Instance): Frame?
 				end)
 				fireClientDone(testRemote, token, { Results = results })
 			elseif caseName == "DuplicateSell" then
-				local results =
-					captureActionResults(actionResult, { [RemoteNames.RequestSellRobot] = true }, function()
+				local results = captureActionResults(
+					actionResult,
+					{ [RemoteNames.RequestSellRobot] = true },
+					function()
 						if typeof(payload) == "table" and typeof(payload.RobotUid) == "string" then
 							requestSellRobot:FireServer(payload.RobotUid)
 							requestSellRobot:FireServer(payload.RobotUid)
 						end
-					end)
+					end
+				)
 				fireClientDone(testRemote, token, { Results = results })
 			elseif caseName == "DoubleUpgrade" then
 				if typeof(payload) == "table" and typeof(payload.UpgradeId) == "string" then
