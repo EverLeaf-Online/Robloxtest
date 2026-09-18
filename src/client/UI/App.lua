@@ -254,28 +254,28 @@ local function App()
 				SortOrder = Enum.SortOrder.LayoutOrder,
 			}),
 			Credits = Components.ResourceChip(
-				"$",
+				"Credits",
 				"CREDITS",
 				StateHelpers.FormatNumber(snapshot.Currencies.Credits),
 				Color3.fromRGB(86, 190, 103),
 				isPhone
 			),
 			Scrap = Components.ResourceChip(
-				"▰",
+				"Scrap",
 				"SCRAP",
 				StateHelpers.FormatNumber(snapshot.Materials.ScrapMetal),
 				Color3.fromRGB(190, 132, 77),
 				isPhone
 			),
 			Wiring = Components.ResourceChip(
-				"⚡",
+				"Wiring",
 				"WIRING",
 				StateHelpers.FormatNumber(snapshot.Materials.Wiring),
 				Color3.fromRGB(235, 192, 75),
 				isPhone
 			),
 			Cores = Components.ResourceChip(
-				"◆",
+				"Cores",
 				"CORES",
 				StateHelpers.FormatNumber(snapshot.Materials.PowerCoreFragments),
 				Color3.fromRGB(82, 169, 232),
