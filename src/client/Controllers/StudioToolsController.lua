@@ -60,15 +60,15 @@ function StudioToolsController.Init()
 	local launcher = Instance.new("TextButton")
 	launcher.Name = "Launcher"
 	launcher.AnchorPoint = Vector2.new(1, 0)
-	launcher.Position = UDim2.new(1, -14, 0, 132)
-	launcher.Size = UDim2.fromOffset(64, 70)
+	launcher.Position = UDim2.new(1, -16, 0, 152)
+	launcher.Size = UDim2.fromOffset(64, 72)
 	launcher.BackgroundTransparency = 1
 	launcher.BorderSizePixel = 0
 	launcher.Text = ""
 	launcher.AutoButtonColor = false
 	launcher.Parent = gui
 
-	local launcherIcon = HUDIconFactory.CreateTools(launcher, 48)
+	local launcherIcon = HUDIconFactory.CreateTools(launcher, 50)
 
 	local launcherLabel = Instance.new("TextLabel")
 	launcherLabel.AnchorPoint = Vector2.new(0.5, 1)
@@ -191,9 +191,9 @@ function StudioToolsController.Init()
 			return
 		end
 		local phone = camera.ViewportSize.X <= 760
-		launcher.Position = UDim2.new(1, -12, 0, if phone then 116 else 132)
-		launcher.Size = if phone then UDim2.fromOffset(58, 64) else UDim2.fromOffset(64, 70)
-		launcherIcon.Size = if phone then UDim2.fromOffset(44, 44) else UDim2.fromOffset(48, 48)
+		launcher.Position = UDim2.new(1, if phone then -12 else -16, 0, if phone then 138 else 152)
+		launcher.Size = if phone then UDim2.fromOffset(58, 66) else UDim2.fromOffset(64, 72)
+		launcherIcon.Size = if phone then UDim2.fromOffset(44, 44) else UDim2.fromOffset(50, 50)
 		panel.Size = if phone then UDim2.fromScale(0.82, 0.78) else UDim2.fromScale(0.68, 0.76)
 	end
 	refreshLayout()
