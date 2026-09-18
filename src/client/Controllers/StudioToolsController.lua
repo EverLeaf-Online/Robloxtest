@@ -2,6 +2,7 @@
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
 
 local StudioMonetizationTestController = require(script.Parent.StudioMonetizationTestController)
 local StudioSecurityTestController = require(script.Parent.StudioSecurityTestController)
@@ -57,9 +58,9 @@ function StudioToolsController.Init()
 
 	local launcher = Instance.new("TextButton")
 	launcher.Name = "Launcher"
-	launcher.AnchorPoint = Vector2.new(0, 1)
-	launcher.Position = UDim2.new(0, 16, 1, -178)
-	launcher.Size = UDim2.fromOffset(174, 36)
+	launcher.AnchorPoint = Vector2.new(1, 0)
+	launcher.Position = UDim2.new(1, -14, 0, 90)
+	launcher.Size = UDim2.fromOffset(110, 30)
 	launcher.BackgroundColor3 = Color3.fromRGB(45, 52, 64)
 	launcher.BorderSizePixel = 0
 	launcher.Font = Enum.Font.GothamBold
@@ -82,7 +83,7 @@ function StudioToolsController.Init()
 	round(panel, 12)
 
 	local sizeConstraint = Instance.new("UISizeConstraint")
-	sizeConstraint.MinSize = Vector2.new(430, 430)
+	sizeConstraint.MinSize = Vector2.new(320, 300)
 	sizeConstraint.MaxSize = Vector2.new(620, 600)
 	sizeConstraint.Parent = panel
 
@@ -172,6 +173,21 @@ function StudioToolsController.Init()
 	closeButton.Activated:Connect(function()
 		panel.Visible = false
 	end)
+
+	local function refreshLayout()
+		local camera = Workspace.CurrentCamera
+		if camera == nil then
+			return
+		end
+		local phone = camera.ViewportSize.X <= 760
+		launcher.Size = if phone then UDim2.fromOffset(96, 28) else UDim2.fromOffset(110, 30)
+		panel.Size = if phone then UDim2.fromScale(0.82, 0.78) else UDim2.fromScale(0.68, 0.76)
+	end
+	refreshLayout()
+	local camera = Workspace.CurrentCamera
+	if camera ~= nil then
+		camera:GetPropertyChangedSignal("ViewportSize"):Connect(refreshLayout)
+	end
 
 	showSecurity()
 end
