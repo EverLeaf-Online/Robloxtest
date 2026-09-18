@@ -161,15 +161,16 @@ local function createUi()
 
 	local toggle = Instance.new("TextButton")
 	toggle.Name = "ShopButton"
-	toggle.Position = UDim2.fromOffset(16, 118)
-	toggle.Size = UDim2.fromOffset(70, 78)
+	toggle.AnchorPoint = Vector2.new(1, 0)
+	toggle.Position = UDim2.new(1, -16, 0, 8)
+	toggle.Size = UDim2.fromOffset(64, 72)
 	toggle.BackgroundTransparency = 1
 	toggle.BorderSizePixel = 0
 	toggle.Text = ""
 	toggle.AutoButtonColor = false
 	toggle.Parent = gui
 
-	local iconPlate = HUDIconFactory.CreateShop(toggle, 54)
+	local iconPlate = HUDIconFactory.CreateShop(toggle, 50)
 
 	local toggleLabel = Instance.new("TextLabel")
 	toggleLabel.Name = "Label"
@@ -265,9 +266,9 @@ local function createUi()
 		end
 		local viewport = camera.ViewportSize
 		local phone = viewport.X <= 760
-		toggle.Position = if phone then UDim2.fromOffset(12, 104) else UDim2.fromOffset(16, 118)
-		toggle.Size = if phone then UDim2.fromOffset(62, 70) else UDim2.fromOffset(70, 78)
-		iconPlate.Size = if phone then UDim2.fromOffset(48, 48) else UDim2.fromOffset(54, 54)
+		toggle.Position = UDim2.new(1, if phone then -12 else -16, 0, 8)
+		toggle.Size = if phone then UDim2.fromOffset(58, 66) else UDim2.fromOffset(64, 72)
+		iconPlate.Size = if phone then UDim2.fromOffset(44, 44) else UDim2.fromOffset(50, 50)
 		shopPanel.Size = if phone then UDim2.new(0.48, 0, 1, -64) else UDim2.fromOffset(310, 356)
 	end
 	refreshLayout()
