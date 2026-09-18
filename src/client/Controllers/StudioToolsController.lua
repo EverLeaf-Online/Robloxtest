@@ -6,6 +6,7 @@ local Workspace = game:GetService("Workspace")
 
 local StudioMonetizationTestController = require(script.Parent.StudioMonetizationTestController)
 local StudioSecurityTestController = require(script.Parent.StudioSecurityTestController)
+local HUDIconFactory = require(script.Parent.Parent.UI.HUDIconFactory)
 
 local StudioToolsController = {}
 local initialized = false
@@ -67,24 +68,7 @@ function StudioToolsController.Init()
 	launcher.AutoButtonColor = false
 	launcher.Parent = gui
 
-	local launcherIcon = Instance.new("Frame")
-	launcherIcon.Name = "Icon"
-	launcherIcon.AnchorPoint = Vector2.new(0.5, 0)
-	launcherIcon.Position = UDim2.fromScale(0.5, 0)
-	launcherIcon.Size = UDim2.fromOffset(48, 48)
-	launcherIcon.BackgroundColor3 = Color3.fromRGB(45, 52, 64)
-	launcherIcon.BorderSizePixel = 0
-	launcherIcon.Parent = launcher
-	round(launcherIcon, 24)
-
-	local launcherGlyph = Instance.new("TextLabel")
-	launcherGlyph.Size = UDim2.fromScale(1, 1)
-	launcherGlyph.BackgroundTransparency = 1
-	launcherGlyph.Font = Enum.Font.GothamBold
-	launcherGlyph.Text = "</>"
-	launcherGlyph.TextColor3 = Color3.fromRGB(245, 247, 250)
-	launcherGlyph.TextSize = 15
-	launcherGlyph.Parent = launcherIcon
+	local launcherIcon = HUDIconFactory.CreateTools(launcher, 48)
 
 	local launcherLabel = Instance.new("TextLabel")
 	launcherLabel.AnchorPoint = Vector2.new(0.5, 1)
