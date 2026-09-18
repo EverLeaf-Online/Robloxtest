@@ -212,7 +212,7 @@ local function createUi()
 	local arrow = Instance.new("TextLabel")
 	arrow.Name = "Arrow"
 	arrow.AnchorPoint = Vector2.new(1, 0.5)
-	arrow.Position = UDim2.new(1, 0, 0.5, 0)
+	arrow.Position = UDim2.fromScale(1, 0.5)
 	arrow.Size = UDim2.fromOffset(22, 36)
 	arrow.BackgroundTransparency = 1
 	arrow.Font = Enum.Font.GothamBold
@@ -327,7 +327,6 @@ local function createUi()
 	end)
 
 	local viewportConnection: RBXScriptConnection? = nil
-	local cameraConnection: RBXScriptConnection? = nil
 	local function bindCamera()
 		if viewportConnection ~= nil then
 			viewportConnection:Disconnect()
@@ -365,7 +364,7 @@ local function createUi()
 	end
 
 	bindCamera()
-	cameraConnection = Workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(bindCamera)
+	Workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(bindCamera)
 
 	setStarterPackVisibility()
 	refreshStatus()
