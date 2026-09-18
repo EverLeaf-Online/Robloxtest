@@ -5,7 +5,6 @@ local WorldLayout = {
 		Size = Vector3.new(240, 1, 200),
 		FactoryOffset = Vector3.new(0, 0, -18),
 		EntryOffset = Vector3.new(0, 1, -68),
-		SignOffset = Vector3.new(-46, 3, -82),
 		HubReturnAttendantOffset = Vector3.new(-104, 3.5, -84),
 	},
 
@@ -18,13 +17,22 @@ local WorldLayout = {
 		Vector3.new(-40, 2, 64),
 	}),
 
+	CircuitIsland = {
+		CenterOffset = Vector3.new(-82, 0, -165),
+		Size = Vector3.new(86, 1, 70),
+		BridgeCenterOffset = Vector3.new(-82, 0.8, -115),
+		BridgeSize = Vector3.new(14, 0.6, 30),
+		BoundaryOpeningCenterX = -82,
+		BoundaryOpeningWidth = 20,
+	},
+
 	CircuitSalvageOffsets = table.freeze({
-		Vector3.new(48, 2, 42),
-		Vector3.new(70, 2, 55),
-		Vector3.new(91, 2, 40),
-		Vector3.new(50, 2, 72),
-		Vector3.new(73, 2, 78),
-		Vector3.new(94, 2, 68),
+		Vector3.new(-108, 2, -179),
+		Vector3.new(-91, 2, -159),
+		Vector3.new(-72, 2, -180),
+		Vector3.new(-54, 2, -158),
+		Vector3.new(-100, 2, -143),
+		Vector3.new(-66, 2, -143),
 	}),
 
 	BotWorkOffsets = table.freeze({
@@ -33,11 +41,11 @@ local WorldLayout = {
 		Assembler = Vector3.new(-5, 1.5, -4),
 		Storage = Vector3.new(-16, 1.5, 13),
 		Recycle = Vector3.new(-2, 1.5, 13),
-		CircuitSalvage = Vector3.new(72, 1.5, 58),
+		CircuitSalvage = Vector3.new(-82, 1.5, -165),
 	}),
 
 	CircuitGateOffset = Vector3.new(-82, 3.5, -84),
-	CircuitArrivalOffset = Vector3.new(72, 1, 58),
+	CircuitArrivalOffset = Vector3.new(-82, 1, -143),
 }
 
 return table.freeze(WorldLayout)
