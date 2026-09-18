@@ -243,31 +243,24 @@ function StudioSecurityTestController.Mount(parent: Instance): Frame?
 				task.wait(0.15)
 				fireClientDone(testRemote, token, { Completed = true })
 			elseif caseName == "ForgeVictimRobot" then
-				local results = captureActionResults(
-					actionResult,
-					{
-						[RemoteNames.RequestAssignRobot] = true,
-						[RemoteNames.RequestSellRobot] = true,
-					},
-					function()
-						if typeof(payload) == "table" and typeof(payload.RobotUid) == "string" then
-							requestAssignRobot:FireServer(payload.RobotUid, "Pad1")
-							requestSellRobot:FireServer(payload.RobotUid)
-						end
+				local results = captureActionResults(actionResult, {
+					[RemoteNames.RequestAssignRobot] = true,
+					[RemoteNames.RequestSellRobot] = true,
+				}, function()
+					if typeof(payload) == "table" and typeof(payload.RobotUid) == "string" then
+						requestAssignRobot:FireServer(payload.RobotUid, "Pad1")
+						requestSellRobot:FireServer(payload.RobotUid)
 					end
-				)
+				end)
 				fireClientDone(testRemote, token, { Results = results })
 			elseif caseName == "DuplicateSell" then
-				local results = captureActionResults(
-					actionResult,
-					{ [RemoteNames.RequestSellRobot] = true },
-					function()
+				local results =
+					captureActionResults(actionResult, { [RemoteNames.RequestSellRobot] = true }, function()
 						if typeof(payload) == "table" and typeof(payload.RobotUid) == "string" then
 							requestSellRobot:FireServer(payload.RobotUid)
 							requestSellRobot:FireServer(payload.RobotUid)
 						end
-					end
-				)
+					end)
 				fireClientDone(testRemote, token, { Results = results })
 			elseif caseName == "DoubleUpgrade" then
 				if typeof(payload) == "table" and typeof(payload.UpgradeId) == "string" then
