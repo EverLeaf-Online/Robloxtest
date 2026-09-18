@@ -45,4 +45,15 @@ describe("WorldLayout", function()
 			expect(math.abs(offset.Z) < halfZ).toBe(true)
 		end
 	end)
+
+	it("keeps the spawn camera comfortably inside the factory boundary", function()
+		local halfZ = WorldLayout.Plot.Size.Z / 2
+		local southEdge = -halfZ
+		expect(WorldLayout.Plot.EntryOffset.Z - southEdge >= 25).toBe(true)
+	end)
+
+	it("keeps the hub return portal away from the spawn lane", function()
+		local delta = WorldLayout.Plot.ReturnPortalOffset - WorldLayout.Plot.EntryOffset
+		expect(delta.Magnitude >= 70).toBe(true)
+	end)
 end)

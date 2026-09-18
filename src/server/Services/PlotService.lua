@@ -21,7 +21,8 @@ local function teleportToEntry(player: Player, plotId: number)
 	if entry == nil or character == nil then
 		return
 	end
-	character:PivotTo(CFrame.new(entry.Position + Vector3.new(0, 4, 0)))
+	local spawnPosition = entry.Position + Vector3.new(0, 4, 0)
+	character:PivotTo(CFrame.lookAt(spawnPosition, spawnPosition + Vector3.new(0, 0, 24)))
 end
 
 local function setPlotProgressionAttributes(plotId: number, player: Player?)
