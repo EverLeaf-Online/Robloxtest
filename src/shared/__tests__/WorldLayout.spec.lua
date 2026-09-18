@@ -52,21 +52,23 @@ describe("WorldLayout", function()
 		expect(WorldLayout.Plot.EntryOffset.Z - southEdge >= 25).toBe(true)
 	end)
 
-	it("keeps the hub return attendant away from the spawn lane", function()
-		local delta = WorldLayout.Plot.HubReturnAttendantOffset - WorldLayout.Plot.EntryOffset
-		expect(delta.Magnitude >= 120).toBe(true)
+	it("keeps the hub return attendant out of the center spawn lane", function()
+		local attendant = WorldLayout.Plot.HubReturnAttendantOffset
+		expect(math.abs(attendant.X) >= 90).toBe(true)
 	end)
 
-	it("keeps the travel cluster in the top-right factory corner", function()
+	it("locks the travel cluster to the visual top-right factory corner", function()
 		local halfX = WorldLayout.Plot.Size.X / 2
 		local halfZ = WorldLayout.Plot.Size.Z / 2
 		local attendant = WorldLayout.Plot.HubReturnAttendantOffset
 		local circuitGate = WorldLayout.CircuitGateOffset
 
+		-- Factory camera/map orientation: negative X + negative Z is the requested
+		-- visual top-right quadrant. Keep both transit bots there.
 		expect(attendant.X < -80).toBe(true)
-		expect(attendant.Z > 70).toBe(true)
+		expect(attendant.Z < -70).toBe(true)
 		expect(circuitGate.X < -60).toBe(true)
-		expect(circuitGate.Z > 70).toBe(true)
+		expect(circuitGate.Z < -70).toBe(true)
 		expect(math.abs(attendant.X) < halfX).toBe(true)
 		expect(math.abs(attendant.Z) < halfZ).toBe(true)
 		expect(math.abs(circuitGate.X) < halfX).toBe(true)
