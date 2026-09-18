@@ -323,12 +323,8 @@ end
 
 local function buildCircuitIsland(plot: Model, plotId: number, center: Vector3)
 	local islandConfig = WorldLayout.CircuitIsland
-	local island = makePart(
-		plot,
-		"CircuitIsland",
-		islandConfig.Size,
-		center + islandConfig.CenterOffset
-	)
+	local island =
+		makePart(plot, "CircuitIsland", islandConfig.Size, center + islandConfig.CenterOffset)
 	island.Material = Enum.Material.Concrete
 	island.Color = Color3.fromRGB(96, 102, 105)
 	island:SetAttribute("ZoneId", 2)
@@ -340,12 +336,7 @@ local function buildCircuitIsland(plot: Model, plotId: number, center: Vector3)
 	bridgeFolder.Parent = plot
 
 	local bridgeCenter = center + islandConfig.BridgeCenterOffset
-	local bridge = makePart(
-		bridgeFolder,
-		"BridgeDeck",
-		islandConfig.BridgeSize,
-		bridgeCenter
-	)
+	local bridge = makePart(bridgeFolder, "BridgeDeck", islandConfig.BridgeSize, bridgeCenter)
 	bridge.Material = Enum.Material.DiamondPlate
 	bridge.Color = Color3.fromRGB(64, 72, 81)
 	bridge.Transparency = 1
@@ -360,12 +351,7 @@ local function buildCircuitIsland(plot: Model, plotId: number, center: Vector3)
 			bridgeFolder,
 			if side < 0 then "BridgeRailLeft" else "BridgeRailRight",
 			Vector3.new(0.45, 2.8, islandConfig.BridgeSize.Z),
-			bridgeCenter
-				+ Vector3.new(
-					side * (islandConfig.BridgeSize.X / 2 - 0.25),
-					1.7,
-					0
-				)
+			bridgeCenter + Vector3.new(side * (islandConfig.BridgeSize.X / 2 - 0.25), 1.7, 0)
 		)
 		rail.Material = Enum.Material.Metal
 		rail.Color = Color3.fromRGB(91, 104, 117)
@@ -380,12 +366,7 @@ local function buildCircuitIsland(plot: Model, plotId: number, center: Vector3)
 			bridgeFolder,
 			if side < 0 then "BridgeGlowLeft" else "BridgeGlowRight",
 			Vector3.new(0.14, 0.14, islandConfig.BridgeSize.Z),
-			bridgeCenter
-				+ Vector3.new(
-					side * (islandConfig.BridgeSize.X / 2 - 0.3),
-					0.45,
-					0
-				)
+			bridgeCenter + Vector3.new(side * (islandConfig.BridgeSize.X / 2 - 0.3), 0.45, 0)
 		)
 		glow.Material = Enum.Material.Neon
 		glow.Color = Color3.fromRGB(71, 211, 226)
@@ -466,10 +447,7 @@ local function buildPlotZoneAccess(plot: Model, plotId: number, center: Vector3)
 		Vector3.new(5, 7, 5),
 		center + WorldLayout.CircuitGateOffset
 	)
-	gate.CFrame = CFrame.lookAt(
-		gate.Position,
-		Vector3.new(center.X, gate.Position.Y, center.Z)
-	)
+	gate.CFrame = CFrame.lookAt(gate.Position, Vector3.new(center.X, gate.Position.Y, center.Z))
 	gate.Transparency = 1
 	gate.CanCollide = false
 	gate.CanTouch = false
