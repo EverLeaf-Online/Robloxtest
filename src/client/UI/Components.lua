@@ -108,34 +108,19 @@ function Components.ResourceChip(
 	local image = RESOURCE_IMAGES[iconKind]
 
 	return React.createElement("Frame", {
-		BackgroundColor3 = COLORS.Panel,
-		BackgroundTransparency = 0.04,
+		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		ClipsDescendants = false,
-		Size = UDim2.new(0.25, -7, 1, 0),
+		Size = UDim2.new(0.25, -8, 1, 0),
 	}, {
-		Corner = Components.Corner(if compact then 12 else 16),
-		Stroke = React.createElement("UIStroke", {
-			Color = accent,
-			Transparency = 0.12,
-			Thickness = if compact then 1.5 else 2,
-		}),
-		Gradient = React.createElement("UIGradient", {
-			Color = ColorSequence.new({
-				ColorSequenceKeypoint.new(0, accent:Lerp(COLORS.Panel, 0.72)),
-				ColorSequenceKeypoint.new(0.32, COLORS.Panel),
-				ColorSequenceKeypoint.new(1, COLORS.PanelAlt),
-			}),
-			Rotation = 8,
-		}),
 		IconShadow = React.createElement("ImageLabel", {
 			AnchorPoint = Vector2.new(0, 0.5),
 			BackgroundTransparency = 1,
 			BorderSizePixel = 0,
 			Image = image,
 			ImageColor3 = Color3.new(0, 0, 0),
-			ImageTransparency = 0.55,
-			Position = UDim2.new(0, if compact then -1 else -4, 0.5, 3),
+			ImageTransparency = 0.58,
+			Position = UDim2.new(0, 2, 0.5, 3),
 			ScaleType = Enum.ScaleType.Fit,
 			Size = UDim2.fromOffset(iconSize, iconSize),
 			ZIndex = 1,
@@ -145,7 +130,7 @@ function Components.ResourceChip(
 			BackgroundTransparency = 1,
 			BorderSizePixel = 0,
 			Image = image,
-			Position = UDim2.new(0, if compact then -3 else -6, 0.5, 0),
+			Position = UDim2.new(0, 0, 0.5, 0),
 			ScaleType = Enum.ScaleType.Fit,
 			Size = UDim2.fromOffset(iconSize, iconSize),
 			ZIndex = 3,
@@ -153,13 +138,14 @@ function Components.ResourceChip(
 		Title = titleVisible and React.createElement("TextLabel", {
 			BackgroundTransparency = 1,
 			Font = Enum.Font.GothamBold,
-			Position = UDim2.fromOffset(textLeft, 6),
-			Size = UDim2.new(1, -(textLeft + 9), 0, 13),
+			Position = UDim2.fromOffset(textLeft, 5),
+			Size = UDim2.new(1, -(textLeft + 4), 0, 13),
 			Text = title,
-			TextColor3 = accent:Lerp(Color3.new(1, 1, 1), 0.3),
+			TextColor3 = accent:Lerp(Color3.new(1, 1, 1), 0.28),
 			TextSize = 9,
+			TextStrokeColor3 = Color3.new(0, 0, 0),
+			TextStrokeTransparency = 0.32,
 			TextXAlignment = Enum.TextXAlignment.Left,
-			TextStrokeTransparency = 0.75,
 			ZIndex = 2,
 		}) or nil,
 		Value = React.createElement("TextLabel", {
@@ -169,14 +155,77 @@ function Components.ResourceChip(
 				then UDim2.fromOffset(textLeft, 0)
 				else UDim2.fromOffset(textLeft, 20),
 			Size = if compact
-				then UDim2.new(1, -(textLeft + 7), 1, 0)
-				else UDim2.new(1, -(textLeft + 8), 0, 26),
+				then UDim2.new(1, -(textLeft + 4), 1, 0)
+				else UDim2.new(1, -(textLeft + 4), 0, 26),
 			Text = value,
 			TextColor3 = COLORS.Text,
 			TextSize = if compact then 15 else 19,
+			TextStrokeColor3 = Color3.new(0, 0, 0),
+			TextStrokeTransparency = 0.32,
 			TextXAlignment = Enum.TextXAlignment.Left,
 			TextYAlignment = Enum.TextYAlignment.Center,
-			TextStrokeTransparency = 0.62,
+			ZIndex = 2,
+		}),
+	})
+end
+
+function Components.MachineIndicator(
+	image: string,
+	title: string,
+	status: string,
+	compact: boolean
+): any
+	local iconSize = if compact then 42 else 50
+	local width = if compact then 132 else 158
+
+	return React.createElement("Frame", {
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		Size = UDim2.fromOffset(width, iconSize),
+	}, {
+		IconShadow = React.createElement("ImageLabel", {
+			BackgroundTransparency = 1,
+			BorderSizePixel = 0,
+			Image = image,
+			ImageColor3 = Color3.new(0, 0, 0),
+			ImageTransparency = 0.58,
+			Position = UDim2.fromOffset(2, 3),
+			ScaleType = Enum.ScaleType.Fit,
+			Size = UDim2.fromOffset(iconSize, iconSize),
+			ZIndex = 1,
+		}),
+		Icon = React.createElement("ImageLabel", {
+			BackgroundTransparency = 1,
+			BorderSizePixel = 0,
+			Image = image,
+			ScaleType = Enum.ScaleType.Fit,
+			Size = UDim2.fromOffset(iconSize, iconSize),
+			ZIndex = 2,
+		}),
+		Title = React.createElement("TextLabel", {
+			BackgroundTransparency = 1,
+			Font = Enum.Font.GothamBold,
+			Position = UDim2.fromOffset(iconSize + 6, if compact then 5 else 7),
+			Size = UDim2.new(1, -(iconSize + 6), 0, 16),
+			Text = title,
+			TextColor3 = COLORS.Text,
+			TextSize = if compact then 10 else 11,
+			TextStrokeColor3 = Color3.new(0, 0, 0),
+			TextStrokeTransparency = 0.28,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			ZIndex = 2,
+		}),
+		Status = React.createElement("TextLabel", {
+			BackgroundTransparency = 1,
+			Font = Enum.Font.GothamBold,
+			Position = UDim2.fromOffset(iconSize + 6, if compact then 21 else 25),
+			Size = UDim2.new(1, -(iconSize + 6), 0, 17),
+			Text = status,
+			TextColor3 = COLORS.Accent,
+			TextSize = if compact then 10 else 11,
+			TextStrokeColor3 = Color3.new(0, 0, 0),
+			TextStrokeTransparency = 0.28,
+			TextXAlignment = Enum.TextXAlignment.Left,
 			ZIndex = 2,
 		}),
 	})
