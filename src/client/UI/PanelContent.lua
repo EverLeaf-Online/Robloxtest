@@ -1,5 +1,6 @@
 --!strict
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local React = require(ReplicatedStorage.Packages.React)
@@ -124,6 +125,195 @@ local function buildRobotRows(snapshot: any, extraWorkSlots: number): any
 			})
 		end
 	end
+	return rows
+end
+
+local function effectiveStorageCapacity(snapshot: any): number
+	local baseCapacity = FactoryRules.GetStorageCapacity(snapshot.Machines.StorageLevel)
+	local multiplier = if Players.LocalPlayer:GetAttribute("PassExpandedStorage") == true
+		then 2
+		else 1
+	local clubMultiplier = Players.LocalPlayer:GetAttribute("FactoryClubStorageMultiplier")
+	if typeof(clubMultiplier) == "number" and clubMultiplier > 0 then
+		multiplier *= clubMultiplier
+	end
+	return math.floor(baseCapacity * multiplier)
+end
+
+local function buildStorageRows(snapshot: any): any
+	local rows: { [string]: any } = {
+		Layout = React.createElement("UIListLayout", {
+			Padding = UDim.new(0, 8),
+			SortOrder = Enum.SortOrder.LayoutOrder,
+		}),
+	}
+
+	local capacity = effectiveStorageCapacity(snapshot)
+	local total = FactoryRules.TotalMaterials(snapshot.Materials)
+	local nextLevel = FactoryRules.GetNextUpgrade("Storage", snapshot.Machines.StorageLevel)
+	local canUpgrade = nextLevel ~= nil and snapshot.Currencies.Credits >= nextLevel.CostCredits
+
+	rows.Usage = React.createElement("Frame", {
+		BackgroundColor3 = COLORS.PanelSoft,
+		BorderSizePixel = 0,
+		LayoutOrder = 1,
+		Size = UDim2.new(1, 0, 0, 72),
+	}, {
+		Corner = Components.Corner(8),
+		Title = Components.TextLabel(
+			("STORAGE %s / %s"):format(
+				StateHelpers.FormatNumber(total),
+				StateHelpers.FormatNumber(capacity)
+			),
+			15,
+			COLORS.Text,
+			true
+		),
+		Details = React.createElement("TextLabel", {
+			BackgroundTransparency = 1,
+			Font = Enum.Font.Gotham,
+			Position = UDim2.fromOffset(10, 34),
+			Size = UDim2.new(1, -20, 0, 26),
+			Text = ("Scrap %s   •   Wiring %s   •   Cores %s"):format(
+				StateHelpers.FormatNumber(snapshot.Materials.ScrapMetal),
+				StateHelpers.FormatNumber(snapshot.Materials.Wiring),
+				StateHelpers.FormatNumber(snapshot.Materials.PowerCoreFragments)
+			),
+			TextColor3 = COLORS.Muted,
+			TextSize = 11,
+			TextWrapped = true,
+			TextXAlignment = Enum.TextXAlignment.Left,
+		}),
+	})
+
+	rows.Upgrade = React.createElement("Frame", {
+		BackgroundColor3 = COLORS.PanelSoft,
+		BorderSizePixel = 0,
+		LayoutOrder = 2,
+		Size = UDim2.new(1, 0, 0, 62),
+	}, {
+		Corner = Components.Corner(8),
+		Title = React.createElement("TextLabel", {
+			BackgroundTransparency = 1,
+			Font = Enum.Font.GothamBold,
+			Position = UDim2.fromOffset(10, 8),
+			Size = UDim2.new(1, -116, 0, 20),
+			Text = ("Material Storage • Lv.%d"):format(snapshot.Machines.StorageLevel),
+			TextColor3 = COLORS.Text,
+			TextSize = 14,
+			TextXAlignment = Enum.TextXAlignment.Left,
+		}),
+		Meta = React.createElement("TextLabel", {
+			BackgroundTransparency = 1,
+			Font = Enum.Font.Gotham,
+			Position = UDim2.fromOffset(10, 31),
+			Size = UDim2.new(1, -116, 0, 18),
+			Text = if nextLevel
+				then ("Next: %s capacity • %s credits"):format(
+					StateHelpers.FormatNumber(nextLevel.Value),
+					StateHelpers.FormatNumber(nextLevel.CostCredits)
+				)
+				else "Maximum level reached",
+			TextColor3 = COLORS.Muted,
+			TextSize = 11,
+			TextXAlignment = Enum.TextXAlignment.Left,
+		}),
+		Buy = React.createElement("Frame", {
+			BackgroundTransparency = 1,
+			Position = UDim2.new(1, -102, 0.5, -16),
+			Size = UDim2.fromOffset(92, 32),
+		}, {
+			Button = Components.Button(
+				nextLevel and "Upgrade" or "Max",
+				canUpgrade,
+				if nextLevel
+					then function()
+						getRemote(RemoteNames.RequestUpgrade):FireServer("Storage")
+					end
+					else nil
+			),
+		}),
+	})
+
+	return rows
+end
+
+local function buildRecycleRows(snapshot: any): any
+	local rows: { [string]: any } = {
+		Layout = React.createElement("UIListLayout", {
+			Padding = UDim.new(0, 8),
+			SortOrder = Enum.SortOrder.LayoutOrder,
+		}),
+	}
+
+	local ids = {}
+	for uid in snapshot.Robots.OwnedByUid do
+		table.insert(ids, uid)
+	end
+	table.sort(ids)
+
+	if #ids == 0 then
+		rows.Empty = Components.TextLabel("No bots available to recycle.", 13, COLORS.Muted)
+		return rows
+	end
+
+	for index, uid in ids do
+		local owned = snapshot.Robots.OwnedByUid[uid]
+		local definition = Robots.Definitions[owned.RobotId]
+		if definition ~= nil then
+			local assignedPad = StateHelpers.GetAssignedPad(snapshot, uid)
+			local canRecycle = assignedPad == nil
+			rows[("Recycle_%s"):format(uid)] = React.createElement("Frame", {
+				BackgroundColor3 = COLORS.PanelSoft,
+				BorderSizePixel = 0,
+				LayoutOrder = index,
+				Size = UDim2.new(1, 0, 0, 58),
+			}, {
+				Corner = Components.Corner(8),
+				Name = React.createElement("TextLabel", {
+					BackgroundTransparency = 1,
+					Font = Enum.Font.GothamBold,
+					Position = UDim2.fromOffset(10, 7),
+					Size = UDim2.new(1, -116, 0, 20),
+					Text = definition.DisplayName,
+					TextColor3 = COLORS.Text,
+					TextSize = 14,
+					TextXAlignment = Enum.TextXAlignment.Left,
+				}),
+				Meta = React.createElement("TextLabel", {
+					BackgroundTransparency = 1,
+					Font = Enum.Font.Gotham,
+					Position = UDim2.fromOffset(10, 30),
+					Size = UDim2.new(1, -116, 0, 18),
+					Text = if assignedPad
+						then ("Assigned to %s • unassign before recycling"):format(assignedPad)
+						else ("%s • +%s credits"):format(
+							definition.Rarity,
+							StateHelpers.FormatNumber(definition.RecycleCredits)
+						),
+					TextColor3 = COLORS.Muted,
+					TextSize = 11,
+					TextXAlignment = Enum.TextXAlignment.Left,
+				}),
+				Recycle = React.createElement("Frame", {
+					BackgroundTransparency = 1,
+					Position = UDim2.new(1, -102, 0.5, -16),
+					Size = UDim2.fromOffset(92, 32),
+				}, {
+					Button = Components.Button(
+						"Recycle",
+						canRecycle,
+						if canRecycle
+							then function()
+								getRemote(RemoteNames.RequestSellRobot):FireServer(uid)
+							end
+							else nil
+					),
+				}),
+			})
+		end
+	end
+
 	return rows
 end
 
@@ -272,6 +462,10 @@ function PanelContent.Title(panelName: string, snapshot: any): string
 		return ("Bot Control (%d)"):format(StateHelpers.CountOwnedRobots(snapshot))
 	elseif panelName == "Upgrades" then
 		return "Factory Upgrades"
+	elseif panelName == "Storage" then
+		return "Material Storage"
+	elseif panelName == "Recycle" then
+		return "Recycle Bots"
 	end
 	return ("Robot Index (%d/%d)"):format(
 		StateHelpers.CountDiscovered(snapshot),
@@ -284,6 +478,10 @@ function PanelContent.Hint(panelName: string): string
 		return "Assign or unassign bots from unlocked work pads. Idle bots can be recycled."
 	elseif panelName == "Upgrades" then
 		return "Upgrade prices, ownership, and currency spending are validated by the server."
+	elseif panelName == "Storage" then
+		return "Review stored materials and expand capacity from the physical storage station."
+	elseif panelName == "Recycle" then
+		return "Recycle idle bots for credits. Assigned bots must be unassigned first."
 	end
 	return "Discover robot outcomes by assembling them. Undiscovered names remain hidden."
 end
@@ -293,6 +491,10 @@ function PanelContent.Content(panelName: string, snapshot: any, extraWorkSlots: 
 		return buildRobotRows(snapshot, extraWorkSlots)
 	elseif panelName == "Upgrades" then
 		return buildUpgradeRows(snapshot)
+	elseif panelName == "Storage" then
+		return buildStorageRows(snapshot)
+	elseif panelName == "Recycle" then
+		return buildRecycleRows(snapshot)
 	end
 	return buildIndexRows(snapshot)
 end

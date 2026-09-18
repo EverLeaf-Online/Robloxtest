@@ -58,11 +58,16 @@ function UpgradeService.Purchase(player: Player, upgradeId: any)
 	end
 
 	local console = PlotService.GetUpgradeConsole(player)
+	local storageStation = if upgradeId == "Storage"
+		then PlotService.GetStorageStation(player)
+		else nil
 	if console == nil then
 		StateService.ActionResult(player, RemoteNames.RequestUpgrade, false, "NO_FACTORY_PLOT", nil)
 		return
 	end
-	if not isNear(player, console) then
+	local nearAllowedStation = isNear(player, console)
+		or (storageStation ~= nil and isNear(player, storageStation))
+	if not nearAllowedStation then
 		StateService.ActionResult(player, RemoteNames.RequestUpgrade, false, "TOO_FAR_AWAY", nil)
 		return
 	end

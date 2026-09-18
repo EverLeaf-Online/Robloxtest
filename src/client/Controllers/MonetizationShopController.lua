@@ -3,6 +3,7 @@
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
 
 local RemoteNames = require(ReplicatedStorage.Shared.Networking.RemoteNames)
@@ -106,6 +107,7 @@ local function makeButton(parent: Instance, name: string, label: string, order: 
 	button.LayoutOrder = order
 	button.Size = UDim2.new(1, 0, 0, 38)
 	button.BackgroundColor3 = Color3.fromRGB(46, 54, 70)
+	button.BackgroundTransparency = 0.08
 	button.BorderSizePixel = 0
 	button.Font = Enum.Font.GothamBold
 	button.Text = label
@@ -152,6 +154,11 @@ end
 
 local function createUi()
 	local playerGui = player:WaitForChild("PlayerGui") :: PlayerGui
+	local existing = playerGui:FindFirstChild("FactoryShop")
+	if existing ~= nil then
+		existing:Destroy()
+	end
+
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "FactoryShop"
 	gui.ResetOnSpawn = false
@@ -161,41 +168,73 @@ local function createUi()
 
 	local toggle = Instance.new("TextButton")
 	toggle.Name = "ShopButton"
-	toggle.AnchorPoint = Vector2.new(1, 0)
-	toggle.Position = UDim2.new(1, -16, 0, 8)
-	toggle.Size = UDim2.fromOffset(64, 72)
+	toggle.AnchorPoint = Vector2.new(0, 0.5)
+	toggle.Position = UDim2.new(0, 18, 0.72, 0)
+	toggle.Size = UDim2.fromOffset(158, 54)
 	toggle.BackgroundTransparency = 1
 	toggle.BorderSizePixel = 0
 	toggle.Text = ""
 	toggle.AutoButtonColor = false
 	toggle.Parent = gui
 
-	local iconPlate = HUDIconFactory.CreateShop(toggle, 50)
+	local icon = HUDIconFactory.CreateShop(toggle, 50)
+	icon.AnchorPoint = Vector2.new(0, 0.5)
+	icon.Position = UDim2.fromScale(0, 0.5)
 
 	local toggleLabel = Instance.new("TextLabel")
 	toggleLabel.Name = "Label"
-	toggleLabel.AnchorPoint = Vector2.new(0.5, 1)
-	toggleLabel.Position = UDim2.fromScale(0.5, 1)
-	toggleLabel.Size = UDim2.new(1, 0, 0, 20)
+	toggleLabel.Position = UDim2.fromOffset(56, 8)
+	toggleLabel.Size = UDim2.new(1, -82, 0, 18)
 	toggleLabel.BackgroundTransparency = 1
 	toggleLabel.Font = Enum.Font.GothamBold
-	toggleLabel.Text = "SHOP"
-	toggleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-	toggleLabel.TextSize = 12
-	toggleLabel.TextStrokeTransparency = 0.35
+	toggleLabel.Text = "FACTORY SHOP"
+	toggleLabel.TextColor3 = Color3.fromRGB(245, 247, 250)
+	toggleLabel.TextSize = 11
+	toggleLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+	toggleLabel.TextStrokeTransparency = 0.28
+	toggleLabel.TextXAlignment = Enum.TextXAlignment.Left
 	toggleLabel.Parent = toggle
+
+	local toggleHint = Instance.new("TextLabel")
+	toggleHint.Name = "Hint"
+	toggleHint.Position = UDim2.fromOffset(56, 27)
+	toggleHint.Size = UDim2.new(1, -82, 0, 16)
+	toggleHint.BackgroundTransparency = 1
+	toggleHint.Font = Enum.Font.GothamBold
+	toggleHint.Text = "OPEN"
+	toggleHint.TextColor3 = Color3.fromRGB(104, 223, 151)
+	toggleHint.TextSize = 10
+	toggleHint.TextStrokeColor3 = Color3.new(0, 0, 0)
+	toggleHint.TextStrokeTransparency = 0.28
+	toggleHint.TextXAlignment = Enum.TextXAlignment.Left
+	toggleHint.Parent = toggle
+
+	local arrow = Instance.new("TextLabel")
+	arrow.Name = "Arrow"
+	arrow.AnchorPoint = Vector2.new(1, 0.5)
+	arrow.Position = UDim2.fromScale(1, 0.5)
+	arrow.Size = UDim2.fromOffset(22, 36)
+	arrow.BackgroundTransparency = 1
+	arrow.Font = Enum.Font.GothamBold
+	arrow.Text = "›"
+	arrow.TextColor3 = Color3.fromRGB(245, 247, 250)
+	arrow.TextSize = 28
+	arrow.TextStrokeColor3 = Color3.new(0, 0, 0)
+	arrow.TextStrokeTransparency = 0.3
+	arrow.Parent = toggle
 
 	local shopPanel = Instance.new("ScrollingFrame")
 	shopPanel.Name = "Panel"
-	shopPanel.AnchorPoint = Vector2.new(1, 0)
-	shopPanel.Position = UDim2.new(1, -14, 0, 52)
-	shopPanel.Size = UDim2.fromOffset(310, 356)
+	shopPanel.AnchorPoint = Vector2.new(0, 0.5)
+	shopPanel.Position = UDim2.new(0, 188, 0.63, 0)
+	shopPanel.Size = UDim2.fromOffset(0, 356)
 	shopPanel.BackgroundColor3 = Color3.fromRGB(20, 23, 30)
 	shopPanel.AutomaticCanvasSize = Enum.AutomaticSize.Y
 	shopPanel.CanvasSize = UDim2.new()
 	shopPanel.ScrollBarThickness = 4
-	shopPanel.BackgroundTransparency = 0.04
+	shopPanel.BackgroundTransparency = 0.12
 	shopPanel.BorderSizePixel = 0
+	shopPanel.ClipsDescendants = true
 	shopPanel.Visible = false
 	shopPanel.Parent = gui
 
@@ -255,27 +294,77 @@ local function createUi()
 	clubButton.BackgroundColor3 = Color3.fromRGB(112, 77, 154)
 	clubButton.Activated:Connect(promptFactoryClub)
 
+	local panelOpen = false
+	local currentTween: Tween? = nil
+	local function setOpen(open: boolean)
+		panelOpen = open
+		if currentTween ~= nil then
+			currentTween:Cancel()
+			currentTween = nil
+		end
+		if open then
+			shopPanel.Visible = true
+		end
+		arrow.Text = if open then "‹" else "›"
+		toggleHint.Text = if open then "CLOSE" else "OPEN"
+		local targetWidth = if open then 310 else 0
+		currentTween = TweenService:Create(
+			shopPanel,
+			TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+			{ Size = UDim2.fromOffset(targetWidth, shopPanel.Size.Y.Offset) }
+		)
+		currentTween.Completed:Once(function()
+			currentTween = nil
+			if not panelOpen then
+				shopPanel.Visible = false
+			end
+		end)
+		currentTween:Play()
+	end
+
 	toggle.Activated:Connect(function()
-		shopPanel.Visible = not shopPanel.Visible
+		setOpen(not panelOpen)
 	end)
 
-	local function refreshLayout()
+	local viewportConnection: RBXScriptConnection? = nil
+	local function bindCamera()
+		if viewportConnection ~= nil then
+			viewportConnection:Disconnect()
+			viewportConnection = nil
+		end
 		local camera = Workspace.CurrentCamera
 		if camera == nil then
 			return
 		end
-		local viewport = camera.ViewportSize
-		local phone = viewport.X <= 760
-		toggle.Position = UDim2.new(1, if phone then -12 else -16, 0, 8)
-		toggle.Size = if phone then UDim2.fromOffset(58, 66) else UDim2.fromOffset(64, 72)
-		iconPlate.Size = if phone then UDim2.fromOffset(44, 44) else UDim2.fromOffset(50, 50)
-		shopPanel.Size = if phone then UDim2.new(0.48, 0, 1, -64) else UDim2.fromOffset(310, 356)
+
+		local function refreshLayout()
+			local phone = camera.ViewportSize.X <= 760
+			toggle.Position = if phone then UDim2.new(0, 10, 0.66, 0) else UDim2.new(0, 18, 0.72, 0)
+			toggle.Size = if phone then UDim2.fromOffset(132, 48) else UDim2.fromOffset(158, 54)
+			icon.Size = if phone then UDim2.fromOffset(42, 42) else UDim2.fromOffset(50, 50)
+			toggleLabel.Position = if phone
+				then UDim2.fromOffset(48, 5)
+				else UDim2.fromOffset(56, 8)
+			toggleHint.Position = if phone
+				then UDim2.fromOffset(48, 23)
+				else UDim2.fromOffset(56, 27)
+			shopPanel.Position = if phone
+				then UDim2.new(0, 154, 0.58, 0)
+				else UDim2.new(0, 188, 0.63, 0)
+			shopPanel.Size = if phone
+				then UDim2.fromOffset(
+					if panelOpen then 286 else 0,
+					math.max(300, camera.ViewportSize.Y - 150)
+				)
+				else UDim2.fromOffset(if panelOpen then 310 else 0, 356)
+		end
+
+		refreshLayout()
+		viewportConnection = camera:GetPropertyChangedSignal("ViewportSize"):Connect(refreshLayout)
 	end
-	refreshLayout()
-	local camera = Workspace.CurrentCamera
-	if camera ~= nil then
-		camera:GetPropertyChangedSignal("ViewportSize"):Connect(refreshLayout)
-	end
+
+	bindCamera()
+	Workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(bindCamera)
 
 	setStarterPackVisibility()
 	refreshStatus()
@@ -301,4 +390,4 @@ function MonetizationShopController.Init()
 	end)
 end
 
-return MonetizationShopController
+return table.freeze(MonetizationShopController)

@@ -2,8 +2,10 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
 
 local RemoteNames = require(ReplicatedStorage.Shared.Networking.RemoteNames)
+local HUDIconFactory = require(script.Parent.Parent.UI.HUDIconFactory)
 
 local InstantProcessController = {}
 local initialized = false
@@ -28,30 +30,68 @@ function InstantProcessController.Init()
 	gui.Name = "InstantProcessUI"
 	gui.ResetOnSpawn = false
 	gui.IgnoreGuiInset = false
-	gui.DisplayOrder = 20
+	gui.DisplayOrder = 25
 	gui.Parent = player:WaitForChild("PlayerGui")
 
 	local button = Instance.new("TextButton")
 	button.Name = "UseInstantProcessToken"
-	button.AnchorPoint = Vector2.new(1, 1)
-	button.Position = UDim2.new(1, -20, 1, -20)
-	button.Size = UDim2.fromOffset(190, 46)
-	button.BackgroundColor3 = Color3.fromRGB(48, 132, 88)
+	button.AnchorPoint = Vector2.new(0, 0.5)
+	button.Position = UDim2.new(0, 18, 0.63, 0)
+	button.Size = UDim2.fromOffset(158, 54)
+	button.BackgroundTransparency = 1
 	button.BorderSizePixel = 0
-	button.Font = Enum.Font.GothamBold
-	button.TextColor3 = Color3.fromRGB(245, 247, 250)
-	button.TextSize = 14
-	button.AutoButtonColor = true
+	button.Text = ""
+	button.AutoButtonColor = false
 	button.Parent = gui
 
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 8)
-	corner.Parent = button
+	local icon = HUDIconFactory.CreateInstantFinish(button, 50)
+	icon.AnchorPoint = Vector2.new(0, 0.5)
+	icon.Position = UDim2.fromScale(0, 0.5)
+
+	local title = Instance.new("TextLabel")
+	title.Name = "Title"
+	title.BackgroundTransparency = 1
+	title.Position = UDim2.fromOffset(56, 5)
+	title.Size = UDim2.new(1, -56, 0, 18)
+	title.Font = Enum.Font.GothamBold
+	title.Text = "INSTANT FINISH"
+	title.TextColor3 = Color3.fromRGB(245, 247, 250)
+	title.TextSize = 11
+	title.TextStrokeColor3 = Color3.new(0, 0, 0)
+	title.TextStrokeTransparency = 0.28
+	title.TextXAlignment = Enum.TextXAlignment.Left
+	title.Parent = button
+
+	local countLabel = Instance.new("TextLabel")
+	countLabel.Name = "Count"
+	countLabel.BackgroundTransparency = 1
+	countLabel.Position = UDim2.fromOffset(56, 25)
+	countLabel.Size = UDim2.new(1, -56, 0, 18)
+	countLabel.Font = Enum.Font.GothamBold
+	countLabel.TextColor3 = Color3.fromRGB(104, 223, 151)
+	countLabel.TextSize = 11
+	countLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+	countLabel.TextStrokeTransparency = 0.28
+	countLabel.TextXAlignment = Enum.TextXAlignment.Left
+	countLabel.Parent = button
 
 	local function refresh()
 		local count = tokenCount()
 		button.Visible = count > 0
-		button.Text = ("Instant Finish (%d)"):format(count)
+		countLabel.Text = ("%d TOKEN%s"):format(count, if count == 1 then "" else "S")
+	end
+
+	local function refreshLayout()
+		local camera = Workspace.CurrentCamera
+		if camera == nil then
+			return
+		end
+		local phone = camera.ViewportSize.X <= 760
+		button.Position = if phone then UDim2.new(0, 10, 0.57, 0) else UDim2.new(0, 18, 0.63, 0)
+		button.Size = if phone then UDim2.fromOffset(132, 48) else UDim2.fromOffset(158, 54)
+		icon.Size = if phone then UDim2.fromOffset(42, 42) else UDim2.fromOffset(50, 50)
+		title.Position = if phone then UDim2.fromOffset(48, 3) else UDim2.fromOffset(56, 5)
+		countLabel.Position = if phone then UDim2.fromOffset(48, 22) else UDim2.fromOffset(56, 25)
 	end
 
 	button.Activated:Connect(function()
@@ -63,6 +103,12 @@ function InstantProcessController.Init()
 
 	player:GetAttributeChangedSignal("InstantProcessTokens"):Connect(refresh)
 	refresh()
+
+	refreshLayout()
+	local camera = Workspace.CurrentCamera
+	if camera ~= nil then
+		camera:GetPropertyChangedSignal("ViewportSize"):Connect(refreshLayout)
+	end
 end
 
-return InstantProcessController
+return table.freeze(InstantProcessController)

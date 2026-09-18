@@ -23,6 +23,10 @@ function HUDIconFactory.CreateShop(parent: Instance, size: number): ImageLabel
 	return makeIcon(parent, size, IconAssets.Shop)
 end
 
+function HUDIconFactory.CreateInstantFinish(parent: Instance, size: number): ImageLabel
+	return makeIcon(parent, size, IconAssets.InstantFinish)
+end
+
 function HUDIconFactory.CreateAdmin(parent: Instance, size: number): ImageLabel
 	return makeIcon(parent, size, IconAssets.Admin)
 end

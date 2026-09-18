@@ -205,7 +205,20 @@ function RobotService.Sell(player: Player, robotUid: any)
 		)
 		return
 	end
-	if not requireBotConsole(player, RemoteNames.RequestSellRobot) then
+	local botConsole = PlotService.GetBotConsole(player)
+	local recycleStation = PlotService.GetRecycleStation(player)
+	if botConsole == nil or recycleStation == nil then
+		StateService.ActionResult(
+			player,
+			RemoteNames.RequestSellRobot,
+			false,
+			"NO_FACTORY_PLOT",
+			nil
+		)
+		return
+	end
+	if not isNear(player, botConsole) and not isNear(player, recycleStation) then
+		StateService.ActionResult(player, RemoteNames.RequestSellRobot, false, "TOO_FAR_AWAY", nil)
 		return
 	end
 

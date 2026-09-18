@@ -131,7 +131,9 @@ local function buildFactoryPlot(parent: Folder, plotId: number, center: Vector3)
 	local processor =
 		makePart(plot, "Processor", Vector3.new(11, 8, 9), center + Vector3.new(-15, 4.5, 4))
 	processor.Material = Enum.Material.Metal
+	processor.Color = Color3.fromRGB(54, 94, 112)
 	tagPlotPart(processor, plotId)
+	addBillboard(processor, "PROCESSOR")
 
 	local wiringControl =
 		makePart(plot, "MakeWiring", Vector3.new(5, 2, 4), center + Vector3.new(-18, 2, -5))
@@ -146,7 +148,9 @@ local function buildFactoryPlot(parent: Folder, plotId: number, center: Vector3)
 	local assembler =
 		makePart(plot, "Assembler", Vector3.new(11, 8, 9), center + Vector3.new(0, 4.5, 4))
 	assembler.Material = Enum.Material.Metal
+	assembler.Color = Color3.fromRGB(129, 89, 52)
 	tagPlotPart(assembler, plotId)
+	addBillboard(assembler, "ASSEMBLER")
 	addPrompt(assembler, "Assemble", "Build Robot")
 	plotAssemblers[plotId] = assembler
 	if plotId == 1 then

@@ -12,7 +12,8 @@ local IconAssets = {
 	Wiring = "rbxassetid://17368078790", -- Stats/Energy
 	Cores = "rbxassetid://17368064384", -- Gems/GemIcon
 
-	Shop = "rbxassetid://17368188494", -- Menus/Shop
+	Shop = "rbxassetid://15403066964", -- Menus/Store (shopping cart)
+	InstantFinish = "rbxassetid://17368052918", -- Stats/Speed
 	Admin = "rbxassetid://15402956142", -- Misc/Exclaim
 	Tools = "rbxassetid://17368089841", -- Menus/Settings
 	Processor = "rbxassetid://17368087730", -- Stats/Power2
