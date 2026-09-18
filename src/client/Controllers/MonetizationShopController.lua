@@ -154,15 +154,15 @@ local function createUi()
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "FactoryShop"
 	gui.ResetOnSpawn = false
-	gui.IgnoreGuiInset = true
+	gui.IgnoreGuiInset = false
 	gui.DisplayOrder = 30
 	gui.Parent = playerGui
 
 	local toggle = Instance.new("TextButton")
 	toggle.Name = "ShopButton"
-	toggle.AnchorPoint = Vector2.new(0, 1)
-	toggle.Position = UDim2.new(0, 202, 1, -178)
-	toggle.Size = UDim2.fromOffset(174, 36)
+	toggle.AnchorPoint = Vector2.new(1, 0)
+	toggle.Position = UDim2.new(1, -14, 0, 10)
+	toggle.Size = UDim2.fromOffset(92, 34)
 	toggle.BackgroundColor3 = Color3.fromRGB(38, 126, 91)
 	toggle.BorderSizePixel = 0
 	toggle.Font = Enum.Font.GothamBold
@@ -175,12 +175,15 @@ local function createUi()
 	toggleCorner.CornerRadius = UDim.new(0, 8)
 	toggleCorner.Parent = toggle
 
-	local shopPanel = Instance.new("Frame")
+	local shopPanel = Instance.new("ScrollingFrame")
 	shopPanel.Name = "Panel"
 	shopPanel.AnchorPoint = Vector2.new(1, 0)
-	shopPanel.Position = UDim2.new(1, -14, 0, 106)
+	shopPanel.Position = UDim2.new(1, -14, 0, 52)
 	shopPanel.Size = UDim2.fromOffset(310, 356)
 	shopPanel.BackgroundColor3 = Color3.fromRGB(20, 23, 30)
+	shopPanel.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	shopPanel.CanvasSize = UDim2.new()
+	shopPanel.ScrollBarThickness = 4
 	shopPanel.BackgroundTransparency = 0.04
 	shopPanel.BorderSizePixel = 0
 	shopPanel.Visible = false
@@ -245,6 +248,24 @@ local function createUi()
 	toggle.Activated:Connect(function()
 		shopPanel.Visible = not shopPanel.Visible
 	end)
+
+	local function refreshLayout()
+		local camera = Workspace.CurrentCamera
+		if camera == nil then
+			return
+		end
+		local viewport = camera.ViewportSize
+		local phone = viewport.X <= 760
+		toggle.Size = if phone then UDim2.fromOffset(80, 30) else UDim2.fromOffset(92, 34)
+		shopPanel.Size = if phone
+			then UDim2.new(0.48, 0, 1, -64)
+			else UDim2.fromOffset(310, 356)
+	end
+	refreshLayout()
+	local camera = Workspace.CurrentCamera
+	if camera ~= nil then
+		camera:GetPropertyChangedSignal("ViewportSize"):Connect(refreshLayout)
+	end
 
 	setStarterPackVisibility()
 	refreshStatus()
