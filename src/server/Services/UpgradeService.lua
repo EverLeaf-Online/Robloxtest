@@ -139,6 +139,7 @@ function UpgradeService.Purchase(player: Player, upgradeId: any)
 				updatedData.Currencies.Credits
 			)
 		end
+		PlotService.RefreshPresentation(player)
 		StateService.PushSnapshot(player)
 	end
 end

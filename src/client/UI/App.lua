@@ -6,6 +6,7 @@ local Workspace = game:GetService("Workspace")
 
 local React = require(ReplicatedStorage.Packages.React)
 local RemoteNames = require(ReplicatedStorage.Shared.Networking.RemoteNames)
+local Robots = require(ReplicatedStorage.Shared.Config.Robots)
 
 local Components = require(script.Parent.Components)
 local IconAssets = require(script.Parent.IconAssets)
@@ -19,6 +20,11 @@ local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 local LocalPlayer = Players.LocalPlayer
 
 type LayoutMode = "Desktop" | "Tablet" | "Phone"
+
+type RobotRevealState = {
+	RobotId: string,
+	RobotUid: string?,
+}
 
 local function getRemote(name: string): RemoteEvent
 	return Remotes:WaitForChild(name) :: RemoteEvent
@@ -60,6 +66,17 @@ local function objectiveSize(mode: LayoutMode): UDim2
 	return UDim2.fromOffset(520, 64)
 end
 
+local function rarityColor(rarity: string): Color3
+	if rarity == "Epic" then
+		return Color3.fromRGB(218, 125, 255)
+	elseif rarity == "Rare" then
+		return Color3.fromRGB(91, 166, 255)
+	elseif rarity == "Uncommon" then
+		return Color3.fromRGB(96, 214, 129)
+	end
+	return Color3.fromRGB(205, 210, 219)
+end
+
 local function modalSize(mode: LayoutMode): UDim2
 	if mode == "Phone" then
 		return UDim2.fromScale(0.92, 0.78)
@@ -75,6 +92,7 @@ local function App()
 	local openPanel, setOpenPanel = React.useState(nil :: string?)
 	local actionMessage, setActionMessage = React.useState("")
 	local actionSuccess, setActionSuccess = React.useState(true)
+	local robotReveal, setRobotReveal = React.useState(nil :: RobotRevealState?)
 	local now, setNow = React.useState(Workspace:GetServerTimeNow())
 	local layoutMode, setLayoutMode = React.useState("Desktop" :: LayoutMode)
 	local extraWorkSlots, setExtraWorkSlots =
@@ -131,6 +149,18 @@ local function App()
 			end
 			setActionSuccess(actionResult.Success == true)
 			setActionMessage(StateHelpers.ReadableCode(tostring(actionResult.Code)))
+
+			if actionResult.Success == true and actionResult.Code == "ASSEMBLY_COMPLETE" then
+				local payload = actionResult.Payload
+				if typeof(payload) == "table" and typeof(payload.RobotId) == "string" then
+					setRobotReveal({
+						RobotId = payload.RobotId,
+						RobotUid = if typeof(payload.RobotUid) == "string"
+							then payload.RobotUid
+							else nil,
+					})
+				end
+			end
 		end)
 		requestState:FireServer()
 		return function()
@@ -233,6 +263,9 @@ local function App()
 	end
 
 	local objectiveTitle, objectiveBody = StateHelpers.GetObjective(snapshot)
+	local revealDefinition = if robotReveal ~= nil
+		then Robots.Definitions[robotReveal.RobotId]
+		else nil
 	local isPhone = layoutMode == "Phone"
 	local processorJob = snapshot.Machines.ProcessorJob
 	local assemblerJob = snapshot.Machines.AssemblerJob
@@ -419,6 +452,116 @@ local function App()
 						Size = UDim2.new(1, -32, 1, -104),
 						ZIndex = 22,
 					}, PanelContent.Content(openPanel :: string, snapshot, extraWorkSlots)),
+				}),
+			})
+			else nil,
+
+		RobotReveal = if robotReveal ~= nil and revealDefinition ~= nil
+			then React.createElement("Frame", {
+				BackgroundColor3 = Color3.new(0, 0, 0),
+				BackgroundTransparency = 0.32,
+				BorderSizePixel = 0,
+				Size = UDim2.fromScale(1, 1),
+				ZIndex = 40,
+			}, {
+				Card = React.createElement("Frame", {
+					AnchorPoint = Vector2.new(0.5, 0.5),
+					BackgroundColor3 = Color3.fromRGB(23, 27, 34),
+					BorderSizePixel = 0,
+					Position = UDim2.fromScale(0.5, 0.5),
+					Size = if isPhone
+						then UDim2.fromOffset(300, 250)
+						else UDim2.fromOffset(420, 300),
+					ZIndex = 41,
+				}, {
+					Corner = Components.Corner(16),
+					Stroke = React.createElement("UIStroke", {
+						Color = rarityColor(revealDefinition.Rarity),
+						Thickness = 2,
+						Transparency = 0.08,
+					}),
+					Accent = React.createElement("Frame", {
+						BackgroundColor3 = rarityColor(revealDefinition.Rarity),
+						BorderSizePixel = 0,
+						Position = UDim2.fromOffset(20, 18),
+						Size = UDim2.new(1, -40, 0, 5),
+						ZIndex = 42,
+					}, {
+						Corner = Components.Corner(3),
+					}),
+					Eyebrow = React.createElement("TextLabel", {
+						BackgroundTransparency = 1,
+						Font = Enum.Font.GothamBold,
+						Position = UDim2.fromOffset(20, 38),
+						Size = UDim2.new(1, -40, 0, 24),
+						Text = "NEW BOT ASSEMBLED",
+						TextColor3 = COLORS.Muted,
+						TextSize = if isPhone then 11 else 12,
+						ZIndex = 42,
+					}),
+					Name = React.createElement("TextLabel", {
+						BackgroundTransparency = 1,
+						Font = Enum.Font.GothamBold,
+						Position = UDim2.fromOffset(20, 66),
+						Size = UDim2.new(1, -40, 0, if isPhone then 42 else 52),
+						Text = revealDefinition.DisplayName,
+						TextColor3 = COLORS.Text,
+						TextScaled = true,
+						ZIndex = 42,
+					}),
+					Rarity = React.createElement("TextLabel", {
+						BackgroundTransparency = 1,
+						Font = Enum.Font.GothamBold,
+						Position = UDim2.fromOffset(20, if isPhone then 112 else 124),
+						Size = UDim2.new(1, -40, 0, 24),
+						Text = string.upper(revealDefinition.Rarity),
+						TextColor3 = rarityColor(revealDefinition.Rarity),
+						TextSize = if isPhone then 13 else 15,
+						ZIndex = 42,
+					}),
+					Family = React.createElement("TextLabel", {
+						BackgroundTransparency = 1,
+						Font = Enum.Font.Gotham,
+						Position = UDim2.fromOffset(20, if isPhone then 140 else 154),
+						Size = UDim2.new(1, -40, 0, 22),
+						Text = ("%s  •  %.1f Credits/sec"):format(
+							revealDefinition.Family,
+							revealDefinition.ProductionPerSecond
+						),
+						TextColor3 = COLORS.Text,
+						TextSize = if isPhone then 12 else 14,
+						ZIndex = 42,
+					}),
+					Hint = React.createElement("TextLabel", {
+						BackgroundTransparency = 1,
+						Font = Enum.Font.Gotham,
+						Position = UDim2.fromOffset(20, if isPhone then 164 else 184),
+						Size = UDim2.new(1, -40, 0, 28),
+						Text = "Assign it to a work pad to start producing Credits.",
+						TextColor3 = COLORS.Muted,
+						TextSize = if isPhone then 10 else 11,
+						TextWrapped = true,
+						ZIndex = 42,
+					}),
+					Continue = React.createElement("TextButton", {
+						AnchorPoint = Vector2.new(0.5, 1),
+						BackgroundColor3 = rarityColor(revealDefinition.Rarity),
+						BorderSizePixel = 0,
+						Font = Enum.Font.GothamBold,
+						Position = UDim2.new(0.5, 0, 1, -18),
+						Size = if isPhone
+							then UDim2.new(1, -40, 0, 38)
+							else UDim2.fromOffset(220, 42),
+						Text = "KEEP BUILDING",
+						TextColor3 = Color3.fromRGB(18, 21, 27),
+						TextSize = if isPhone then 12 else 13,
+						ZIndex = 42,
+						[React.Event.Activated] = function()
+							setRobotReveal(nil)
+						end,
+					}, {
+						Corner = Components.Corner(9),
+					}),
 				}),
 			})
 			else nil,

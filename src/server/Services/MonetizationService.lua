@@ -12,6 +12,7 @@ local RemoteNames = require(ReplicatedStorage.Shared.Networking.RemoteNames)
 
 local DataService = require(script.Parent.DataService)
 local EconomyService = require(script.Parent.EconomyService)
+local PlotService = require(script.Parent.PlotService)
 local RemoteService = require(script.Parent.RemoteService)
 local StateService = require(script.Parent.StateService)
 local ProfileTypes = require(script.Parent.Parent.Data.ProfileTypes)
@@ -158,6 +159,7 @@ local function setPresentationAttributes(player: Player)
 		end
 		player:SetAttribute("FactoryClubCosmeticCount", cosmeticCount)
 	end
+	PlotService.RefreshPresentation(player)
 end
 
 local MATERIAL_BUNDLE = table.freeze({

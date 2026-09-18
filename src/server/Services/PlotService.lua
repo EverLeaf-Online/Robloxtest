@@ -3,6 +3,8 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local FactoryRules = require(ReplicatedStorage.Shared.Domain.FactoryRules)
+local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
 local PlotRules = require(ReplicatedStorage.Shared.Domain.PlotRules)
 
 local DataService = require(script.Parent.DataService)
@@ -14,6 +16,41 @@ local plotByPlayer: { [Player]: number } = {}
 local ownerByPlot: { [number]: Player } = {}
 
 local NO_FREE_PLOT_MESSAGE = "This server has no free factory plot. Please join another server."
+
+local function setPlotProgressionAttributes(plotId: number, player: Player?)
+	local plot = WorldService.GetPlot(plotId)
+	if plot == nil then
+		return
+	end
+
+	local processorLevel = 1
+	local assemblerLevel = 1
+	local storageLevel = 1
+	local workSlotsLevel = 1
+	local extraWorkSlots = 0
+
+	if player ~= nil then
+		local data = DataService.GetData(player)
+		if data ~= nil then
+			processorLevel = data.Machines.ProcessorLevel
+			assemblerLevel = data.Machines.AssemblerLevel
+			storageLevel = data.Machines.StorageLevel
+			workSlotsLevel = data.Machines.WorkSlotsLevel
+		end
+		extraWorkSlots = if player:GetAttribute("PassBotWorkSlots2") == true then 2 else 0
+	end
+
+	local unlockedWorkSlots = math.min(
+		GameConfig.Factory.MaxWorkSlots + 2,
+		FactoryRules.GetWorkSlots(workSlotsLevel) + extraWorkSlots
+	)
+
+	plot:SetAttribute("ProcessorLevel", processorLevel)
+	plot:SetAttribute("AssemblerLevel", assemblerLevel)
+	plot:SetAttribute("StorageLevel", storageLevel)
+	plot:SetAttribute("WorkSlotsLevel", workSlotsLevel)
+	plot:SetAttribute("UnlockedWorkSlots", unlockedWorkSlots)
+end
 
 local function setPlotLabel(plotId: number, player: Player?)
 	local sign = WorldService.GetPlotSign(plotId)
@@ -56,6 +93,7 @@ local function release(player: Player)
 	if ownerByPlot[plotId] == player then
 		ownerByPlot[plotId] = nil
 		setPlotLabel(plotId, nil)
+		setPlotProgressionAttributes(plotId, nil)
 	end
 end
 
@@ -92,7 +130,15 @@ function PlotService.Assign(player: Player): number?
 	plotByPlayer[player] = plotId
 	ownerByPlot[plotId] = player
 	setPlotLabel(plotId, player)
+	setPlotProgressionAttributes(plotId, player)
 	return plotId
+end
+
+function PlotService.RefreshPresentation(player: Player)
+	local plotId = plotByPlayer[player]
+	if plotId ~= nil then
+		setPlotProgressionAttributes(plotId, player)
+	end
 end
 
 function PlotService.GetPlotId(player: Player): number?

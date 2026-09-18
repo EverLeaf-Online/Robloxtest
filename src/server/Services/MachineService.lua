@@ -6,6 +6,7 @@ local Workspace = game:GetService("Workspace")
 
 local FactoryRules = require(ReplicatedStorage.Shared.Domain.FactoryRules)
 local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
+local MachineJobRules = require(ReplicatedStorage.Shared.Domain.MachineJobRules)
 local Recipes = require(ReplicatedStorage.Shared.Config.Recipes)
 local RemoteNames = require(ReplicatedStorage.Shared.Networking.RemoteNames)
 local RobotInventoryRules = require(ReplicatedStorage.Shared.Domain.RobotInventoryRules)
@@ -66,6 +67,47 @@ end
 
 local function isNear(player: Player, part: BasePart): boolean
 	return PlayerCharacter.IsNear(player, part, GameConfig.World.InteractionDistance)
+end
+
+local function setMachineBusyAttribute(
+	plot: Model,
+	machineName: string,
+	busy: boolean,
+	completesAt: number
+)
+	local machine = plot:FindFirstChild(machineName)
+	if machine == nil or not machine:IsA("BasePart") then
+		return
+	end
+
+	local targetCompletesAt = if busy then completesAt else 0
+	if machine:GetAttribute("Busy") ~= busy then
+		machine:SetAttribute("Busy", busy)
+	end
+	if machine:GetAttribute("JobCompletesAt") ~= targetCompletesAt then
+		machine:SetAttribute("JobCompletesAt", targetCompletesAt)
+	end
+end
+
+local function syncMachinePresentation(player: Player)
+	local plot = PlotService.GetPlot(player)
+	local data = DataService.GetData(player)
+	if plot == nil or data == nil then
+		return
+	end
+
+	setMachineBusyAttribute(
+		plot,
+		"Processor",
+		data.Machines.ProcessorJob.Active,
+		data.Machines.ProcessorJob.CompletesAt
+	)
+	setMachineBusyAttribute(
+		plot,
+		"Assembler",
+		data.Machines.AssemblerJob.Active,
+		data.Machines.AssemblerJob.CompletesAt
+	)
 end
 
 local function sendTransactionResult(
@@ -162,6 +204,9 @@ function MachineService.StartProcessor(player: Player, recipeId: any)
 	end)
 
 	sendTransactionResult(player, RemoteNames.RequestProcess, executed, transactionResult)
+	if executed then
+		syncMachinePresentation(player)
+	end
 end
 
 function MachineService.StartAssembler(player: Player)
@@ -187,6 +232,15 @@ function MachineService.StartAssembler(player: Player)
 		if job.Active then
 			return false, result(false, "ASSEMBLER_BUSY", { CompletesAt = job.CompletesAt })
 		end
+
+		local canStart, startCode = FactoryRules.CanStartAssembler(
+			data.Stats.LifetimeRobotsBuilt,
+			data.Tutorial.Milestones.FirstProcess == true
+		)
+		if not canStart then
+			return false, result(false, startCode, nil)
+		end
+
 		if ownedRobotCount(data) >= GameConfig.Economy.MaxOwnedRobots then
 			return false, result(false, "ROBOT_INVENTORY_FULL", nil)
 		end
@@ -211,13 +265,16 @@ function MachineService.StartAssembler(player: Player)
 	end)
 
 	sendTransactionResult(player, RemoteNames.RequestAssemble, executed, transactionResult)
+	if executed then
+		syncMachinePresentation(player)
+	end
 end
 
 local function completeProcessor(player: Player, now: number): boolean
 	local storageMultiplier = MonetizationService.GetStorageMultiplier(player)
 	local executed, transactionResult = DataService.Transaction(player, function(data)
 		local job = data.Machines.ProcessorJob
-		if not job.Active or job.CompletesAt > now then
+		if not MachineJobRules.IsDue(job.Active, job.CompletesAt, now) then
 			return false, nil
 		end
 		local recipe = Recipes.Processor[job.RecipeId]
@@ -254,7 +311,7 @@ end
 local function completeAssembler(player: Player, now: number): boolean
 	local executed, transactionResult = DataService.Transaction(player, function(data)
 		local job = data.Machines.AssemblerJob
-		if not job.Active or job.CompletesAt > now then
+		if not MachineJobRules.IsDue(job.Active, job.CompletesAt, now) then
 			return false, nil
 		end
 		if ownedRobotCount(data) >= GameConfig.Economy.MaxOwnedRobots then
@@ -366,13 +423,14 @@ function MachineService.PollPlayer(player: Player)
 	end
 	local now = serverNow()
 	local processorJob = data.Machines.ProcessorJob
-	if processorJob.Active and processorJob.CompletesAt <= now then
+	if MachineJobRules.IsDue(processorJob.Active, processorJob.CompletesAt, now) then
 		completeProcessor(player, now)
 	end
 	local assemblerJob = data.Machines.AssemblerJob
-	if assemblerJob.Active and assemblerJob.CompletesAt <= now then
+	if MachineJobRules.IsDue(assemblerJob.Active, assemblerJob.CompletesAt, now) then
 		completeAssembler(player, now)
 	end
+	syncMachinePresentation(player)
 end
 
 local function rejectForeignPlot(player: Player, actionName: string)

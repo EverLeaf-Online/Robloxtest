@@ -21,6 +21,19 @@ describe("FactoryRules", function()
 		expect(repeatCost.PowerCoreFragments).toBe(1)
 	end)
 
+	it("requires the tutorial processor step before the first assembly", function()
+		local allowedBeforeProcess, codeBeforeProcess = FactoryRules.CanStartAssembler(0, false)
+		local allowedAfterProcess, codeAfterProcess = FactoryRules.CanStartAssembler(0, true)
+		local allowedAfterFirstRobot, codeAfterFirstRobot = FactoryRules.CanStartAssembler(1, false)
+
+		expect(allowedBeforeProcess).toBe(false)
+		expect(codeBeforeProcess).toBe("PROCESS_FIRST")
+		expect(allowedAfterProcess).toBe(true)
+		expect(codeAfterProcess).toBe("ASSEMBLER_READY")
+		expect(allowedAfterFirstRobot).toBe(true)
+		expect(codeAfterFirstRobot).toBe("ASSEMBLER_READY")
+	end)
+
 	it("validates material affordability", function()
 		local materials = {
 			ScrapMetal = 10,
