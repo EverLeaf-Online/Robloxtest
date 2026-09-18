@@ -10,10 +10,13 @@ local it = JestGlobals.it
 local WorldLayout = require(script.Parent.Parent.Config.WorldLayout)
 
 describe("WorldLayout", function()
-	it("keeps the instanced factory footprint large enough for production and starter salvage", function()
-		expect(WorldLayout.Plot.Size.X >= 220).toBe(true)
-		expect(WorldLayout.Plot.Size.Z >= 180).toBe(true)
-	end)
+	it(
+		"keeps the instanced factory footprint large enough for production and starter salvage",
+		function()
+			expect(WorldLayout.Plot.Size.X >= 220).toBe(true)
+			expect(WorldLayout.Plot.Size.Z >= 180).toBe(true)
+		end
+	)
 
 	it("keeps starter salvage inside the main factory footprint", function()
 		local halfX = WorldLayout.Plot.Size.X / 2
@@ -76,17 +79,20 @@ describe("WorldLayout", function()
 		expect((attendant - circuitGate).Magnitude >= 18).toBe(true)
 	end)
 
-	it("places the Circuit island beyond the top-right edge with a bridge spanning the gap", function()
-		local plotSouthEdge = -(WorldLayout.Plot.Size.Z / 2)
-		local island = WorldLayout.CircuitIsland
-		local islandNorthEdge = island.CenterOffset.Z + island.Size.Z / 2
-		local bridgeNorthEdge = island.BridgeCenterOffset.Z + island.BridgeSize.Z / 2
-		local bridgeSouthEdge = island.BridgeCenterOffset.Z - island.BridgeSize.Z / 2
+	it(
+		"places the Circuit island beyond the top-right edge with a bridge spanning the gap",
+		function()
+			local plotSouthEdge = -(WorldLayout.Plot.Size.Z / 2)
+			local island = WorldLayout.CircuitIsland
+			local islandNorthEdge = island.CenterOffset.Z + island.Size.Z / 2
+			local bridgeNorthEdge = island.BridgeCenterOffset.Z + island.BridgeSize.Z / 2
+			local bridgeSouthEdge = island.BridgeCenterOffset.Z - island.BridgeSize.Z / 2
 
-		expect(islandNorthEdge < plotSouthEdge).toBe(true)
-		expect(math.abs(bridgeNorthEdge - plotSouthEdge) <= 0.1).toBe(true)
-		expect(math.abs(bridgeSouthEdge - islandNorthEdge) <= 0.1).toBe(true)
-		expect(island.BridgeCenterOffset.X).toBe(island.BoundaryOpeningCenterX)
-		expect(island.BridgeSize.X < island.BoundaryOpeningWidth).toBe(true)
-	end)
+			expect(islandNorthEdge < plotSouthEdge).toBe(true)
+			expect(math.abs(bridgeNorthEdge - plotSouthEdge) <= 0.1).toBe(true)
+			expect(math.abs(bridgeSouthEdge - islandNorthEdge) <= 0.1).toBe(true)
+			expect(island.BridgeCenterOffset.X).toBe(island.BoundaryOpeningCenterX)
+			expect(island.BridgeSize.X < island.BoundaryOpeningWidth).toBe(true)
+		end
+	)
 end)
