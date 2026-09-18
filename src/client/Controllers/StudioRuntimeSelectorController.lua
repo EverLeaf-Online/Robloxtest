@@ -171,17 +171,17 @@ function StudioRuntimeSelectorController.ResolveMode(): Mode
 
 	if not RunService:IsStudio() then
 		while not isMode(current) do
-			game:GetAttributeChangedSignal("RuntimeMode"):Wait()
+			task.wait(0.05)
 			current = game:GetAttribute("RuntimeMode")
 		end
 		return current :: Mode
 	end
 
 	local remote = ReplicatedStorage:WaitForChild(REMOTE_NAME, 10)
-	if remote == nil or not remote:IsA("RemoteEvent") then
+	if remote == nil or not remote:IsA("RemoteFunction") then
 		warn("[StudioRuntimeSelector] Selector remote unavailable; waiting for server runtime")
 		while not isMode(current) do
-			game:GetAttributeChangedSignal("RuntimeMode"):Wait()
+			task.wait(0.05)
 			current = game:GetAttribute("RuntimeMode")
 		end
 		return current :: Mode
@@ -189,18 +189,39 @@ function StudioRuntimeSelectorController.ResolveMode(): Mode
 
 	local gui, hubButton, factoryButton, status = createSelectorGui()
 	local sent = false
+	local selectedMode: Mode? = nil
+
+	local function setButtonsEnabled(enabled: boolean)
+		hubButton.Active = enabled
+		hubButton.AutoButtonColor = enabled
+		factoryButton.Active = enabled
+		factoryButton.AutoButtonColor = enabled
+	end
 
 	local function choose(mode: Mode)
 		if sent then
 			return
 		end
+
 		sent = true
-		hubButton.Active = false
-		hubButton.AutoButtonColor = false
-		factoryButton.Active = false
-		factoryButton.AutoButtonColor = false
+		setButtonsEnabled(false)
 		status.Text = ("Starting %s runtime..."):format(mode)
-		remote:FireServer(mode)
+
+		task.spawn(function()
+			local ok, result = pcall(function()
+				return remote:InvokeServer(mode)
+			end)
+
+			if ok and isMode(result) then
+				selectedMode = result :: Mode
+				return
+			end
+
+			warn(("[StudioRuntimeSelector] Runtime request failed: %s"):format(tostring(result)))
+			status.Text = "Runtime selection failed. Try again."
+			sent = false
+			setButtonsEnabled(true)
+		end)
 	end
 
 	hubButton.Activated:Connect(function()
@@ -210,14 +231,17 @@ function StudioRuntimeSelectorController.ResolveMode(): Mode
 		choose("Factory")
 	end)
 
-	current = game:GetAttribute("RuntimeMode")
-	while not isMode(current) do
-		game:GetAttributeChangedSignal("RuntimeMode"):Wait()
+	while selectedMode == nil do
 		current = game:GetAttribute("RuntimeMode")
+		if isMode(current) then
+			selectedMode = current :: Mode
+			break
+		end
+		task.wait(0.03)
 	end
 
 	gui:Destroy()
-	return current :: Mode
+	return selectedMode :: Mode
 end
 
 return StudioRuntimeSelectorController
