@@ -52,8 +52,25 @@ describe("WorldLayout", function()
 		expect(WorldLayout.Plot.EntryOffset.Z - southEdge >= 25).toBe(true)
 	end)
 
-	it("keeps the hub return portal away from the spawn lane", function()
-		local delta = WorldLayout.Plot.ReturnPortalOffset - WorldLayout.Plot.EntryOffset
-		expect(delta.Magnitude >= 70).toBe(true)
+	it("keeps the hub return attendant away from the spawn lane", function()
+		local delta = WorldLayout.Plot.HubReturnAttendantOffset - WorldLayout.Plot.EntryOffset
+		expect(delta.Magnitude >= 120).toBe(true)
+	end)
+
+	it("keeps the travel cluster in the top-right factory corner", function()
+		local halfX = WorldLayout.Plot.Size.X / 2
+		local halfZ = WorldLayout.Plot.Size.Z / 2
+		local attendant = WorldLayout.Plot.HubReturnAttendantOffset
+		local circuitGate = WorldLayout.CircuitGateOffset
+
+		expect(attendant.X > 80).toBe(true)
+		expect(attendant.Z > 70).toBe(true)
+		expect(circuitGate.X > 60).toBe(true)
+		expect(circuitGate.Z > 70).toBe(true)
+		expect(math.abs(attendant.X) < halfX).toBe(true)
+		expect(math.abs(attendant.Z) < halfZ).toBe(true)
+		expect(math.abs(circuitGate.X) < halfX).toBe(true)
+		expect(math.abs(circuitGate.Z) < halfZ).toBe(true)
+		expect((attendant - circuitGate).Magnitude >= 18).toBe(true)
 	end)
 end)

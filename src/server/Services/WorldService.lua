@@ -234,7 +234,7 @@ local function buildPrivateSalvage(plot: Model, plotId: number, center: Vector3)
 	end
 
 	local circuitSign =
-		makePart(plot, "CircuitSalvageSign", Vector3.new(10, 5, 1), center + Vector3.new(73, 3, 88))
+		makePart(plot, "CircuitSalvageSign", Vector3.new(10, 5, 1), center + Vector3.new(56, 3, 88))
 	circuitSign.Material = Enum.Material.Metal
 	tagPlotPart(circuitSign, plotId)
 	addBillboard(circuitSign, "PRIVATE CIRCUIT FIELD")
@@ -278,28 +278,14 @@ local function buildPlotZoneAccess(plot: Model, plotId: number, center: Vector3)
 	tagPlotPart(arrival, plotId)
 	arrival:SetAttribute("ZoneId", 2)
 
-	local returnPortal = makePart(
-		plot,
-		"CircuitYardReturn",
-		Vector3.new(7, 7, 3),
-		center + WorldLayout.CircuitReturnOffset
-	)
-	returnPortal.Material = Enum.Material.Metal
-	returnPortal.Color = Color3.fromRGB(64, 82, 92)
-	returnPortal:SetAttribute("CurrentZone", 2)
-	tagPlotPart(returnPortal, plotId)
-	addPrompt(returnPortal, "Return", Zones[1].DisplayName)
-
 	plotZoneGates[plotId] = { [2] = gate }
 	plotZoneArrivals[plotId] = { [2] = arrival }
-	plotZoneReturns[plotId] = { [2] = returnPortal }
+	plotZoneReturns[plotId] = {}
 	table.insert(allZoneGates, gate)
-	table.insert(allZoneReturns, returnPortal)
 
 	if plotId == 1 then
 		zoneGateByTarget[2] = gate
 		zoneArrivalById[2] = arrival
-		zoneReturnById[2] = returnPortal
 	end
 end
 
