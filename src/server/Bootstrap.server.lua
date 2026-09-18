@@ -1,10 +1,68 @@
 --!strict
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local RuntimeMode = require(ReplicatedStorage.Shared.RuntimeMode)
 
-local mode = RuntimeMode.Resolve()
+local STUDIO_SELECTOR_REMOTE = "StudioRuntimeSelector"
+
+local function isMode(value: any): boolean
+	return value == "Hub" or value == "Factory"
+end
+
+local function resolveServerMode(): string
+	local override = game:GetAttribute("RuntimeModeOverride")
+	if isMode(override) then
+		return override :: string
+	end
+
+	if not RunService:IsStudio() then
+		return RuntimeMode.Resolve()
+	end
+
+	game:SetAttribute("RuntimeMode", "Selecting")
+
+	local existing = ReplicatedStorage:FindFirstChild(STUDIO_SELECTOR_REMOTE)
+	if existing ~= nil then
+		existing:Destroy()
+	end
+
+	local selector = Instance.new("RemoteEvent")
+	selector.Name = STUDIO_SELECTOR_REMOTE
+	selector.Parent = ReplicatedStorage
+
+	local selected: string? = nil
+	local connection = selector.OnServerEvent:Connect(function(_player, requestedMode)
+		if selected ~= nil or not isMode(requestedMode) then
+			return
+		end
+		selected = requestedMode
+		game:SetAttribute("RuntimeMode", requestedMode)
+	end)
+
+	-- Server-only Studio runs have no LocalPlayer to display the selector. Preserve
+	-- existing automation by falling back to Factory only when no player appears.
+	local playerDeadline = os.clock() + 5
+	while selected == nil and #Players:GetPlayers() == 0 and os.clock() < playerDeadline do
+		task.wait(0.05)
+	end
+	if selected == nil and #Players:GetPlayers() == 0 then
+		selected = "Factory"
+		game:SetAttribute("RuntimeMode", selected)
+	else
+		while selected == nil do
+			task.wait(0.05)
+		end
+	end
+
+	connection:Disconnect()
+	selector:Destroy()
+	return selected :: string
+end
+
+local mode = resolveServerMode()
 game:SetAttribute("RuntimeMode", mode)
 
 local function startHub()

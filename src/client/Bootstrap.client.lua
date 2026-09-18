@@ -3,12 +3,10 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local RuntimeMode = require(ReplicatedStorage.Shared.RuntimeMode)
+local StudioRuntimeSelectorController =
+	require(script.Parent.Controllers.StudioRuntimeSelectorController)
 
-local modeAttribute = game:GetAttribute("RuntimeMode")
-local mode = if modeAttribute == "Hub" or modeAttribute == "Factory"
-	then modeAttribute
-	else RuntimeMode.Resolve()
+local mode = StudioRuntimeSelectorController.ResolveMode()
 
 local function startHubClient()
 	print("[ScrapToBotFactory] Hub client initialized")

@@ -11,7 +11,7 @@ The experience uses one Roblox place in two server modes:
 
 src/shared/RuntimeMode.lua resolves the mode:
 
-- Roblox Studio defaults to Factory so gameplay/OCALE workflows remain usable without TeleportService.
+- Roblox Studio shows an interactive Hub/Factory selector when a Play session starts; server-only Studio runs safely fall back to Factory.
 - Standard live servers are Hub.
 - Reserved live servers (PrivateServerId is non-empty and PrivateServerOwnerId is 0) are Factory.
 - VIP/private servers stay Hub.
@@ -86,6 +86,15 @@ Routing/domain types support Owner and Visitor roles, but this first architectur
 Friend invites/visit discovery should be implemented only after an active factory presence lease exists. Do not treat the stored reserved-server access code alone as proof that the owner is currently online.
 
 The later visitor flow should verify social/invite permissions server-side, verify an active owner session, issue a route token bound to visitor + owner, teleport with the reserved access code, and keep visitors read-only unless explicit co-op permissions are added.
+
+## Studio runtime selection
+
+When a normal Studio Play session starts without `RuntimeModeOverride`, the client displays a modal selector before either runtime initializes:
+
+- **Hub** — boots the social Hub preview and labels the factory portal as live-only.
+- **Factory** — boots the personal production instance and all existing gameplay tools.
+
+The choice affects only that Play session. `RuntimeModeOverride` still bypasses the selector for automation/debugging. Actual Hub -> Factory and Factory -> Hub teleporting remains live-client-only because Roblox does not execute TeleportService transitions in Studio.
 
 ## Required live configuration / validation
 
