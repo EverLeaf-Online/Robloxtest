@@ -233,14 +233,6 @@ function MachineService.StartAssembler(player: Player)
 			return false, result(false, "ASSEMBLER_BUSY", { CompletesAt = job.CompletesAt })
 		end
 
-		local canStart, startCode = FactoryRules.CanStartAssembler(
-			data.Stats.LifetimeRobotsBuilt,
-			data.Tutorial.Milestones.FirstProcess == true
-		)
-		if not canStart then
-			return false, result(false, startCode, nil)
-		end
-
 		if ownedRobotCount(data) >= GameConfig.Economy.MaxOwnedRobots then
 			return false, result(false, "ROBOT_INVENTORY_FULL", nil)
 		end
