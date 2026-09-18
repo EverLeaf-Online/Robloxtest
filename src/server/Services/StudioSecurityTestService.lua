@@ -420,18 +420,10 @@ local function runDuplicateSellCase(player: Player)
 	local response = dispatchClient(player, "DuplicateSell", { RobotUid = tempUid })
 	local after = DataService.GetData(player)
 	local robotRemoved = after ~= nil and after.Robots.OwnedByUid[tempUid] == nil
-	local recycleSuccesses = countCapturedResults(
-		response,
-		RemoteNames.RequestSellRobot,
-		true,
-		"ROBOT_RECYCLED"
-	)
-	local duplicateRejections = countCapturedResults(
-		response,
-		RemoteNames.RequestSellRobot,
-		false,
-		"ROBOT_NOT_OWNED"
-	)
+	local recycleSuccesses =
+		countCapturedResults(response, RemoteNames.RequestSellRobot, true, "ROBOT_RECYCLED")
+	local duplicateRejections =
+		countCapturedResults(response, RemoteNames.RequestSellRobot, false, "ROBOT_NOT_OWNED")
 	local passed = robotRemoved
 		and recycleSuccesses == 1
 		and duplicateRejections == 1
