@@ -10,6 +10,7 @@ local Validation = require(ReplicatedStorage.Shared.Util.Validation)
 local AnalyticsService = require(script.Parent.AnalyticsService)
 local DataService = require(script.Parent.DataService)
 local EconomyService = require(script.Parent.EconomyService)
+local PlotService = require(script.Parent.PlotService)
 local RateLimiter = require(script.Parent.RateLimiter)
 local RemoteService = require(script.Parent.RemoteService)
 local StateService = require(script.Parent.StateService)
@@ -35,9 +36,14 @@ local function isNear(player: Player, part: BasePart): boolean
 end
 
 local function teleportToZone(player: Player, zoneId: number): boolean
-	local arrival = WorldService.GetZoneArrival(zoneId)
+	local plotId = PlotService.GetPlotId(player)
 	local character = player.Character
-	if arrival == nil or character == nil then
+	if plotId == nil or character == nil then
+		return false
+	end
+
+	local arrival = WorldService.GetPlotZoneArrival(plotId, zoneId)
+	if arrival == nil then
 		return false
 	end
 
@@ -100,7 +106,10 @@ function ZoneService.UseGate(player: Player, targetZone: any)
 		return
 	end
 	local authoritativeTarget = targetZone :: number
-	local gate = WorldService.GetZoneGate(authoritativeTarget)
+	local plotId = PlotService.GetPlotId(player)
+	local gate = if plotId ~= nil
+		then WorldService.GetPlotZoneGate(plotId, authoritativeTarget)
+		else nil
 	if gate == nil then
 		StateService.ActionResult(player, RemoteNames.RequestUnlockZone, false, "UNKNOWN_ZONE", nil)
 		return
@@ -181,12 +190,16 @@ function ZoneService.UseGate(player: Player, targetZone: any)
 
 	sendTransactionResult(player, executed, transactionResult)
 	if executed and typeof(transactionResult) == "table" and transactionResult.Success == true then
+		PlotService.RefreshPresentation(player)
 		teleportToZone(player, authoritativeTarget)
 	end
 end
 
 function ZoneService.ReturnToStarter(player: Player, currentZone: number)
-	local portal = WorldService.GetZoneReturnPortals()[currentZone]
+	local plotId = PlotService.GetPlotId(player)
+	local portal = if plotId ~= nil
+		then WorldService.GetPlotZoneReturn(plotId, currentZone)
+		else nil
 	if portal == nil or not isNear(player, portal) then
 		return
 	end
@@ -199,22 +212,30 @@ function ZoneService.Init()
 	end
 	initialized = true
 
-	for targetZone, gate in WorldService.GetZoneGates() do
+	for _, gate in WorldService.GetAllZoneGates() do
+		local targetZone = gate:GetAttribute("TargetZone")
 		local prompt = gate:FindFirstChildOfClass("ProximityPrompt")
-		if prompt then
+		if typeof(targetZone) == "number" and prompt then
 			prompt.Triggered:Connect(function(player)
-				if RateLimiter.Consume(player, RemoteNames.RequestUnlockZone) then
+				if
+					PlotService.OwnsPart(player, gate)
+					and RateLimiter.Consume(player, RemoteNames.RequestUnlockZone)
+				then
 					ZoneService.UseGate(player, targetZone)
 				end
 			end)
 		end
 	end
 
-	for currentZone, portal in WorldService.GetZoneReturnPortals() do
+	for _, portal in WorldService.GetAllZoneReturnPortals() do
+		local currentZone = portal:GetAttribute("CurrentZone")
 		local prompt = portal:FindFirstChildOfClass("ProximityPrompt")
-		if prompt then
+		if typeof(currentZone) == "number" and prompt then
 			prompt.Triggered:Connect(function(player)
-				if RateLimiter.Consume(player, RemoteNames.RequestUnlockZone) then
+				if
+					PlotService.OwnsPart(player, portal)
+					and RateLimiter.Consume(player, RemoteNames.RequestUnlockZone)
+				then
 					ZoneService.ReturnToStarter(player, currentZone)
 				end
 			end)

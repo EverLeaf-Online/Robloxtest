@@ -9,26 +9,39 @@ local Zones = require(ReplicatedStorage.Shared.Config.Zones)
 local ZonePresentationController = {}
 local initialized = false
 
-local function findGate(): BasePart?
+local function findGate(plotId: number): BasePart?
 	local root = Workspace:FindFirstChild("ScrapToBotGraybox")
 	if root == nil then
 		return nil
 	end
-	local gate = root:FindFirstChild("CircuitYardGate", true)
+	local plots = root:FindFirstChild("FactoryPlots")
+	if plots == nil then
+		return nil
+	end
+	local plot = plots:FindFirstChild(("Plot%02d"):format(plotId))
+	if plot == nil or not plot:IsA("Model") then
+		return nil
+	end
+	local gate = plot:FindFirstChild("CircuitYardGate")
 	return if gate ~= nil and gate:IsA("BasePart") then gate else nil
 end
 
 local function applySnapshot(snapshot: any)
-	if typeof(snapshot) ~= "table" or typeof(snapshot.Progression) ~= "table" then
+	if
+		typeof(snapshot) ~= "table"
+		or typeof(snapshot.Progression) ~= "table"
+		or typeof(snapshot.Plot) ~= "table"
+	then
 		return
 	end
 
 	local currentZone = snapshot.Progression.Zone
-	if typeof(currentZone) ~= "number" then
+	local plotId = snapshot.Plot.Id
+	if typeof(currentZone) ~= "number" or typeof(plotId) ~= "number" then
 		return
 	end
 
-	local gate = findGate()
+	local gate = findGate(plotId)
 	local zone = Zones[2]
 	if gate == nil or zone == nil then
 		return
@@ -49,7 +62,7 @@ local function applySnapshot(snapshot: any)
 	local label = gate:FindFirstChild("Label", true)
 	if label ~= nil and label:IsA("TextLabel") then
 		label.Text = if unlocked
-			then ("%s\nUNLOCKED • TRAVEL"):format(zone.DisplayName)
+			then ("%s\nUNLOCKED • PRIVATE FIELD"):format(zone.DisplayName)
 			else ("%s\n%d Credits • Build %d Bots"):format(
 				zone.DisplayName,
 				zone.UnlockCredits,

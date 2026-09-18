@@ -6,12 +6,14 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
 local RemoteNames = require(ReplicatedStorage.Shared.Networking.RemoteNames)
 local Salvage = require(ReplicatedStorage.Shared.Config.Salvage)
+local SalvageAccessRules = require(ReplicatedStorage.Shared.Domain.SalvageAccessRules)
 local Validation = require(ReplicatedStorage.Shared.Util.Validation)
 local Zones = require(ReplicatedStorage.Shared.Config.Zones)
 
 local DataService = require(script.Parent.DataService)
 local EconomyService = require(script.Parent.EconomyService)
 local MonetizationService = require(script.Parent.MonetizationService)
+local PlotService = require(script.Parent.PlotService)
 local RateLimiter = require(script.Parent.RateLimiter)
 local RemoteService = require(script.Parent.RemoteService)
 local StateService = require(script.Parent.StateService)
@@ -106,18 +108,37 @@ function SalvageService.Collect(player: Player, nodeId: any)
 		return
 	end
 	local authoritativeZoneId = zoneId :: number
+	local nodePlotIdAttribute = node:GetAttribute("PlotId")
+	local nodePlotId: number? = nil
+	if nodePlotIdAttribute ~= nil then
+		if not Validation.isSafeInteger(nodePlotIdAttribute, 1, GameConfig.World.PlotCount) then
+			StateService.ActionResult(
+				player,
+				RemoteNames.RequestCollect,
+				false,
+				"INVALID_NODE_PLOT",
+				nil
+			)
+			return
+		end
+		nodePlotId = nodePlotIdAttribute :: number
+	end
+
 	local data = DataService.GetData(player)
 	if data == nil then
 		return
 	end
-	if data.Progression.Zone < authoritativeZoneId then
-		StateService.ActionResult(
-			player,
-			RemoteNames.RequestCollect,
-			false,
-			"ZONE_LOCKED",
-			{ RequiredZone = authoritativeZoneId }
-		)
+	local accessAllowed, accessCode = SalvageAccessRules.Evaluate(
+		PlotService.GetPlotId(player),
+		nodePlotId,
+		data.Progression.Zone,
+		authoritativeZoneId
+	)
+	if not accessAllowed then
+		local payload = if accessCode == "ZONE_LOCKED"
+			then { RequiredZone = authoritativeZoneId }
+			else nil
+		StateService.ActionResult(player, RemoteNames.RequestCollect, false, accessCode, payload)
 		return
 	end
 	local position = PlayerCharacter.GetPosition(player)
@@ -204,14 +225,38 @@ local function autoCollectNearest(player: Player)
 	if position == nil then
 		return
 	end
+	local data = DataService.GetData(player)
+	if data == nil then
+		return
+	end
+	local ownedPlotId = PlotService.GetPlotId(player)
 	local bestId: string? = nil
 	local bestDistance = math.huge
 	for nodeId, node in WorldService.GetSalvageNodes() do
 		if nodeActive[nodeId] == true and nodeClaimed[nodeId] ~= true then
-			local distance = (position - node.Position).Magnitude
-			if distance <= GameConfig.World.SalvageCollectDistance and distance < bestDistance then
-				bestId = nodeId
-				bestDistance = distance
+			local zoneId = node:GetAttribute("ZoneId")
+			local nodePlotIdAttribute = node:GetAttribute("PlotId")
+			local nodePlotId = if typeof(nodePlotIdAttribute) == "number"
+				then nodePlotIdAttribute
+				else nil
+			local accessible = false
+			if typeof(zoneId) == "number" then
+				accessible = SalvageAccessRules.Evaluate(
+					ownedPlotId,
+					nodePlotId,
+					data.Progression.Zone,
+					zoneId
+				)
+			end
+			if accessible then
+				local distance = (position - node.Position).Magnitude
+				if
+					distance <= GameConfig.World.SalvageCollectDistance
+					and distance < bestDistance
+				then
+					bestId = nodeId
+					bestDistance = distance
+				end
 			end
 		end
 	end

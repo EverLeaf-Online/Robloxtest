@@ -55,9 +55,14 @@ local function addMarker(plotId: number)
 		return
 	end
 
+	local floor = plot:FindFirstChild("Floor")
+	if floor == nil or not floor:IsA("BasePart") then
+		return
+	end
+
 	local highlight = Instance.new("Highlight")
 	highlight.Name = "LocalFactoryHighlight"
-	highlight.Adornee = plot
+	highlight.Adornee = floor
 	highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
 	highlight.FillColor = Color3.fromRGB(104, 214, 156)
 	highlight.FillTransparency = 0.9

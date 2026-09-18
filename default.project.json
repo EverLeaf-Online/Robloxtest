@@ -28,6 +28,13 @@
         }
       }
     },
+    "Workspace": {
+      "$properties": {
+        "StreamingEnabled": true,
+        "StreamingMinRadius": 128,
+        "StreamingTargetRadius": 320
+      }
+    },
     "TextChatService": {
       "$className": "TextChatService",
       "$properties": {
