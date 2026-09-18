@@ -8,6 +8,7 @@ local CreatorAdminController = require(script.Parent.Controllers.CreatorAdminCon
 local FactoryClubCosmeticController =
 	require(script.Parent.Controllers.FactoryClubCosmeticController)
 local InstantProcessController = require(script.Parent.Controllers.InstantProcessController)
+local MachineEffectsController = require(script.Parent.Controllers.MachineEffectsController)
 local MonetizationShopController = require(script.Parent.Controllers.MonetizationShopController)
 local NotificationOptInController = require(script.Parent.Controllers.NotificationOptInController)
 local PlotController = require(script.Parent.Controllers.PlotController)
@@ -33,6 +34,7 @@ do
 end
 
 PlotController.Init()
+MachineEffectsController.Init()
 RobotWorkerController.Init()
 WorldInteractionController.Init()
 WorldLabelController.Init()

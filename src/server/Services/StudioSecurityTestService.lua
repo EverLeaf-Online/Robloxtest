@@ -169,9 +169,11 @@ end
 local function findActiveSalvageNode(plotId: number?): (string?, BasePart?)
 	for nodeId, node in WorldService.GetSalvageNodes() do
 		local nodePlotId = node:GetAttribute("PlotId")
+		local prompt = node:FindFirstChildOfClass("ProximityPrompt")
 		if
 			node.CanCollide
-			and node.Transparency < 0.7
+			and prompt ~= nil
+			and prompt.Enabled
 			and (plotId == nil or nodePlotId == plotId)
 		then
 			return nodeId, node
