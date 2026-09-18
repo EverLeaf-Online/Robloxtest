@@ -42,12 +42,6 @@
           "optional": "DevPackages"
         }
       }
-    },
-    "AssetService": {
-      "$className": "AssetService",
-      "$properties": {
-        "AllowInsertFreeAssets": true
-      }
     }
   }
 }
