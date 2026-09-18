@@ -18,6 +18,13 @@ local RESOURCE_IMAGES: { [ResourceIconKind]: string } = {
 	Cores = IconAssets.Cores,
 }
 
+local RESOURCE_ORDER: { [ResourceIconKind]: number } = {
+	Credits = 1,
+	Scrap = 2,
+	Wiring = 3,
+	Cores = 4,
+}
+
 function Components.Corner(radius: number): any
 	return React.createElement("UICorner", {
 		CornerRadius = UDim.new(0, radius),
@@ -111,6 +118,7 @@ function Components.ResourceChip(
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		ClipsDescendants = false,
+		LayoutOrder = RESOURCE_ORDER[iconKind],
 		Size = UDim2.new(0.25, -8, 1, 0),
 	}, {
 		IconShadow = React.createElement("ImageLabel", {
@@ -181,6 +189,7 @@ function Components.MachineIndicator(
 	return React.createElement("Frame", {
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
+		LayoutOrder = if title == "PROCESSOR" then 1 else 2,
 		Size = UDim2.fromOffset(width, iconSize),
 	}, {
 		IconShadow = React.createElement("ImageLabel", {
