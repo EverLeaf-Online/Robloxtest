@@ -58,7 +58,9 @@ function UpgradeService.Purchase(player: Player, upgradeId: any)
 	end
 
 	local console = PlotService.GetUpgradeConsole(player)
-	local storageStation = if upgradeId == "Storage" then PlotService.GetStorageStation(player) else nil
+	local storageStation = if upgradeId == "Storage"
+		then PlotService.GetStorageStation(player)
+		else nil
 	if console == nil then
 		StateService.ActionResult(player, RemoteNames.RequestUpgrade, false, "NO_FACTORY_PLOT", nil)
 		return
