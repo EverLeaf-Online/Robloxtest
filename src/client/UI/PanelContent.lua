@@ -130,7 +130,9 @@ end
 
 local function effectiveStorageCapacity(snapshot: any): number
 	local baseCapacity = FactoryRules.GetStorageCapacity(snapshot.Machines.StorageLevel)
-	local multiplier = if Players.LocalPlayer:GetAttribute("PassExpandedStorage") == true then 2 else 1
+	local multiplier = if Players.LocalPlayer:GetAttribute("PassExpandedStorage") == true
+		then 2
+		else 1
 	local clubMultiplier = Players.LocalPlayer:GetAttribute("FactoryClubStorageMultiplier")
 	if typeof(clubMultiplier) == "number" and clubMultiplier > 0 then
 		multiplier *= clubMultiplier
