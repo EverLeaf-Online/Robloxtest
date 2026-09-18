@@ -5,7 +5,8 @@ local WorldLayout = {
 		Size = Vector3.new(280, 1, 220),
 		FactoryOffset = Vector3.zero,
 		EntryOffset = Vector3.new(0, 1, -84),
-		HubReturnAttendantOffset = Vector3.new(-124, 3.5, -94),
+		HubReturnAttendantOffset = Vector3.new(-132, 3.5, -102),
+		HubReturnAttendantFacing = Vector3.new(0, 0, 1),
 	},
 
 	Production = {
