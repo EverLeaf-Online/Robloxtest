@@ -4,6 +4,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
 local WorldLayout = require(ReplicatedStorage.Shared.Config.WorldLayout)
+local FactoryEnvironmentBuilder =
+	require(script.Parent.Parent.Presentation.FactoryEnvironmentBuilder)
 local NativeAssetBuilder = require(script.Parent.Parent.Presentation.NativeAssetBuilder)
 local WorldService = require(script.Parent.WorldService)
 
@@ -172,80 +174,13 @@ local function buildPerimeterPresentation(plot: Model, plotId: number, center: V
 	end
 end
 
-local function buildEntrance(plot: Model, plotId: number, center: Vector3)
-	local entry = center + WorldLayout.Plot.EntryOffset
-	local dark = Color3.fromRGB(48, 54, 62)
-	local steel = Color3.fromRGB(86, 96, 106)
-	local cyan = Color3.fromRGB(70, 205, 224)
-
-	for index, zOffset in { -58, -46, -34 } do
-		makeDecoration(
-			plot,
-			plotId,
-			("EntryApron%d"):format(index),
-			Vector3.new(14, 0.14, 10),
-			Vector3.new(center.X, center.Y + 0.58, center.Z + zOffset),
-			dark,
-			Enum.Material.DiamondPlate
-		)
-
-		for _, xOffset in { -6.4, 6.4 } do
-			local strip = makeDecoration(
-				plot,
-				plotId,
-				("EntryGuide%d_%d"):format(index, if xOffset < 0 then 1 else 2),
-				Vector3.new(0.18, 0.08, 8.6),
-				Vector3.new(center.X + xOffset, center.Y + 0.72, center.Z + zOffset),
-				cyan,
-				Enum.Material.Neon
-			)
-			strip.Transparency = 0.08
-		end
-	end
-
-	for _, xOffset in { -10, 10 } do
-		for index, zOffset in { -60, -40 } do
-			makeDecoration(
-				plot,
-				plotId,
-				("EntryBollard_%d_%d"):format(if xOffset < 0 then 1 else 2, index),
-				Vector3.new(0.8, 3.4, 0.8),
-				Vector3.new(center.X + xOffset, center.Y + 2.2, center.Z + zOffset),
-				steel,
-				Enum.Material.Metal
-			)
-			local lamp = makeDecoration(
-				plot,
-				plotId,
-				("EntryLamp_%d_%d"):format(if xOffset < 0 then 1 else 2, index),
-				Vector3.new(1, 0.35, 1),
-				Vector3.new(center.X + xOffset, center.Y + 4, center.Z + zOffset),
-				cyan,
-				Enum.Material.Neon
-			)
-			lamp.Transparency = 0.05
-		end
-	end
-
-	local welcome = makeDecoration(
-		plot,
-		plotId,
-		"EntryWelcomePlate",
-		Vector3.new(18, 0.25, 3.4),
-		Vector3.new(entry.X, center.Y + 0.7, entry.Z + 9),
-		Color3.fromRGB(66, 73, 82),
-		Enum.Material.Metal
-	)
-	welcome:SetAttribute("EntryPresentation", true)
-end
-
 local function buildStorage(plot: Model, plotId: number, center: Vector3)
 	local anchor = makeAnchor(
 		plot,
 		plotId,
 		"StorageBin2",
 		Vector3.new(18, 5, 7),
-		center + Vector3.new(-16, 2.7, 14)
+		center + WorldLayout.Production.StorageOffset
 	)
 	addLabel(anchor, "MATERIAL STORAGE")
 	addUIPrompt(anchor, "Storage", "Material Storage")
@@ -258,7 +193,7 @@ local function buildStations(plot: Model, plotId: number, center: Vector3)
 		plotId,
 		"RecycleStation",
 		Vector3.new(7, 5, 5),
-		center + Vector3.new(-2, 2.8, 14)
+		center + WorldLayout.Production.RecycleOffset
 	)
 	addLabel(recycle, "RECYCLE")
 	addUIPrompt(recycle, "Recycle", "Recycle Bots")
@@ -269,7 +204,7 @@ local function buildStations(plot: Model, plotId: number, center: Vector3)
 		plotId,
 		"IndexTerminal",
 		Vector3.new(5, 5, 4),
-		center + Vector3.new(-12, 2.8, -10)
+		center + WorldLayout.Production.IndexTerminalOffset
 	)
 	addLabel(indexTerminal, "ROBOT INDEX")
 	addUIPrompt(indexTerminal, "Index", "Robot Index")
@@ -280,7 +215,7 @@ local function buildStations(plot: Model, plotId: number, center: Vector3)
 		plotId,
 		"BotConsole",
 		Vector3.new(5, 5, 4),
-		center + Vector3.new(-4, 2.8, -10)
+		center + WorldLayout.Production.BotConsoleOffset
 	)
 	addLabel(botConsole, "BOT CONTROL")
 	addUIPrompt(botConsole, "Bots", "Bot Control")
@@ -291,41 +226,11 @@ local function buildStations(plot: Model, plotId: number, center: Vector3)
 		plotId,
 		"UpgradeConsole",
 		Vector3.new(5, 5, 4),
-		center + Vector3.new(4, 2.8, -10)
+		center + WorldLayout.Production.UpgradeConsoleOffset
 	)
 	addLabel(upgradeConsole, "UPGRADES")
 	addUIPrompt(upgradeConsole, "Upgrades", "Factory Upgrades")
 	NativeAssetBuilder.BuildTerminal(upgradeConsole, plotId, "UpgradeConsole", COLORS.Brass)
-end
-
-local function buildExpansionSockets(plot: Model, plotId: number, center: Vector3)
-	for index, xOffset in { 15, 24 } do
-		local socket = makeDecoration(
-			plot,
-			plotId,
-			("ExpansionSocket%d"):format(index),
-			Vector3.new(7, 0.35, 7),
-			center + Vector3.new(xOffset, 0.68, 14),
-			Color3.fromRGB(45, 50, 58),
-			Enum.Material.DiamondPlate
-		)
-		socket:SetAttribute("ReservedExpansion", true)
-
-		local rail = makeDecoration(
-			plot,
-			plotId,
-			("ExpansionRail%d"):format(index),
-			Vector3.new(5.8, 0.12, 0.2),
-			socket.Position + Vector3.new(0, 0.25, -2.3),
-			Color3.fromRGB(92, 101, 110),
-			Enum.Material.Metal
-		)
-		rail.Transparency = 0.15
-
-		if index == 1 then
-			addLabel(socket, "FUTURE EXPANSION")
-		end
-	end
 end
 
 local function readLevel(plot: Model, attributeName: string): number
@@ -500,11 +405,10 @@ local function decoratePlot(plotId: number, plot: Model)
 	end
 
 	local center = floor.Position
+	FactoryEnvironmentBuilder.Build(plot, plotId, center)
 	buildPerimeterPresentation(plot, plotId, center)
-	buildEntrance(plot, plotId, center)
 	buildStorage(plot, plotId, center)
 	buildStations(plot, plotId, center)
-	buildExpansionSockets(plot, plotId, center)
 
 	for _, attributeName in
 		{

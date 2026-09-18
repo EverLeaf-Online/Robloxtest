@@ -76,7 +76,7 @@ function MachineEffectsController.Init()
 	initialized = true
 
 	task.spawn(function()
-		local root = Workspace:WaitForChild("ScrapToBotGraybox")
+		local root = Workspace:WaitForChild("ScrapToBotFactoryWorld")
 		local plots = root:WaitForChild("FactoryPlots")
 
 		for _, child in plots:GetChildren() do

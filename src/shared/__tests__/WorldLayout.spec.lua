@@ -95,4 +95,53 @@ describe("WorldLayout", function()
 			expect(island.BridgeSize.X < island.BoundaryOpeningWidth).toBe(true)
 		end
 	)
+
+	it("keeps all production stations inside the main factory footprint", function()
+		local halfX = WorldLayout.Plot.Size.X / 2
+		local halfZ = WorldLayout.Plot.Size.Z / 2
+		local production = WorldLayout.Production
+
+		for _, offset in
+			{
+				production.ProcessorOffset,
+				production.AssemblerOffset,
+				production.StorageOffset,
+				production.RecycleOffset,
+				production.IndexTerminalOffset,
+				production.BotConsoleOffset,
+				production.UpgradeConsoleOffset,
+				production.WorkPadOriginOffset,
+			}
+		do
+			expect(math.abs(offset.X) < halfX).toBe(true)
+			expect(math.abs(offset.Z) < halfZ).toBe(true)
+		end
+	end)
+
+	it("keeps robot service positions outside the machine centers", function()
+		expect(
+			(WorldLayout.BotWorkOffsets.Processor - WorldLayout.Production.ProcessorOffset).Magnitude
+				>= 8
+		).toBe(true)
+		expect(
+			(WorldLayout.BotWorkOffsets.Assembler - WorldLayout.Production.AssemblerOffset).Magnitude
+				>= 8
+		).toBe(true)
+	end)
+
+	it("keeps major factory departments spatially separated", function()
+		local environment = WorldLayout.Environment
+		expect(
+			(environment.ScrapYardCenterOffset - environment.ProductionHallCenterOffset).Magnitude
+				>= 65
+		).toBe(true)
+		expect(
+			(environment.ProductionHallCenterOffset - environment.LoadingDockCenterOffset).Magnitude
+				>= 85
+		).toBe(true)
+		expect(
+			(environment.WorkerBayCenterOffset - environment.UtilityYardCenterOffset).Magnitude
+				>= 45
+		).toBe(true)
+	end)
 end)
