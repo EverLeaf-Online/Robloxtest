@@ -36,8 +36,8 @@ local function isNear(player: Player, part: BasePart): boolean
 	return PlayerCharacter.IsNear(player, part, GameConfig.World.InteractionDistance)
 end
 
-local function requireBotConsole(player: Player, actionName: string): boolean
-	local console = PlotService.GetBotConsole(player)
+local function requireStation(player: Player, actionName: string, station: BasePart?): boolean
+	local console = station
 	if console == nil then
 		StateService.ActionResult(player, actionName, false, "NO_FACTORY_PLOT", nil)
 		return false
@@ -47,6 +47,10 @@ local function requireBotConsole(player: Player, actionName: string): boolean
 		return false
 	end
 	return true
+end
+
+local function requireBotConsole(player: Player, actionName: string): boolean
+	return requireStation(player, actionName, PlotService.GetBotConsole(player))
 end
 
 local function parsePadIndex(padId: string): number?
