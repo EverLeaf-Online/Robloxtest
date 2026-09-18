@@ -29,18 +29,23 @@ local function resolveServerMode(): string
 		existing:Destroy()
 	end
 
-	local selector = Instance.new("RemoteEvent")
+	local selector = Instance.new("RemoteFunction")
 	selector.Name = STUDIO_SELECTOR_REMOTE
 	selector.Parent = ReplicatedStorage
 
 	local selected: string? = nil
-	local connection = selector.OnServerEvent:Connect(function(_player, requestedMode)
-		if selected ~= nil or not isMode(requestedMode) then
-			return
+	selector.OnServerInvoke = function(_player, requestedMode)
+		if selected ~= nil then
+			return selected
 		end
+		if not isMode(requestedMode) then
+			return nil
+		end
+
 		selected = requestedMode
 		game:SetAttribute("RuntimeMode", requestedMode)
-	end)
+		return requestedMode
+	end
 
 	-- Server-only Studio runs have no LocalPlayer to display the selector. Preserve
 	-- existing automation by falling back to Factory only when no player appears.
@@ -57,8 +62,8 @@ local function resolveServerMode(): string
 		end
 	end
 
-	connection:Disconnect()
-	selector:Destroy()
+	-- Keep the Studio-only selector function alive for this Play session so
+	-- additional local-test clients can receive the already-selected mode.
 	return selected :: string
 end
 
