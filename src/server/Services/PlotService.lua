@@ -136,6 +136,14 @@ function PlotService.GetBotConsole(player: Player): BasePart?
 	return getOwnedStation(player, "BotConsole")
 end
 
+function PlotService.GetStorageStation(player: Player): BasePart?
+	return getOwnedStation(player, "StorageBin2")
+end
+
+function PlotService.GetRecycleStation(player: Player): BasePart?
+	return getOwnedStation(player, "RecycleStation")
+end
+
 function PlotService.GetUpgradeConsole(player: Player): BasePart?
 	return getOwnedStation(player, "UpgradeConsole")
 end
