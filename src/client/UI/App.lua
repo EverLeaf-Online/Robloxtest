@@ -8,6 +8,7 @@ local React = require(ReplicatedStorage.Packages.React)
 local RemoteNames = require(ReplicatedStorage.Shared.Networking.RemoteNames)
 
 local Components = require(script.Parent.Components)
+local IconAssets = require(script.Parent.IconAssets)
 local PanelContent = require(script.Parent.PanelContent)
 local StateHelpers = require(script.Parent.StateHelpers)
 local Theme = require(script.Parent.Theme)
@@ -233,9 +234,15 @@ local function App()
 
 	local objectiveTitle, objectiveBody = StateHelpers.GetObjective(snapshot)
 	local isPhone = layoutMode == "Phone"
-	local machineStatusWidth = if isPhone then 204 else 246
-	local machineStatusHeight = if isPhone then 48 else 54
 	local objectiveHeight = if isPhone then 58 else 64
+	local processorJob = snapshot.Machines.ProcessorJob
+	local assemblerJob = snapshot.Machines.AssemblerJob
+	local processorStatus = if processorJob.Active
+		then ("%ds"):format(math.ceil(math.max(0, processorJob.CompletesAt - now)))
+		else "READY"
+	local assemblerStatus = if assemblerJob.Active
+		then ("%ds"):format(math.ceil(math.max(0, assemblerJob.CompletesAt - now)))
+		else "READY"
 
 	return React.createElement("Frame", {
 		BackgroundTransparency = 1,
@@ -250,8 +257,10 @@ local function App()
 		}, {
 			Layout = React.createElement("UIListLayout", {
 				FillDirection = Enum.FillDirection.Horizontal,
-				Padding = UDim.new(0, if isPhone then 6 else 9),
+				HorizontalAlignment = Enum.HorizontalAlignment.Center,
+				Padding = UDim.new(0, if isPhone then 6 else 12),
 				SortOrder = Enum.SortOrder.LayoutOrder,
+				VerticalAlignment = Enum.VerticalAlignment.Center,
 			}),
 			Credits = Components.ResourceChip(
 				"Credits",
@@ -283,34 +292,38 @@ local function App()
 			),
 		}),
 
-		MachineStatus = if isPhone
-			then nil
-			else React.createElement("Frame", {
-				BackgroundColor3 = COLORS.Panel,
-				BackgroundTransparency = 0.08,
-				BorderSizePixel = 0,
-				Position = UDim2.fromOffset(14, 72),
-				Size = UDim2.fromOffset(machineStatusWidth, machineStatusHeight),
-			}, {
-				Corner = Components.Corner(9),
-				Text = React.createElement("TextLabel", {
-					BackgroundTransparency = 1,
-					Font = Enum.Font.GothamMedium,
-					Position = UDim2.fromOffset(10, 5),
-					Size = UDim2.new(1, -20, 1, -10),
-					Text = StateHelpers.MachineStatus(snapshot, now),
-					TextColor3 = COLORS.Text,
-					TextSize = 11,
-					TextWrapped = true,
-					TextXAlignment = Enum.TextXAlignment.Left,
-					TextYAlignment = Enum.TextYAlignment.Center,
-				}),
+		MachineStatus = React.createElement("Frame", {
+			AnchorPoint = Vector2.new(0, 0.5),
+			BackgroundTransparency = 1,
+			BorderSizePixel = 0,
+			Position = if isPhone
+				then UDim2.new(0, 10, 0.46, 0)
+				else UDim2.new(0, 18, 0.5, 0),
+			Size = if isPhone then UDim2.fromOffset(132, 98) else UDim2.fromOffset(158, 114),
+		}, {
+			Layout = React.createElement("UIListLayout", {
+				FillDirection = Enum.FillDirection.Vertical,
+				Padding = UDim.new(0, if isPhone then 8 else 12),
+				SortOrder = Enum.SortOrder.LayoutOrder,
+				VerticalAlignment = Enum.VerticalAlignment.Center,
 			}),
+			Processor = Components.MachineIndicator(
+				IconAssets.Processor,
+				"PROCESSOR",
+				processorStatus,
+				isPhone
+			),
+			Assembler = Components.MachineIndicator(
+				IconAssets.Assembler,
+				"ASSEMBLER",
+				assemblerStatus,
+				isPhone
+			),
+		}),
 
 		Objective = React.createElement("Frame", {
 			AnchorPoint = Vector2.new(0.5, 1),
-			BackgroundColor3 = COLORS.Panel,
-			BackgroundTransparency = 0.04,
+			BackgroundTransparency = 1,
 			BorderSizePixel = 0,
 			Position = UDim2.new(0.5, 0, 1, -18),
 			Size = objectiveSize(layoutMode),
@@ -332,6 +345,8 @@ local function App()
 				Text = objectiveTitle,
 				TextColor3 = COLORS.Accent,
 				TextSize = if isPhone then 12 else 14,
+				TextStrokeColor3 = Color3.new(0, 0, 0),
+				TextStrokeTransparency = 0.3,
 				TextXAlignment = Enum.TextXAlignment.Left,
 			}),
 			Body = React.createElement("TextLabel", {
@@ -342,6 +357,8 @@ local function App()
 				Text = objectiveBody,
 				TextColor3 = COLORS.Text,
 				TextSize = if isPhone then 10 else 11,
+				TextStrokeColor3 = Color3.new(0, 0, 0),
+				TextStrokeTransparency = 0.35,
 				TextWrapped = true,
 				TextXAlignment = Enum.TextXAlignment.Left,
 				TextYAlignment = Enum.TextYAlignment.Top,
