@@ -126,18 +126,34 @@ local function buildPerimeterPresentation(plot: Model, plotId: number, center: V
 			Vector3.new(WorldLayout.Plot.Size.X - 6, 0.38, 0.38),
 			center + Vector3.new(0, y, halfZ - 2)
 		)
+
 		for _, side in { -1, 1 } do
 			rail(
 				("SideRail%d_%d"):format(if side < 0 then 1 else 2, level),
 				Vector3.new(0.38, 0.38, WorldLayout.Plot.Size.Z - 6),
 				center + Vector3.new(side * (halfX - 2), y, 0)
 			)
+		end
+
+		local openingCenter = WorldLayout.CircuitIsland.BoundaryOpeningCenterX
+		local openingHalfWidth = WorldLayout.CircuitIsland.BoundaryOpeningWidth / 2
+		local leftMax = openingCenter - openingHalfWidth
+		local rightMin = openingCenter + openingHalfWidth
+
+		local function southRail(name: string, minX: number, maxX: number)
+			local width = maxX - minX
+			if width <= 0 then
+				return
+			end
 			rail(
-				("SouthRail%d_%d"):format(if side < 0 then 1 else 2, level),
-				Vector3.new(96, 0.38, 0.38),
-				center + Vector3.new(side * 70, y, -(halfZ - 2))
+				name,
+				Vector3.new(width, 0.38, 0.38),
+				center + Vector3.new((minX + maxX) / 2, y, -(halfZ - 2))
 			)
 		end
+
+		southRail(("SouthRailLeft_%d"):format(level), -halfX + 2, leftMax)
+		southRail(("SouthRailRight_%d"):format(level), rightMin, halfX - 2)
 	end
 
 	for index, offset in
@@ -369,6 +385,24 @@ local function applyWorkPadVisual(visual: Instance?, unlockedPad: boolean)
 	end
 end
 
+local function applyCircuitBridge(plot: Model, unlockedZone: number)
+	local bridge = plot:FindFirstChild("CircuitBridge")
+	if bridge == nil then
+		return
+	end
+
+	local unlocked = unlockedZone >= 2
+	for _, descendant in bridge:GetDescendants() do
+		if descendant:IsA("BasePart") then
+			descendant.Transparency = if unlocked then 0 else 1
+			local bridgeCollidable = descendant:GetAttribute("BridgeCollidable") == true
+			descendant.CanCollide = unlocked and bridgeCollidable
+			descendant.CanTouch = false
+			descendant.CanQuery = unlocked
+		end
+	end
+end
+
 local function setWorldLabel(part: BasePart, text: string)
 	local label = part:FindFirstChild("Label", true)
 	if label ~= nil and label:IsA("TextLabel") then
@@ -380,6 +414,10 @@ local function applyPlotPresentation(plot: Model)
 	local processorLevel = readLevel(plot, "ProcessorLevel")
 	local assemblerLevel = readLevel(plot, "AssemblerLevel")
 	local storageLevel = readLevel(plot, "StorageLevel")
+	local unlockedZone = plot:GetAttribute("UnlockedZone")
+	if typeof(unlockedZone) ~= "number" then
+		unlockedZone = 1
+	end
 	local unlockedWorkSlots = plot:GetAttribute("UnlockedWorkSlots")
 	if typeof(unlockedWorkSlots) ~= "number" then
 		unlockedWorkSlots = 1
@@ -407,6 +445,7 @@ local function applyPlotPresentation(plot: Model)
 	end
 	applyTierModel(plot:FindFirstChild("AssemblerVisual"), assemblerLevel, assemblerBusy)
 	applyTierModel(plot:FindFirstChild("StorageVisual"), storageLevel, false)
+	applyCircuitBridge(plot, unlockedZone)
 
 	local workPads = plot:FindFirstChild("WorkPads")
 	if workPads ~= nil then
@@ -473,6 +512,7 @@ local function decoratePlot(plotId: number, plot: Model)
 			"AssemblerLevel",
 			"StorageLevel",
 			"UnlockedWorkSlots",
+			"UnlockedZone",
 		}
 	do
 		plot:GetAttributeChangedSignal(attributeName):Connect(function()

@@ -72,13 +72,11 @@ local function startFactoryClient()
 	local MonetizationShopController = require(script.Parent.Controllers.MonetizationShopController)
 	local NotificationOptInController =
 		require(script.Parent.Controllers.NotificationOptInController)
-	local PlotController = require(script.Parent.Controllers.PlotController)
 	local StudioToolsController = require(script.Parent.Controllers.StudioToolsController)
 	local UIController = require(script.Parent.Controllers.UIController)
 	local WorldInteractionController = require(script.Parent.Controllers.WorldInteractionController)
 	local ZonePresentationController = require(script.Parent.Controllers.ZonePresentationController)
 
-	PlotController.Init()
 	WorldInteractionController.Init()
 	ZonePresentationController.Init()
 	UIController.Init()
