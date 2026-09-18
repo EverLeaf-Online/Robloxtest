@@ -2,6 +2,7 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local AssignmentRules = require(ReplicatedStorage.Shared.Domain.AssignmentRules)
 local FactoryRules = require(ReplicatedStorage.Shared.Domain.FactoryRules)
 local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
 local RemoteNames = require(ReplicatedStorage.Shared.Networking.RemoteNames)
@@ -53,27 +54,6 @@ local function requireBotConsole(player: Player, actionName: string): boolean
 	return requireStation(player, actionName, PlotService.GetBotConsole(player))
 end
 
-local function parsePadIndex(padId: string): number?
-	local match = string.match(padId, "^Pad(%d+)$")
-	if match == nil then
-		return nil
-	end
-	local index = tonumber(match)
-	if index == nil or index % 1 ~= 0 then
-		return nil
-	end
-	return index
-end
-
-local function findAssignedPad(workPads: { [string]: string }, robotUid: string): string?
-	for padId, assignedUid in workPads do
-		if assignedUid == robotUid then
-			return padId
-		end
-	end
-	return nil
-end
-
 local function sendResult(
 	player: Player,
 	actionName: string,
@@ -116,42 +96,27 @@ function RobotService.Assign(player: Player, robotUid: any, padId: any)
 		return
 	end
 
-	local padIndex = parsePadIndex(padId)
-	if padIndex == nil then
-		StateService.ActionResult(
-			player,
-			RemoteNames.RequestAssignRobot,
-			false,
-			"UNKNOWN_WORK_PAD",
-			nil
-		)
-		return
-	end
-
 	local executed, transactionResult = DataService.Transaction(player, function(data)
-		local robot = data.Robots.OwnedByUid[robotUid]
-		if robot == nil then
-			return false, result(false, "ROBOT_NOT_OWNED", nil)
-		end
-
 		local baseSlots = FactoryRules.GetWorkSlots(data.Machines.WorkSlotsLevel)
 		local unlockedSlots = math.min(
 			GameConfig.Factory.MaxWorkSlots + 2,
 			baseSlots + MonetizationService.GetExtraWorkSlots(player)
 		)
-		if padIndex > unlockedSlots then
-			return false, result(false, "WORK_PAD_LOCKED", { UnlockedSlots = unlockedSlots })
+		local decision = AssignmentRules.EvaluateAssignment(
+			data.Assignments.WorkPads,
+			data.Robots.OwnedByUid,
+			robotUid,
+			padId,
+			unlockedSlots
+		)
+		if not decision.Allowed then
+			local payload = if decision.Code == "WORK_PAD_LOCKED"
+				then { UnlockedSlots = unlockedSlots }
+				else nil
+			return false, result(false, decision.Code, payload)
 		end
 
-		local workPads = data.Assignments.WorkPads
-		if findAssignedPad(workPads, robotUid) ~= nil then
-			return false, result(false, "ROBOT_ALREADY_ASSIGNED", nil)
-		end
-		if workPads[padId] ~= nil then
-			return false, result(false, "WORK_PAD_OCCUPIED", nil)
-		end
-
-		workPads[padId] = robotUid
+		data.Assignments.WorkPads[padId] = robotUid
 		data.Tutorial.Milestones.FirstBotAssigned = true
 		return true, result(true, "ROBOT_ASSIGNED", {
 			RobotUid = robotUid,
@@ -182,7 +147,7 @@ function RobotService.Unassign(player: Player, robotUid: any)
 			return false, result(false, "ROBOT_NOT_OWNED", nil)
 		end
 
-		local padId = findAssignedPad(data.Assignments.WorkPads, robotUid)
+		local padId = AssignmentRules.FindAssignedPad(data.Assignments.WorkPads, robotUid)
 		if padId == nil then
 			return false, result(false, "ROBOT_NOT_ASSIGNED", nil)
 		end
@@ -231,7 +196,7 @@ function RobotService.Sell(player: Player, robotUid: any)
 		if robot == nil then
 			return false, result(false, "ROBOT_NOT_OWNED", nil)
 		end
-		if findAssignedPad(data.Assignments.WorkPads, robotUid) ~= nil then
+		if AssignmentRules.FindAssignedPad(data.Assignments.WorkPads, robotUid) ~= nil then
 			return false, result(false, "ROBOT_IS_ASSIGNED", nil)
 		end
 

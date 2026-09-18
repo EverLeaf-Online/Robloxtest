@@ -71,6 +71,55 @@ describe("AssignmentRules", function()
 		expect(normalized.Pad3).toBe(nil)
 	end)
 
+	it("rejects foreign robots before mutating work-pad state", function()
+		local workPads = { Pad1 = "R1" }
+		local decision = AssignmentRules.EvaluateAssignment(workPads, { R1 = {} }, "R2", "Pad2", 2)
+
+		expect(decision.Allowed).toBe(false)
+		expect(decision.Code).toBe("ROBOT_NOT_OWNED")
+		expect(workPads.Pad2).toBe(nil)
+	end)
+
+	it("rejects a second robot racing for an occupied pad", function()
+		local workPads = { Pad1 = "R1" }
+		local owned = {
+			R1 = {},
+			R2 = {},
+		}
+		local decision = AssignmentRules.EvaluateAssignment(workPads, owned, "R2", "Pad1", 2)
+
+		expect(decision.Allowed).toBe(false)
+		expect(decision.Code).toBe("WORK_PAD_OCCUPIED")
+		expect(workPads.Pad1).toBe("R1")
+	end)
+
+	it("rejects assigning the same robot to a second pad", function()
+		local workPads = { Pad1 = "R1" }
+		local decision = AssignmentRules.EvaluateAssignment(workPads, { R1 = {} }, "R1", "Pad2", 2)
+
+		expect(decision.Allowed).toBe(false)
+		expect(decision.Code).toBe("ROBOT_ALREADY_ASSIGNED")
+		expect(decision.ExistingPadId).toBe("Pad1")
+	end)
+
+	it("rejects malformed and locked pad ids", function()
+		local owned = { R1 = {} }
+		local malformed = AssignmentRules.EvaluateAssignment({}, owned, "R1", "Pad0", 2)
+		local locked = AssignmentRules.EvaluateAssignment({}, owned, "R1", "Pad3", 2)
+
+		expect(malformed.Allowed).toBe(false)
+		expect(malformed.Code).toBe("UNKNOWN_WORK_PAD")
+		expect(locked.Allowed).toBe(false)
+		expect(locked.Code).toBe("WORK_PAD_LOCKED")
+	end)
+
+	it("accepts an owned unassigned robot on a free unlocked pad", function()
+		local decision = AssignmentRules.EvaluateAssignment({}, { R1 = {} }, "R1", "Pad2", 2)
+		expect(decision.Allowed).toBe(true)
+		expect(decision.Code).toBe("ROBOT_ASSIGNED")
+		expect(decision.PadIndex).toBe(2)
+	end)
+
 	it("returns an empty assignment set for malformed inputs", function()
 		local normalized = AssignmentRules.NormalizeWorkPads("bad", {}, 4)
 		expect(next(normalized)).toBe(nil)
