@@ -64,9 +64,8 @@ local function setPlotProgressionAttributes(plotId: number, player: Player?)
 end
 
 local function setPlotLabel(plotId: number, player: Player?)
-	local sign = WorldService.GetPlotSign(plotId)
 	local plot = WorldService.GetPlot(plotId)
-	if sign == nil or plot == nil then
+	if plot == nil then
 		return
 	end
 
@@ -76,13 +75,6 @@ local function setPlotLabel(plotId: number, player: Player?)
 	else
 		plot:SetAttribute("OwnerUserId", player.UserId)
 		plot:SetAttribute("OwnerName", player.DisplayName)
-	end
-
-	local label = sign:FindFirstChild("OwnerLabel", true)
-	if label ~= nil and label:IsA("TextLabel") then
-		label.Text = if player
-			then ("%s's Factory"):format(player.DisplayName)
-			else "Private Factory"
 	end
 end
 
