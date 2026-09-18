@@ -69,7 +69,7 @@ local WorldLayout = {
 		CircuitSalvage = Vector3.new(-112, 1.5, -174),
 	}),
 
-	CircuitGateOffset = Vector3.new(-101, 3.5, -94),
+	CircuitGateOffset = Vector3.new(-101, 1.1, -94),
 	CircuitArrivalOffset = Vector3.new(-112, 1, -150),
 }
 

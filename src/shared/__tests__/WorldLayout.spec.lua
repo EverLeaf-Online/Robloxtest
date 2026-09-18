@@ -92,6 +92,16 @@ describe("WorldLayout", function()
 		expect(facing.Z).toBe(1)
 	end)
 
+	it("keeps the Circuit unlock control ground-mounted beside the bridge entrance", function()
+		local gate = WorldLayout.CircuitGateOffset
+		local island = WorldLayout.CircuitIsland
+
+		expect(gate.Y <= 1.5).toBe(true)
+		expect(math.abs(gate.X - island.BoundaryOpeningCenterX) <= 15).toBe(true)
+		expect(gate.Z > island.BridgeCenterOffset.Z).toBe(true)
+		expect(gate.Z - island.BridgeCenterOffset.Z <= 35).toBe(true)
+	end)
+
 	it(
 		"places the Circuit island beyond the top-right edge with a bridge spanning the gap",
 		function()

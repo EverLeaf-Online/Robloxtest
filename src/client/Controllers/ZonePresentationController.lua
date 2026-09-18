@@ -48,29 +48,29 @@ local function applySnapshot(snapshot: any)
 	end
 
 	local unlocked = currentZone >= zone.Id
-	gate.Color = if unlocked then Color3.fromRGB(58, 137, 122) else Color3.fromRGB(103, 80, 67)
-	gate.Material = if unlocked then Enum.Material.DiamondPlate else Enum.Material.Metal
 
 	local prompt = gate:FindFirstChildOfClass("ProximityPrompt")
 	if prompt ~= nil then
-		prompt.ActionText = if unlocked then "Travel" else "Unlock / Travel"
-		prompt.ObjectText = if unlocked
-			then ("%s • Unlocked"):format(zone.DisplayName)
-			else zone.DisplayName
+		prompt.Enabled = not unlocked
+		prompt.ActionText = "Unlock"
+		prompt.ObjectText = ("%s • %d Credits • Build %d Bots"):format(
+			zone.DisplayName,
+			zone.UnlockCredits,
+			zone.RequiredLifetimeRobots
+		)
+	end
+
+	local billboard = gate:FindFirstChild("CircuitUnlockLabel")
+	if billboard ~= nil and billboard:IsA("BillboardGui") then
+		billboard.Enabled = not unlocked
 	end
 
 	local label = gate:FindFirstChild("Label", true)
 	if label ~= nil and label:IsA("TextLabel") then
-		label.Text = if unlocked
-			then ("%s\nUNLOCKED • PRIVATE FIELD"):format(zone.DisplayName)
-			else ("%s\n%d Credits • Build %d Bots"):format(
-				zone.DisplayName,
-				zone.UnlockCredits,
-				zone.RequiredLifetimeRobots
-			)
-		label.TextColor3 = if unlocked
-			then Color3.fromRGB(137, 255, 213)
-			else Color3.fromRGB(245, 247, 250)
+		label.Text = ("CIRCUIT YARD ACCESS\n%d CREDITS • BUILD %d BOTS"):format(
+			zone.UnlockCredits,
+			zone.RequiredLifetimeRobots
+		)
 	end
 end
 
