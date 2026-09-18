@@ -69,16 +69,6 @@ function FactoryRules.GetWorkSlots(level: number): number
 	)
 end
 
-function FactoryRules.CanStartAssembler(
-	lifetimeRobotsBuilt: number,
-	firstProcessCompleted: boolean
-): (boolean, string)
-	if lifetimeRobotsBuilt <= 0 and not firstProcessCompleted then
-		return false, "PROCESS_FIRST"
-	end
-	return true, "ASSEMBLER_READY"
-end
-
 function FactoryRules.GetAssemblerCost(lifetimeRobotsBuilt: number): { [string]: number }
 	return if lifetimeRobotsBuilt <= 0
 		then Recipes.Assembler.FirstBuildInput
