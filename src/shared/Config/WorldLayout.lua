@@ -6,7 +6,7 @@ local WorldLayout = {
 		FactoryOffset = Vector3.new(0, 0, -18),
 		EntryOffset = Vector3.new(0, 1, -68),
 		SignOffset = Vector3.new(-46, 3, -82),
-		HubReturnAttendantOffset = Vector3.new(-104, 3.5, 84),
+		HubReturnAttendantOffset = Vector3.new(-104, 3.5, -84),
 	},
 
 	StarterSalvageOffsets = table.freeze({
@@ -36,7 +36,7 @@ local WorldLayout = {
 		CircuitSalvage = Vector3.new(72, 1.5, 58),
 	}),
 
-	CircuitGateOffset = Vector3.new(-82, 3.5, 84),
+	CircuitGateOffset = Vector3.new(-82, 3.5, -84),
 	CircuitArrivalOffset = Vector3.new(72, 1, 58),
 }
 
