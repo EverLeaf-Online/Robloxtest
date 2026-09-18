@@ -171,7 +171,7 @@ local function createUi()
 	local iconPlate = Instance.new("Frame")
 	iconPlate.Name = "Icon"
 	iconPlate.AnchorPoint = Vector2.new(0.5, 0)
-	iconPlate.Position = UDim2.new(0.5, 0, 0, 0)
+	iconPlate.Position = UDim2.fromScale(0.5, 0)
 	iconPlate.Size = UDim2.fromOffset(54, 54)
 	iconPlate.BackgroundColor3 = Color3.fromRGB(38, 126, 91)
 	iconPlate.BorderSizePixel = 0
@@ -200,7 +200,7 @@ local function createUi()
 	local toggleLabel = Instance.new("TextLabel")
 	toggleLabel.Name = "Label"
 	toggleLabel.AnchorPoint = Vector2.new(0.5, 1)
-	toggleLabel.Position = UDim2.new(0.5, 0, 1, 0)
+	toggleLabel.Position = UDim2.fromScale(0.5, 1)
 	toggleLabel.Size = UDim2.new(1, 0, 0, 20)
 	toggleLabel.BackgroundTransparency = 1
 	toggleLabel.Font = Enum.Font.GothamBold
