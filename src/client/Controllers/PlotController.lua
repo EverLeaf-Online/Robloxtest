@@ -69,9 +69,9 @@ local function addMarker(plotId: number)
 	marker.Name = "LocalFactoryMarker"
 	marker.Adornee = sign
 	marker.AlwaysOnTop = true
-	marker.Size = UDim2.fromOffset(170, 34)
-	marker.StudsOffset = Vector3.new(0, 9, 0)
-	marker.MaxDistance = 60
+	marker.Size = UDim2.fromOffset(140, 28)
+	marker.StudsOffset = Vector3.new(0, 6.5, 0)
+	marker.MaxDistance = 36
 	marker.Parent = plot
 
 	local label = Instance.new("TextLabel")
@@ -80,7 +80,7 @@ local function addMarker(plotId: number)
 	label.BorderSizePixel = 0
 	label.Font = Enum.Font.GothamBold
 	label.Size = UDim2.fromScale(1, 1)
-	label.Text = ("YOUR FACTORY  •  PLOT %d"):format(plotId)
+	label.Text = ("YOUR FACTORY • %d"):format(plotId)
 	label.TextColor3 = Color3.fromRGB(245, 247, 250)
 	label.TextScaled = true
 	label.Parent = marker
