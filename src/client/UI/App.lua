@@ -296,9 +296,7 @@ local function App()
 			AnchorPoint = Vector2.new(0, 0.5),
 			BackgroundTransparency = 1,
 			BorderSizePixel = 0,
-			Position = if isPhone
-				then UDim2.new(0, 10, 0.46, 0)
-				else UDim2.new(0, 18, 0.5, 0),
+			Position = if isPhone then UDim2.new(0, 10, 0.46, 0) else UDim2.new(0, 18, 0.5, 0),
 			Size = if isPhone then UDim2.fromOffset(132, 98) else UDim2.fromOffset(158, 114),
 		}, {
 			Layout = React.createElement("UIListLayout", {
