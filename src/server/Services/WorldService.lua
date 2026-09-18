@@ -127,15 +127,57 @@ local function buildTransitBotVisual(
 		tagPlotPart(item, plotId)
 	end
 
-	piece("Base", Vector3.new(5.5, 0.45, 5.5), Vector3.new(0, -3.2, 0), dark, Enum.Material.DiamondPlate)
+	piece(
+		"Base",
+		Vector3.new(5.5, 0.45, 5.5),
+		Vector3.new(0, -3.2, 0),
+		dark,
+		Enum.Material.DiamondPlate
+	)
 	piece("Body", Vector3.new(3.2, 3.8, 2.4), Vector3.new(0, -0.9, 0), steel, Enum.Material.Metal)
-	piece("ChestPanel", Vector3.new(2.3, 1.2, 0.24), Vector3.new(0, -0.8, -1.32), accent, Enum.Material.Neon)
+	piece(
+		"ChestPanel",
+		Vector3.new(2.3, 1.2, 0.24),
+		Vector3.new(0, -0.8, -1.32),
+		accent,
+		Enum.Material.Neon
+	)
 	piece("Head", Vector3.new(2.6, 1.8, 2.1), Vector3.new(0, 1.9, 0), dark, Enum.Material.Metal)
-	piece("Visor", Vector3.new(1.9, 0.48, 0.2), Vector3.new(0, 2.05, -1.12), accent, Enum.Material.Neon)
-	piece("LeftArm", Vector3.new(0.65, 2.7, 0.65), Vector3.new(-2, -0.6, 0), orange, Enum.Material.Metal)
-	piece("RightArm", Vector3.new(0.65, 2.7, 0.65), Vector3.new(2, -0.6, 0), orange, Enum.Material.Metal)
-	piece("LeftFoot", Vector3.new(1.15, 0.6, 1.8), Vector3.new(-0.9, -2.75, -0.1), dark, Enum.Material.Metal)
-	piece("RightFoot", Vector3.new(1.15, 0.6, 1.8), Vector3.new(0.9, -2.75, -0.1), dark, Enum.Material.Metal)
+	piece(
+		"Visor",
+		Vector3.new(1.9, 0.48, 0.2),
+		Vector3.new(0, 2.05, -1.12),
+		accent,
+		Enum.Material.Neon
+	)
+	piece(
+		"LeftArm",
+		Vector3.new(0.65, 2.7, 0.65),
+		Vector3.new(-2, -0.6, 0),
+		orange,
+		Enum.Material.Metal
+	)
+	piece(
+		"RightArm",
+		Vector3.new(0.65, 2.7, 0.65),
+		Vector3.new(2, -0.6, 0),
+		orange,
+		Enum.Material.Metal
+	)
+	piece(
+		"LeftFoot",
+		Vector3.new(1.15, 0.6, 1.8),
+		Vector3.new(-0.9, -2.75, -0.1),
+		dark,
+		Enum.Material.Metal
+	)
+	piece(
+		"RightFoot",
+		Vector3.new(1.15, 0.6, 1.8),
+		Vector3.new(0.9, -2.75, -0.1),
+		dark,
+		Enum.Material.Metal
+	)
 
 	local billboard = Instance.new("BillboardGui")
 	billboard.Name = "TransitLabel"
