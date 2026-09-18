@@ -63,9 +63,9 @@ describe("WorldLayout", function()
 		local attendant = WorldLayout.Plot.HubReturnAttendantOffset
 		local circuitGate = WorldLayout.CircuitGateOffset
 
-		expect(attendant.X > 80).toBe(true)
+		expect(attendant.X < -80).toBe(true)
 		expect(attendant.Z > 70).toBe(true)
-		expect(circuitGate.X > 60).toBe(true)
+		expect(circuitGate.X < -60).toBe(true)
 		expect(circuitGate.Z > 70).toBe(true)
 		expect(math.abs(attendant.X) < halfX).toBe(true)
 		expect(math.abs(attendant.Z) < halfZ).toBe(true)

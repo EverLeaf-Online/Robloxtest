@@ -93,6 +93,118 @@ local function tagPlotPart(part: BasePart, plotId: number)
 	part:SetAttribute("PlotId", plotId)
 end
 
+local function buildTransitBotVisual(
+	plot: Model,
+	plotId: number,
+	anchor: BasePart,
+	name: string,
+	labelText: string,
+	accent: Color3
+)
+	local visual = Instance.new("Model")
+	visual.Name = name
+	visual.Parent = plot
+
+	local dark = Color3.fromRGB(43, 49, 58)
+	local steel = Color3.fromRGB(89, 101, 113)
+	local orange = Color3.fromRGB(224, 140, 63)
+	local center = anchor.Position
+
+	local function piece(
+		partName: string,
+		size: Vector3,
+		offset: Vector3,
+		color: Color3,
+		material: Enum.Material
+	)
+		local item = makePart(visual, partName, size, center + offset)
+		item.Color = color
+		item.Material = material
+		item.CanCollide = false
+		item.CanTouch = false
+		item.CanQuery = false
+		item:SetAttribute("PresentationPart", true)
+		tagPlotPart(item, plotId)
+	end
+
+	piece(
+		"Base",
+		Vector3.new(5.5, 0.45, 5.5),
+		Vector3.new(0, -3.2, 0),
+		dark,
+		Enum.Material.DiamondPlate
+	)
+	piece("Body", Vector3.new(3.2, 3.8, 2.4), Vector3.new(0, -0.9, 0), steel, Enum.Material.Metal)
+	piece(
+		"ChestPanel",
+		Vector3.new(2.3, 1.2, 0.24),
+		Vector3.new(0, -0.8, -1.32),
+		accent,
+		Enum.Material.Neon
+	)
+	piece("Head", Vector3.new(2.6, 1.8, 2.1), Vector3.new(0, 1.9, 0), dark, Enum.Material.Metal)
+	piece(
+		"Visor",
+		Vector3.new(1.9, 0.48, 0.2),
+		Vector3.new(0, 2.05, -1.12),
+		accent,
+		Enum.Material.Neon
+	)
+	piece(
+		"LeftArm",
+		Vector3.new(0.65, 2.7, 0.65),
+		Vector3.new(-2, -0.6, 0),
+		orange,
+		Enum.Material.Metal
+	)
+	piece(
+		"RightArm",
+		Vector3.new(0.65, 2.7, 0.65),
+		Vector3.new(2, -0.6, 0),
+		orange,
+		Enum.Material.Metal
+	)
+	piece(
+		"LeftFoot",
+		Vector3.new(1.15, 0.6, 1.8),
+		Vector3.new(-0.9, -2.75, -0.1),
+		dark,
+		Enum.Material.Metal
+	)
+	piece(
+		"RightFoot",
+		Vector3.new(1.15, 0.6, 1.8),
+		Vector3.new(0.9, -2.75, -0.1),
+		dark,
+		Enum.Material.Metal
+	)
+
+	local billboard = Instance.new("BillboardGui")
+	billboard.Name = "TransitLabel"
+	billboard.Adornee = anchor
+	billboard.AlwaysOnTop = true
+	billboard.Size = UDim2.fromOffset(190, 58)
+	billboard.StudsOffset = Vector3.new(0, 5.7, 0)
+	billboard.MaxDistance = 55
+	billboard.Parent = anchor
+
+	local label = Instance.new("TextLabel")
+	label.BackgroundColor3 = Color3.fromRGB(21, 25, 31)
+	label.BackgroundTransparency = 0.08
+	label.BorderSizePixel = 0
+	label.Font = Enum.Font.GothamBold
+	label.Size = UDim2.fromScale(1, 1)
+	label.Text = labelText
+	label.TextColor3 = Color3.fromRGB(235, 245, 250)
+	label.TextScaled = true
+	label.TextWrapped = true
+	label.Parent = billboard
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 8)
+	corner.Parent = label
+end
+
 local function registerProcessorControl(plotId: number, part: BasePart, recipeId: string)
 	part:SetAttribute("ProcessorRecipeId", recipeId)
 	tagPlotPart(part, plotId)
@@ -256,21 +368,26 @@ local function buildPlotZoneAccess(plot: Model, plotId: number, center: Vector3)
 	local gate = makePart(
 		plot,
 		"CircuitYardGate",
-		Vector3.new(8, 10, 3),
+		Vector3.new(5, 7, 5),
 		center + WorldLayout.CircuitGateOffset
 	)
-	gate.Material = Enum.Material.Metal
-	gate.Color = Color3.fromRGB(103, 80, 67)
+	gate.Transparency = 1
+	gate.CanCollide = false
+	gate.CanTouch = false
+	gate.CanQuery = false
 	gate:SetAttribute("TargetZone", 2)
 	tagPlotPart(gate, plotId)
 	addPrompt(gate, "Unlock / Travel", zoneTwo.DisplayName)
-	addBillboard(
+	buildTransitBotVisual(
+		plot,
+		plotId,
 		gate,
-		("%s\n%d Credits • Build %d Bots"):format(
-			zoneTwo.DisplayName,
+		"CircuitTransitBotVisual",
+		("CIRCUIT TRANSIT\n%d CREDITS • BUILD %d BOTS"):format(
 			zoneTwo.UnlockCredits,
 			zoneTwo.RequiredLifetimeRobots
-		)
+		),
+		Color3.fromRGB(225, 180, 84)
 	)
 
 	local arrival =
