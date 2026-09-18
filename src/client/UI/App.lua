@@ -52,9 +52,9 @@ end
 
 local function modalSize(mode: LayoutMode): UDim2
 	if mode == "Phone" then
-		return UDim2.new(0.92, 0, 0.78, 0)
+		return UDim2.fromScale(0.92, 0.78)
 	elseif mode == "Tablet" then
-		return UDim2.new(0.76, 0, 0.78, 0)
+		return UDim2.fromScale(0.76, 0.78)
 	end
 	return UDim2.fromOffset(560, 520)
 end
