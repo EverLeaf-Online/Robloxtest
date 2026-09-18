@@ -14,12 +14,17 @@ local GameConfig = {
 		MaxReceiptHistory = 500,
 	},
 
+	Session = {
+		HubTargetPlayers = 16,
+		FactoryMaxPlayers = 4,
+	},
+
 	World = {
 		PromptActivationDistance = 12,
 		SalvageCollectDistance = 14,
 		InteractionDistance = 14,
 		NodeRespawnSeconds = 8,
-		PlotCount = 8,
+		PlotCount = 1,
 	},
 
 	Factory = {

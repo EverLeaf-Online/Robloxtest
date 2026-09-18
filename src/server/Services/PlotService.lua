@@ -5,17 +5,15 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local FactoryRules = require(ReplicatedStorage.Shared.Domain.FactoryRules)
 local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
-local PlotRules = require(ReplicatedStorage.Shared.Domain.PlotRules)
 
 local DataService = require(script.Parent.DataService)
+local FactorySessionService = require(script.Parent.FactorySessionService)
 local WorldService = require(script.Parent.WorldService)
 
 local PlotService = {}
 local initialized = false
 local plotByPlayer: { [Player]: number } = {}
 local ownerByPlot: { [number]: Player } = {}
-
-local NO_FREE_PLOT_MESSAGE = "This server has no free factory plot. Please join another server."
 
 local function teleportToEntry(player: Player, plotId: number)
 	local entry = WorldService.GetPlotEntry(plotId)
@@ -82,17 +80,9 @@ local function setPlotLabel(plotId: number, player: Player?)
 	local label = sign:FindFirstChild("OwnerLabel", true)
 	if label ~= nil and label:IsA("TextLabel") then
 		label.Text = if player
-			then ("%s's Factory\nPlot %d"):format(player.DisplayName, plotId)
-			else ("Factory Plot %d\nUnclaimed"):format(plotId)
+			then ("%s's Factory"):format(player.DisplayName)
+			else "Private Factory"
 	end
-end
-
-local function firstFreePlot(): number?
-	local claimed: { [number]: boolean } = {}
-	for plotId in ownerByPlot do
-		claimed[plotId] = true
-	end
-	return PlotRules.FindFirstFree(#WorldService.GetPlots(), claimed)
 end
 
 local function release(player: Player)
@@ -107,15 +97,6 @@ local function release(player: Player)
 		setPlotLabel(plotId, nil)
 		setPlotProgressionAttributes(plotId, nil)
 	end
-end
-
-local function rejectWithoutPlot(player: Player)
-	warn(("[PlotService] No free factory plot for %d"):format(player.UserId))
-	task.defer(function()
-		if player.Parent == Players then
-			player:Kick(NO_FREE_PLOT_MESSAGE)
-		end
-	end)
 end
 
 local function getOwnedStation(player: Player, stationName: string): BasePart?
@@ -133,9 +114,21 @@ function PlotService.Assign(player: Player): number?
 		return existing
 	end
 
-	local plotId = firstFreePlot()
-	if plotId == nil then
-		rejectWithoutPlot(player)
+	-- Visitors can observe an owner's factory, but only the verified owner receives
+	-- authoritative plot ownership and therefore gameplay interaction authority.
+	if not FactorySessionService.IsOwner(player) then
+		return nil
+	end
+
+	local plotId = 1
+	local existingOwner = ownerByPlot[plotId]
+	if existingOwner ~= nil and existingOwner ~= player then
+		warn(
+			("[PlotService] Factory owner collision: %d vs %d"):format(
+				existingOwner.UserId,
+				player.UserId
+			)
+		)
 		return nil
 	end
 

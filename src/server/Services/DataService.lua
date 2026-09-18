@@ -11,6 +11,7 @@ local ProfileMigrations = require(script.Parent.Parent.Data.ProfileMigrations)
 local ProfileSanitizer = require(script.Parent.Parent.Data.ProfileSanitizer)
 local ProfileTemplate = require(script.Parent.Parent.Data.ProfileTemplate)
 local ProfileTypes = require(script.Parent.Parent.Data.ProfileTypes)
+local FactorySessionService = require(script.Parent.FactorySessionService)
 
 type ProfileData = ProfileTypes.ProfileData
 
@@ -84,6 +85,16 @@ local function releaseProfile(player: Player)
 end
 
 function DataService.LoadPlayer(player: Player): boolean
+	if not FactorySessionService.WaitForVerification(player, 10) then
+		warn(("[DataService] Factory route was not verified for %d"):format(player.UserId))
+		return false
+	end
+	if not FactorySessionService.IsOwner(player) then
+		-- Visitors are read-only observers. Do not open their persistent profile or
+		-- run their personal economy while they are inside another player's factory.
+		return false
+	end
+
 	local existing = profiles[player]
 	if existing ~= nil and existing:IsActive() == true then
 		return true

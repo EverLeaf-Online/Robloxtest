@@ -10,21 +10,12 @@ local it = JestGlobals.it
 local WorldLayout = require(script.Parent.Parent.Config.WorldLayout)
 
 describe("WorldLayout", function()
-	it("keeps all eight private yards well separated", function()
-		local centers = {}
-		for plotId = 1, 8 do
-			centers[plotId] = WorldLayout.GetPlotCenter(plotId)
-		end
-
-		for first = 1, 8 do
-			for second = first + 1, 8 do
-				local distance = (centers[first] - centers[second]).Magnitude
-				expect(distance >= 400).toBe(true)
-			end
-		end
+	it("keeps the instanced factory footprint large enough for production and salvage", function()
+		expect(WorldLayout.Plot.Size.X >= 220).toBe(true)
+		expect(WorldLayout.Plot.Size.Z >= 180).toBe(true)
 	end)
 
-	it("keeps private salvage fields inside the plot footprint", function()
+	it("keeps private salvage fields inside the factory footprint", function()
 		local halfX = WorldLayout.Plot.Size.X / 2
 		local halfZ = WorldLayout.Plot.Size.Z / 2
 
@@ -41,8 +32,17 @@ describe("WorldLayout", function()
 		end
 	end)
 
-	it("gives every yard independent starter and circuit salvage sets", function()
+	it("keeps starter and circuit salvage as independent private fields", function()
 		expect(#WorldLayout.StarterSalvageOffsets).toBe(6)
 		expect(#WorldLayout.CircuitSalvageOffsets).toBe(6)
+	end)
+
+	it("keeps all bot work nodes within the private factory footprint", function()
+		local halfX = WorldLayout.Plot.Size.X / 2
+		local halfZ = WorldLayout.Plot.Size.Z / 2
+		for _, offset in WorldLayout.BotWorkOffsets do
+			expect(math.abs(offset.X) < halfX).toBe(true)
+			expect(math.abs(offset.Z) < halfZ).toBe(true)
+		end
 	end)
 end)

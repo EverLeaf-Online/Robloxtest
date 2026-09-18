@@ -80,7 +80,7 @@ end
 function StateHelpers.GetObjective(snapshot: any): (string, string)
 	local milestones = snapshot.Tutorial.Milestones
 	local ownedPlotId = StateHelpers.PlotId(snapshot)
-	local plotText = if ownedPlotId then (" at Plot %d"):format(ownedPlotId) else ""
+	local plotText = if ownedPlotId then " in your factory" else ""
 	if milestones.FirstScrap ~= true then
 		return "Collect scrap", "Walk to a scrap pile and use its Collect prompt."
 	elseif milestones.FirstProcess ~= true then
@@ -174,10 +174,7 @@ function StateHelpers.MachineStatus(snapshot: any, now: number): string
 	local lines = {}
 	local ownedPlotId = StateHelpers.PlotId(snapshot)
 
-	table.insert(
-		lines,
-		if ownedPlotId then ("Plot %d"):format(ownedPlotId) else "Assigning plot..."
-	)
+	table.insert(lines, if ownedPlotId then "Private Factory" else "Loading factory...")
 	if processor.Active then
 		local remaining = math.max(0, processor.CompletesAt - now)
 		table.insert(
