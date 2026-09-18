@@ -46,9 +46,11 @@ local function addLabel(part: BasePart, text: string)
 end
 
 local function build(): Folder
-	local oldFactory = Workspace:FindFirstChild("ScrapToBotGraybox")
-	if oldFactory ~= nil then
-		oldFactory:Destroy()
+	for _, worldName in { "ScrapToBotGraybox", "ScrapToBotFactoryWorld" } do
+		local oldFactory = Workspace:FindFirstChild(worldName)
+		if oldFactory ~= nil then
+			oldFactory:Destroy()
+		end
 	end
 	local oldHub = Workspace:FindFirstChild("ScrapToBotHub")
 	if oldHub ~= nil then

@@ -28,7 +28,7 @@ local function clearMarker()
 end
 
 local function findPlot(plotId: number): Model?
-	local root = Workspace:FindFirstChild("ScrapToBotGraybox")
+	local root = Workspace:FindFirstChild("ScrapToBotFactoryWorld")
 	if root == nil then
 		return nil
 	end

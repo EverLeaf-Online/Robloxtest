@@ -10,7 +10,7 @@ local ZonePresentationController = {}
 local initialized = false
 
 local function findGate(plotId: number): BasePart?
-	local root = Workspace:FindFirstChild("ScrapToBotGraybox")
+	local root = Workspace:FindFirstChild("ScrapToBotFactoryWorld")
 	if root == nil then
 		return nil
 	end

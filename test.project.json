@@ -17,6 +17,9 @@
         "Domain": {
           "$path": "src/server/Domain"
         },
+        "Presentation": {
+          "$path": "src/server/Presentation"
+        },
         "Services": {
           "$className": "Folder",
           "EconomyService": {

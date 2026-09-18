@@ -393,16 +393,6 @@ local function buildPrivateSalvage(plot: Model, plotId: number, center: Vector3)
 		)
 	end
 
-	local starterSign = makePart(
-		plot,
-		"StarterSalvageSign",
-		Vector3.new(10, 5, 1),
-		center + Vector3.new(-66, 3, 83)
-	)
-	starterSign.Material = Enum.Material.Metal
-	tagPlotPart(starterSign, plotId)
-	addBillboard(starterSign, "YOUR SCRAP FIELD")
-
 	local circuitFolder = Instance.new("Folder")
 	circuitFolder.Name = "CircuitSalvage"
 	circuitFolder.Parent = plot
@@ -416,16 +406,6 @@ local function buildPrivateSalvage(plot: Model, plotId: number, center: Vector3)
 			plotId
 		)
 	end
-
-	local circuitSign = makePart(
-		plot,
-		"CircuitSalvageSign",
-		Vector3.new(12, 5, 1),
-		center + WorldLayout.CircuitIsland.CenterOffset + Vector3.new(0, 3, -27)
-	)
-	circuitSign.Material = Enum.Material.Metal
-	tagPlotPart(circuitSign, plotId)
-	addBillboard(circuitSign, "CIRCUIT YARD")
 end
 
 local function buildBotWorkNodes(plot: Model, plotId: number, center: Vector3)
@@ -520,16 +500,25 @@ local function buildFactoryPlot(parent: Folder, plotId: number, center: Vector3)
 	spawn.Parent = plot
 
 	local factoryCenter = center + WorldLayout.Plot.FactoryOffset
+	local production = WorldLayout.Production
 
-	local processor =
-		makePart(plot, "Processor", Vector3.new(11, 8, 9), factoryCenter + Vector3.new(-30, 4.5, 0))
+	local processor = makePart(
+		plot,
+		"Processor",
+		Vector3.new(11, 8, 9),
+		factoryCenter + production.ProcessorOffset
+	)
 	processor.Material = Enum.Material.Metal
 	processor.Color = Color3.fromRGB(54, 94, 112)
 	tagPlotPart(processor, plotId)
 	addBillboard(processor, "PROCESSOR")
 
-	local wiringControl =
-		makePart(plot, "MakeWiring", Vector3.new(5, 2, 4), factoryCenter + Vector3.new(-33, 2, -10))
+	local wiringControl = makePart(
+		plot,
+		"MakeWiring",
+		Vector3.new(5, 2, 4),
+		factoryCenter + production.WiringControlOffset
+	)
 	registerProcessorControl(plotId, wiringControl, "MakeWiring")
 	addPrompt(wiringControl, "Process", "Make Wiring")
 
@@ -537,13 +526,17 @@ local function buildFactoryPlot(parent: Folder, plotId: number, center: Vector3)
 		plot,
 		"RecoverCore",
 		Vector3.new(5, 2, 4),
-		factoryCenter + Vector3.new(-27, 2, -10)
+		factoryCenter + production.CoreControlOffset
 	)
 	registerProcessorControl(plotId, coreControl, "RecoverCore")
 	addPrompt(coreControl, "Process", "Recover Core")
 
-	local assembler =
-		makePart(plot, "Assembler", Vector3.new(11, 8, 9), factoryCenter + Vector3.new(-5, 4.5, 0))
+	local assembler = makePart(
+		plot,
+		"Assembler",
+		Vector3.new(11, 8, 9),
+		factoryCenter + production.AssemblerOffset
+	)
 	assembler.Material = Enum.Material.Metal
 	assembler.Color = Color3.fromRGB(129, 89, 52)
 	tagPlotPart(assembler, plotId)
@@ -561,12 +554,13 @@ local function buildFactoryPlot(parent: Folder, plotId: number, center: Vector3)
 		local column = (index - 1) % 2
 		local row = math.floor((index - 1) / 2)
 		local padId = ("Pad%d"):format(index)
-		local pad = makePart(
-			padsFolder,
-			padId,
-			Vector3.new(8, 0.5, 8),
-			factoryCenter + Vector3.new(24 + column * 11, 0.75, -8 + row * 12)
-		)
+		local padOffset = production.WorkPadOriginOffset
+			+ Vector3.new(
+				column * production.WorkPadColumnSpacing,
+				0,
+				row * production.WorkPadRowSpacing
+			)
+		local pad = makePart(padsFolder, padId, Vector3.new(8, 0.5, 8), factoryCenter + padOffset)
 		pad:SetAttribute("WorkPadId", padId)
 		tagPlotPart(pad, plotId)
 		plotWorkPads[plotId][padId] = pad
@@ -590,10 +584,12 @@ local function buildPlots(folder: Folder)
 end
 
 local function buildWorld(): Folder
-	local existing = Workspace:FindFirstChild("ScrapToBotGraybox")
-	if existing then
-		assert(existing:IsA("Folder"), "Workspace.ScrapToBotGraybox must be a Folder")
-		existing:Destroy()
+	for _, worldName in { "ScrapToBotGraybox", "ScrapToBotFactoryWorld" } do
+		local existing = Workspace:FindFirstChild(worldName)
+		if existing ~= nil then
+			assert(existing:IsA("Folder"), ("Workspace.%s must be a Folder"):format(worldName))
+			existing:Destroy()
+		end
 	end
 
 	table.clear(salvageNodes)
@@ -617,7 +613,7 @@ local function buildWorld(): Folder
 	assemblerPart = nil
 
 	local folder = Instance.new("Folder")
-	folder.Name = "ScrapToBotGraybox"
+	folder.Name = "ScrapToBotFactoryWorld"
 	folder.Parent = Workspace
 
 	buildPlots(folder)
