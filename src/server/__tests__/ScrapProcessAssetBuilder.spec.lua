@@ -59,16 +59,35 @@ describe("ScrapProcessAssetBuilder", function()
 			local infeed = train:FindFirstChild("InfeedConveyorVisual", true)
 			local outfeed = train:FindFirstChild("FinishedRobotOutfeedVisual", true)
 			local scrapPile = train:FindFirstChild("ScrapPileVisual", true)
+			local ferrousBin = train:FindFirstChild("FerrousBunkerVisual", true)
+			local nonFerrousBin = train:FindFirstChild("NonFerrousBunkerVisual", true)
+			local residueBin = train:FindFirstChild("ResidueBunkerVisual", true)
 
-			expect(infeed ~= nil and infeed:GetAttribute("FactoryImportedAsset") == true).toBe(true)
-			expect(outfeed ~= nil and outfeed:GetAttribute("FactoryImportedAsset") == true).toBe(
-				true
-			)
-			expect(scrapPile ~= nil and scrapPile:GetAttribute("FactoryImportedAsset") == true).toBe(
-				true
-			)
+			for _, imported in
+				{
+					infeed,
+					outfeed,
+					scrapPile,
+					ferrousBin,
+					nonFerrousBin,
+					residueBin,
+				}
+			do
+				expect(imported ~= nil and imported:GetAttribute("FactoryImportedAsset") == true).toBe(
+					true
+				)
+			end
 
-			for _, imported in { infeed, outfeed, scrapPile } do
+			for _, imported in
+				{
+					infeed,
+					outfeed,
+					scrapPile,
+					ferrousBin,
+					nonFerrousBin,
+					residueBin,
+				}
+			do
 				local baseParts = 0
 				for _, descendant in (imported :: Instance):GetDescendants() do
 					if descendant:IsA("BasePart") then
@@ -83,6 +102,8 @@ describe("ScrapProcessAssetBuilder", function()
 			expect(train:FindFirstChild("InfeedConveyorCollision", true) ~= nil).toBe(true)
 			expect(train:FindFirstChild("FinishedRobotOutfeedCollision", true) ~= nil).toBe(true)
 			expect(train:FindFirstChild("ScrapPileCollision", true) ~= nil).toBe(true)
+			local bunkerCollision = train:FindFirstChild("BunkerCollision", true)
+			expect(bunkerCollision ~= nil and (bunkerCollision :: BasePart).CanCollide).toBe(true)
 
 			parent:Destroy()
 		end
