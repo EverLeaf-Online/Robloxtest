@@ -75,6 +75,8 @@ local function startFactoryClient()
 	local MonetizationShopController = require(script.Parent.Controllers.MonetizationShopController)
 	local NotificationOptInController =
 		require(script.Parent.Controllers.NotificationOptInController)
+	local ObjectiveGuidanceController =
+		require(script.Parent.Controllers.ObjectiveGuidanceController)
 	local StudioToolsController = require(script.Parent.Controllers.StudioToolsController)
 	local UIController = require(script.Parent.Controllers.UIController)
 	local WorldInteractionController = require(script.Parent.Controllers.WorldInteractionController)
@@ -82,6 +84,7 @@ local function startFactoryClient()
 
 	WorldInteractionController.Init()
 	ZonePresentationController.Init()
+	ObjectiveGuidanceController.Init()
 	UIController.Init()
 	AnnouncementController.Init()
 	FactoryClubCosmeticController.Init()

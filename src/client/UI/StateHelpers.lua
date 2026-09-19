@@ -4,6 +4,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local FactoryRules = require(ReplicatedStorage.Shared.Domain.FactoryRules)
 local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
+local ObjectiveGuidanceRules = require(ReplicatedStorage.Shared.Domain.ObjectiveGuidanceRules)
 local Robots = require(ReplicatedStorage.Shared.Config.Robots)
 local Zones = require(ReplicatedStorage.Shared.Config.Zones)
 
@@ -78,35 +79,37 @@ function StateHelpers.PlotId(snapshot: any): number?
 end
 
 function StateHelpers.GetObjective(snapshot: any): (string, string)
-	local milestones = snapshot.Tutorial.Milestones
+	local step = ObjectiveGuidanceRules.GetStep(snapshot)
 	local ownedPlotId = StateHelpers.PlotId(snapshot)
 	local plotText = if ownedPlotId then " in your factory" else ""
-	if milestones.FirstScrap ~= true then
-		return "Collect scrap", "Walk to a scrap pile and use its Collect prompt."
-	elseif milestones.FirstProcess ~= true then
+
+	if step == "CollectScrap" then
+		return "Collect scrap", "Follow the NEXT marker to a scrap pile and collect it."
+	elseif step == "ProcessMaterials" then
 		return "Process materials",
-			("Use your processor%s to make wiring or recover a core."):format(plotText)
-	elseif milestones.FirstBotReveal ~= true then
+			("Follow NEXT to your processor%s and make wiring or recover a core."):format(plotText)
+	elseif step == "BuildFirstBot" then
 		return "Build your first bot",
-			("Use your assembler%s once you have enough materials."):format(plotText)
-	elseif milestones.FirstBotAssigned ~= true then
+			("Follow NEXT to your assembler%s once you have enough materials."):format(plotText)
+	elseif step == "AssignFirstBot" then
 		return "Put your bot to work",
-			"Use the BOT CONTROL terminal and assign the bot to a work pad."
-	elseif milestones.FirstIncomeEarned ~= true then
-		return "Earn your first credits", "Your assigned bot produces credits automatically."
-	elseif milestones.FirstUpgrade ~= true then
-		return "Buy an upgrade", "Use the UPGRADES terminal at your factory."
-	elseif snapshot.Progression.Zone < 2 then
+			"Follow NEXT to BOT CONTROL and assign the bot to a work pad."
+	elseif step == "EarnFirstCredits" then
+		return "Earn your first credits", "Your assigned bot is working automatically."
+	elseif step == "BuyFirstUpgrade" then
+		return "Buy an upgrade", "Follow NEXT to the UPGRADES terminal at your factory."
+	elseif step == "UnlockCircuitYard" then
 		local zone = Zones[2]
 		return "Unlock Circuit Yard",
-			("Gate progress: %s/%s Credits • %d/%d bots built."):format(
+			("Follow NEXT to the gate • %s/%s Credits • %d/%d bots built."):format(
 				StateHelpers.FormatNumber(snapshot.Currencies.Credits),
 				StateHelpers.FormatNumber(zone.UnlockCredits),
 				math.min(snapshot.Stats.LifetimeRobotsBuilt, zone.RequiredLifetimeRobots),
 				zone.RequiredLifetimeRobots
 			)
 	end
-	return "Explore Circuit Yard", "Its salvage piles have better wiring and core-fragment yields."
+
+	return "Explore Circuit Yard", "Follow NEXT to its higher-value salvage piles."
 end
 
 function StateHelpers.GetAssignedPad(snapshot: any, robotUid: string): string?
