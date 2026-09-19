@@ -5,39 +5,73 @@
   "assets": [
     {
       "key": "HydraulicScrapBaler",
-      "roblox_asset_id": 76484892239245,
+      "roblox_asset_id": 119687239055490,
       "moderation": "Approved",
       "source_name": "hydraulic_scrap_baler",
       "triangle_count": 1200,
-      "material_count": 5,
-      "runtime_use": "replaces procedural hydraulic baler visual; collision remains server-authored"
+      "material_count": 1,
+      "runtime_use": "optimized single-mesh PBR visual; replaces procedural hydraulic baler; collision remains server-authored",
+      "optimization": "atlas merged to one mesh/one material with base-color + metallic-roughness PBR textures"
     },
     {
       "key": "MagneticSortingConveyor",
-      "roblox_asset_id": 89816186092755,
+      "roblox_asset_id": 82587853233083,
       "moderation": "Approved",
       "source_name": "magnetic_sorting_conveyor",
       "triangle_count": 2672,
-      "material_count": 5,
-      "runtime_use": "replaces procedural overband magnetic sorter visual; collision remains server-authored"
+      "material_count": 1,
+      "runtime_use": "optimized single-mesh PBR visual; replaces procedural overband magnetic sorter; collision remains server-authored",
+      "optimization": "atlas merged to one mesh/one material with base-color + metallic-roughness PBR textures"
     },
     {
       "key": "LargeScrapHopper",
-      "roblox_asset_id": 74192034279073,
+      "roblox_asset_id": 96263374977934,
       "moderation": "Approved",
       "source_name": "large_scrap_hopper",
       "triangle_count": 602,
-      "material_count": 5,
-      "runtime_use": "scrap receiving yard presentation"
+      "material_count": 1,
+      "runtime_use": "optimized single-mesh PBR scrap receiving yard presentation",
+      "optimization": "atlas merged to one mesh/one material with base-color + metallic-roughness PBR textures"
     },
     {
       "key": "BotAssemblerStation",
-      "roblox_asset_id": 105480668154079,
+      "roblox_asset_id": 88933326882163,
       "moderation": "Approved",
       "source_name": "bot_assembler_station",
       "triangle_count": 932,
-      "material_count": 5,
-      "runtime_use": "approved for later assembler visual replacement after machine-feedback integration"
+      "material_count": 1,
+      "runtime_use": "optimized single-mesh PBR assembler frame; animated gameplay feedback remains native",
+      "optimization": "atlas merged to one mesh/one material with base-color + metallic-roughness PBR textures"
+    },
+    {
+      "key": "InfeedConveyor",
+      "roblox_asset_id": 112925855673224,
+      "moderation": "Approved",
+      "source_name": "infeed_conveyor_8m",
+      "triangle_count": 2000,
+      "material_count": 1,
+      "runtime_use": "optimized single-mesh PBR process conveyor; collision remains server-authored",
+      "optimization": "atlas merged to one mesh/one material with base-color + metallic-roughness PBR textures"
+    },
+    {
+      "key": "OutfeedConveyor",
+      "roblox_asset_id": 112992563260380,
+      "moderation": "Approved",
+      "source_name": "outfeed_conveyor_6m",
+      "triangle_count": 2144,
+      "material_count": 1,
+      "runtime_use": "optimized single-mesh PBR robot outfeed conveyor; collision remains server-authored",
+      "optimization": "atlas merged to one mesh/one material with base-color + metallic-roughness PBR textures"
+    },
+    {
+      "key": "ScrapPileMedium",
+      "roblox_asset_id": 94121661837836,
+      "moderation": "Approved",
+      "source_name": "scrap_pile_medium",
+      "triangle_count": 1408,
+      "material_count": 1,
+      "runtime_use": "optimized single-mesh PBR scrap stockpile; collision remains server-authored",
+      "optimization": "atlas merged to one mesh/one material with base-color + metallic-roughness PBR textures"
     }
   ],
   "runtime_policy": {
@@ -45,6 +79,8 @@
     "anchored": true,
     "scripts_stripped": true,
     "constraints_stripped": true,
-    "collision": "server-authored"
+    "collision": "server-authored",
+    "optimized_meshes": true,
+    "pbr": "single atlas base-color + metallic-roughness"
   }
 }
