@@ -22,6 +22,8 @@ local PRELOAD_ASSET_KEYS = table.freeze({
 	"UtilityPipeRack",
 	"SafetyBarrier",
 	"ElectricalCabinet",
+	"MaterialBin",
+	"StructuralColumn",
 })
 
 local COLORS = table.freeze({
@@ -781,20 +783,49 @@ local function buildHallShell(root: Model, plotId: number, center: Vector3)
 		)
 	end
 
-	-- Structural columns/trusses.
+	-- Structural columns/trusses. The player-facing row uses the approved
+	-- galvanized/charcoal support mesh while collision remains a simple box.
 	for x = -72, 72, 24 do
 		for _, z in { -(depth / 2 - 2), depth / 2 - 2 } do
-			part(
-				hall,
-				plotId,
-				"HallColumn",
-				Vector3.new(1.3, 21, 1.3),
-				CFrame.new(hallCenter + Vector3.new(x, 11, z)),
-				COLORS.SteelBlack,
-				Enum.Material.Metal,
-				true,
-				nil
-			)
+			local columnPosition = hallCenter + Vector3.new(x, 0.73, z)
+			local importedColumn = if z < 0
+				then FactoryAssetLibrary.TryPlace(
+					"StructuralColumn",
+					hall,
+					CFrame.new(columnPosition),
+					plotId,
+					21
+				)
+				else nil
+
+			if importedColumn ~= nil then
+				importedColumn.Name = "HallColumnVisual"
+				local collision = part(
+					hall,
+					plotId,
+					"HallColumnCollision",
+					Vector3.new(1.3, 21, 1.3),
+					CFrame.new(hallCenter + Vector3.new(x, 11, z)),
+					COLORS.SteelBlack,
+					Enum.Material.SmoothPlastic,
+					true,
+					nil
+				)
+				collision.Transparency = 1
+				collision.CastShadow = false
+			else
+				part(
+					hall,
+					plotId,
+					"HallColumn",
+					Vector3.new(1.3, 21, 1.3),
+					CFrame.new(hallCenter + Vector3.new(x, 11, z)),
+					COLORS.SteelBlack,
+					Enum.Material.Metal,
+					true,
+					nil
+				)
+			end
 		end
 		part(
 			hall,
