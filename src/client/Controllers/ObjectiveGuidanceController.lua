@@ -461,10 +461,22 @@ function ObjectiveGuidanceController.Init()
 
 	local stateRemote = Remotes:WaitForChild(RemoteNames.StateSnapshot) :: RemoteEvent
 	local deltaRemote = Remotes:WaitForChild(RemoteNames.StateDelta) :: RemoteEvent
+	local requestState = Remotes:WaitForChild(RemoteNames.RequestState) :: RemoteEvent
+	local lastResyncRequest = -math.huge
+
+	local function requestFreshState()
+		local now = os.clock()
+		if now - lastResyncRequest < 1 then
+			return
+		end
+		lastResyncRequest = now
+		requestState:FireServer()
+	end
 
 	stateRemote.OnClientEvent:Connect(acceptSnapshot)
 	deltaRemote.OnClientEvent:Connect(function(delta)
 		if snapshot == nil then
+			requestFreshState()
 			return
 		end
 		local nextSnapshot = StateHelpers.MergeProductionDelta(snapshot, delta)
@@ -483,6 +495,11 @@ function ObjectiveGuidanceController.Init()
 	LocalPlayer.CharacterAdded:Connect(function()
 		queueRefresh()
 	end)
+
+	-- Do not depend on React UI mount order for the initial objective. This
+	-- controller owns its own bounded resync request so guidance still appears
+	-- if another state consumer initializes late or misses the first snapshot.
+	requestFreshState()
 end
 
 return table.freeze(ObjectiveGuidanceController)
