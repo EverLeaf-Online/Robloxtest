@@ -419,6 +419,40 @@ local function buildOverbandMagnet(root: Model, plotId: number, center: Vector3)
 	local magnet = model(root, "OverbandMagnetSeparator")
 	local base = center + Vector3.new(-27, 0, 20)
 
+	local importedMagnet =
+		FactoryAssetLibrary.TryPlace("MagneticSortingConveyor", magnet, CFrame.new(base), plotId)
+	if importedMagnet ~= nil then
+		importedMagnet.Name = "MagneticSortingConveyor"
+
+		local collision = part(
+			magnet,
+			plotId,
+			"MagneticSorterCollision",
+			Vector3.new(24, 4, 8.5),
+			CFrame.new(base + Vector3.new(0, 2, 0)),
+			COLORS.Black,
+			Enum.Material.SmoothPlastic,
+			true,
+			nil
+		)
+		collision.Transparency = 1
+		collision.CastShadow = false
+
+		local sign = part(
+			magnet,
+			plotId,
+			"MagnetSign",
+			Vector3.new(9, 1.8, 0.45),
+			CFrame.new(base + Vector3.new(0, 10.8, -4.6)),
+			COLORS.Black,
+			Enum.Material.Metal,
+			false,
+			nil
+		)
+		addSign(sign, "FERROUS MAGNET", Enum.NormalId.Front)
+		return
+	end
+
 	conveyor(
 		magnet,
 		plotId,
@@ -686,6 +720,40 @@ end
 local function buildBaler(root: Model, plotId: number, center: Vector3)
 	local baler = model(root, "HydraulicBaler")
 	local base = center + Vector3.new(55, 0, 44)
+
+	local importedBaler =
+		FactoryAssetLibrary.TryPlace("HydraulicScrapBaler", baler, CFrame.new(base), plotId)
+	if importedBaler ~= nil then
+		importedBaler.Name = "HydraulicScrapBaler"
+
+		local collision = part(
+			baler,
+			plotId,
+			"BalerCollision",
+			Vector3.new(15, 8, 9),
+			CFrame.new(base + Vector3.new(0, 4, 0)),
+			COLORS.Black,
+			Enum.Material.SmoothPlastic,
+			true,
+			nil
+		)
+		collision.Transparency = 1
+		collision.CastShadow = false
+
+		local sign = part(
+			baler,
+			plotId,
+			"BalerSign",
+			Vector3.new(11, 1.8, 0.45),
+			CFrame.new(base + Vector3.new(0, 9.3, -4.6)),
+			COLORS.Black,
+			Enum.Material.Metal,
+			false,
+			nil
+		)
+		addSign(sign, "SCRAP BALER", Enum.NormalId.Front)
+		return
+	end
 
 	part(
 		baler,
