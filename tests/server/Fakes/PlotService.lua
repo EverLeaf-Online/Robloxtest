@@ -11,13 +11,23 @@ export type StationConfig = {
 local PlotService = {}
 
 local stationByPlayer: { [Player]: StationConfig } = {}
+local refreshCountByPlayer: { [Player]: number } = {}
 
 function PlotService.Reset()
 	table.clear(stationByPlayer)
+	table.clear(refreshCountByPlayer)
 end
 
 function PlotService.SetStations(player: Player, config: StationConfig)
 	stationByPlayer[player] = config
+end
+
+function PlotService.GetRefreshCount(player: Player): number
+	return refreshCountByPlayer[player] or 0
+end
+
+function PlotService.RefreshPresentation(player: Player)
+	refreshCountByPlayer[player] = (refreshCountByPlayer[player] or 0) + 1
 end
 
 local function getConfig(player: Player): StationConfig?
