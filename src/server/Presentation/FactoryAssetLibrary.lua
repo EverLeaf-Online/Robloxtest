@@ -132,6 +132,38 @@ local function groundAndCenter(model: Model, targetCFrame: CFrame)
 	model:PivotTo(model:GetPivot() + offset)
 end
 
+function FactoryAssetLibrary.Preload(assetKeys: { string })
+	local pending: { string } = {}
+	local scheduled: { [string]: boolean } = {}
+
+	for _, assetKey in assetKeys do
+		if
+			not scheduled[assetKey]
+			and templateCache[assetKey] == nil
+			and FactoryAssetRegistry[assetKey] ~= nil
+		then
+			scheduled[assetKey] = true
+			table.insert(pending, assetKey)
+		end
+	end
+
+	if #pending == 0 then
+		return
+	end
+
+	local completed = 0
+	for _, assetKey in pending do
+		task.spawn(function()
+			loadTemplate(assetKey)
+			completed += 1
+		end)
+	end
+
+	while completed < #pending do
+		task.wait()
+	end
+end
+
 function FactoryAssetLibrary.TryPlace(
 	assetKey: string,
 	parent: Instance,
