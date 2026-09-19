@@ -29,6 +29,7 @@ local directionText: TextLabel? = nil
 local COLORS = Theme.Colors
 local LocalPlayer = Players.LocalPlayer
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
+local GUIDANCE_UPDATE_INTERVAL = 0.1
 
 local STEP_LABELS: { [ObjectiveGuidanceRules.ObjectiveStep]: string } = {
 	CollectScrap = "COLLECT SCRAP",
@@ -311,7 +312,14 @@ local function startRenderTracking()
 		return
 	end
 
-	renderConnection = RunService.RenderStepped:Connect(function()
+	local elapsed = GUIDANCE_UPDATE_INTERVAL
+	renderConnection = RunService.Heartbeat:Connect(function(deltaTime)
+		elapsed += deltaTime
+		if elapsed < GUIDANCE_UPDATE_INTERVAL then
+			return
+		end
+		elapsed %= GUIDANCE_UPDATE_INTERVAL
+
 		local target = currentTarget
 		local frame = directionFrame
 		local text = directionText

@@ -122,20 +122,19 @@ local function computePath(model: Model, startPosition: Vector3, endPosition: Ve
 		return nil
 	end
 
-	local path = PathfindingService:CreatePath({
-		AgentRadius = NAV_AGENT_RADIUS,
-		AgentHeight = NAV_AGENT_HEIGHT,
-		AgentCanJump = false,
-		AgentCanClimb = false,
-		WaypointSpacing = NAV_WAYPOINT_SPACING,
-	})
-
+	local path: Path? = nil
 	local ok = pcall(function()
-		path:ComputeAsync(startPosition, endPosition)
+		path = PathfindingService:CreatePath({
+			AgentRadius = NAV_AGENT_RADIUS,
+			AgentHeight = NAV_AGENT_HEIGHT,
+			AgentCanJump = false,
+			AgentCanClimb = false,
+			WaypointSpacing = NAV_WAYPOINT_SPACING,
+		})(path :: Path):ComputeAsync(startPosition, endPosition)
 	end)
 	activePathComputes -= 1
 
-	if not ok or path.Status ~= Enum.PathStatus.Success then
+	if not ok or path == nil or path.Status ~= Enum.PathStatus.Success then
 		return nil
 	end
 
@@ -260,6 +259,16 @@ local function moveTo(
 
 	local destination = targetPosition(target, offset or Vector3.zero)
 	model:SetAttribute("PresentationState", "Travelling")
+
+	-- Most authored work-node routes are line-of-sight. Avoid an expensive
+	-- PathfindingService compute when a single server-authored presentation
+	-- segment is already clear; fall back to navmesh only for blocked routes.
+	if hasSegmentClearance(model, rootPart, destination) then
+		local direct = tweenSegment(model, rootPart, destination, speed)
+		if direct then
+			return true
+		end
+	end
 
 	for attempt = 1, NAV_REPATH_ATTEMPTS do
 		if model.Parent == nil then
@@ -425,6 +434,11 @@ local function bindPlot(plot: Model)
 		return
 	end
 	boundPlots[plot] = true
+	plot.AncestryChanged:Connect(function(_, parent)
+		if parent == nil then
+			boundPlots[plot] = nil
+		end
+	end)
 
 	local existing = plot:FindFirstChild("RobotVisuals")
 	if existing ~= nil and existing:IsA("Folder") then

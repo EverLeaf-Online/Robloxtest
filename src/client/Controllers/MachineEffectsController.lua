@@ -8,6 +8,33 @@ local initialized = false
 
 local activeSpinners: { [BasePart]: number } = {}
 local boundMachines: { [BasePart]: boolean } = {}
+local spinnerConnection: RBXScriptConnection? = nil
+
+local function stopSpinnerLoopIfIdle()
+	if next(activeSpinners) ~= nil or spinnerConnection == nil then
+		return
+	end
+	spinnerConnection:Disconnect()
+	spinnerConnection = nil
+end
+
+local function ensureSpinnerLoop()
+	if spinnerConnection ~= nil then
+		return
+	end
+
+	spinnerConnection = RunService.Heartbeat:Connect(function(deltaTime)
+		for spinner, degreesPerSecond in activeSpinners do
+			if spinner.Parent == nil then
+				activeSpinners[spinner] = nil
+				continue
+			end
+			local radians = math.rad(degreesPerSecond) * deltaTime
+			spinner.CFrame *= CFrame.Angles(radians, 0, 0)
+		end
+		stopSpinnerLoopIfIdle()
+	end)
+end
 
 local function updateMachine(anchor: BasePart, visualName: string)
 	local plot = anchor.Parent
@@ -21,8 +48,10 @@ local function updateMachine(anchor: BasePart, visualName: string)
 	end
 
 	local busy = anchor:GetAttribute("Busy") == true
+	local foundSpinner = false
 	for _, descendant in visual:GetDescendants() do
 		if descendant:IsA("BasePart") and descendant:GetAttribute("MachineEffect") == "Spin" then
+			foundSpinner = true
 			if busy then
 				local speed = descendant:GetAttribute("EffectSpeedDegrees")
 				activeSpinners[descendant] = if typeof(speed) == "number" then speed else 90
@@ -30,6 +59,12 @@ local function updateMachine(anchor: BasePart, visualName: string)
 				activeSpinners[descendant] = nil
 			end
 		end
+	end
+
+	if busy and foundSpinner then
+		ensureSpinnerLoop()
+	else
+		stopSpinnerLoopIfIdle()
 	end
 end
 
@@ -39,6 +74,11 @@ local function bindMachine(plot: Model, anchorName: string, visualName: string)
 		return
 	end
 	boundMachines[anchor] = true
+	anchor.AncestryChanged:Connect(function(_, parent)
+		if parent == nil then
+			boundMachines[anchor] = nil
+		end
+	end)
 
 	local function refresh()
 		updateMachine(anchor, visualName)
@@ -90,17 +130,6 @@ function MachineEffectsController.Init()
 				bindPlot(child)
 			end
 		end)
-	end)
-
-	RunService.Heartbeat:Connect(function(deltaTime)
-		for spinner, degreesPerSecond in activeSpinners do
-			if spinner.Parent == nil then
-				activeSpinners[spinner] = nil
-				continue
-			end
-			local radians = math.rad(degreesPerSecond) * deltaTime
-			spinner.CFrame *= CFrame.Angles(radians, 0, 0)
-		end
 	end)
 end
 
