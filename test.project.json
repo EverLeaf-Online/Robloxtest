@@ -60,6 +60,9 @@
           },
           "MonetizationServiceUnderTest": {
             "$path": "src/server/Services/MonetizationService.lua"
+          },
+          "ZoneServiceUnderTest": {
+            "$path": "src/server/Services/ZoneService.lua"
           }
         },
         "Tests": {
