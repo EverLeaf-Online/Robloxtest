@@ -88,7 +88,7 @@ function CircuitUnlockButtonBuilder.Build(parent: Instance, plotId: number, anch
 		model,
 		plotId,
 		"LowerBase",
-		Vector3.new(7.4, 0.26, 7.4),
+		Vector3.new(9.2, 0.28, 9.2),
 		frame * CFrame.new(0, 0.13, 0),
 		COLORS.Base,
 		Enum.Material.DiamondPlate,
@@ -98,7 +98,7 @@ function CircuitUnlockButtonBuilder.Build(parent: Instance, plotId: number, anch
 		model,
 		plotId,
 		"BaseEdge",
-		Vector3.new(6.9, 0.22, 6.9),
+		Vector3.new(8.6, 0.22, 8.6),
 		frame * CFrame.new(0, 0.35, 0),
 		COLORS.BaseEdge,
 		Enum.Material.Metal,
@@ -108,7 +108,7 @@ function CircuitUnlockButtonBuilder.Build(parent: Instance, plotId: number, anch
 		model,
 		plotId,
 		"TopPlate",
-		Vector3.new(6.25, 0.18, 6.25),
+		Vector3.new(7.8, 0.18, 7.8),
 		frame * CFrame.new(0, 0.55, 0),
 		COLORS.Plate,
 		Enum.Material.DiamondPlate,
@@ -117,10 +117,10 @@ function CircuitUnlockButtonBuilder.Build(parent: Instance, plotId: number, anch
 
 	for index, offset in
 		{
-			Vector3.new(-2.55, 0.68, -2.55),
-			Vector3.new(2.55, 0.68, -2.55),
-			Vector3.new(-2.55, 0.68, 2.55),
-			Vector3.new(2.55, 0.68, 2.55),
+			Vector3.new(-3.35, 0.68, -3.35),
+			Vector3.new(3.35, 0.68, -3.35),
+			Vector3.new(-3.35, 0.68, 3.35),
+			Vector3.new(3.35, 0.68, 3.35),
 		}
 	do
 		local cornerFrame = frame * CFrame.new(offset)
@@ -128,7 +128,7 @@ function CircuitUnlockButtonBuilder.Build(parent: Instance, plotId: number, anch
 			model,
 			plotId,
 			("HazardPad%d"):format(index),
-			Vector3.new(1.3, 0.16, 1.3),
+			Vector3.new(1.55, 0.16, 1.55),
 			cornerFrame,
 			COLORS.Hazard,
 			Enum.Material.Neon,
@@ -138,10 +138,10 @@ function CircuitUnlockButtonBuilder.Build(parent: Instance, plotId: number, anch
 
 	for index, offset in
 		{
-			Vector3.new(-3.05, 0.62, -3.05),
-			Vector3.new(3.05, 0.62, -3.05),
-			Vector3.new(-3.05, 0.62, 3.05),
-			Vector3.new(3.05, 0.62, 3.05),
+			Vector3.new(-4.0, 0.62, -4.0),
+			Vector3.new(4.0, 0.62, -4.0),
+			Vector3.new(-4.0, 0.62, 4.0),
+			Vector3.new(4.0, 0.62, 4.0),
 		}
 	do
 		part(
@@ -162,7 +162,7 @@ function CircuitUnlockButtonBuilder.Build(parent: Instance, plotId: number, anch
 		model,
 		plotId,
 		"ButtonRing",
-		Vector3.new(0.55, 3.65, 3.65),
+		Vector3.new(0.6, 4.4, 4.4),
 		frame * CFrame.new(0, 0.9, 0) * CFrame.Angles(0, 0, math.rad(90)),
 		COLORS.ButtonRing,
 		Enum.Material.Metal,
@@ -174,7 +174,7 @@ function CircuitUnlockButtonBuilder.Build(parent: Instance, plotId: number, anch
 		model,
 		plotId,
 		"ButtonBase",
-		Vector3.new(0.58, 2.95, 2.95),
+		Vector3.new(0.62, 3.55, 3.55),
 		frame * CFrame.new(0, 1.04, 0) * CFrame.Angles(0, 0, math.rad(90)),
 		COLORS.Button,
 		Enum.Material.SmoothPlastic,
@@ -186,7 +186,7 @@ function CircuitUnlockButtonBuilder.Build(parent: Instance, plotId: number, anch
 		model,
 		plotId,
 		"ButtonDome",
-		Vector3.new(2.6, 0.62, 2.6),
+		Vector3.new(3.15, 0.7, 3.15),
 		frame * CFrame.new(0, 1.36, 0),
 		COLORS.ButtonGlow,
 		Enum.Material.Neon,

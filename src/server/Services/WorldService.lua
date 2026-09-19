@@ -101,8 +101,8 @@ local function addCircuitUnlockLabel(anchor: BasePart, zoneTwo: any)
 	billboard.Adornee = anchor
 	billboard.AlwaysOnTop = true
 	billboard.Size = UDim2.fromOffset(210, 58)
-	billboard.StudsOffset = Vector3.new(0, 3.8, 0)
-	billboard.MaxDistance = 48
+	billboard.StudsOffset = Vector3.new(0, 3, 0)
+	billboard.MaxDistance = 40
 	billboard.Parent = anchor
 
 	local label = Instance.new("TextLabel")
