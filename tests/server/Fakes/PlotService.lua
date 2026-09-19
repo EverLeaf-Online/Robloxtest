@@ -4,6 +4,8 @@ export type StationConfig = {
 	BotConsole: BasePart?,
 	RecycleStation: BasePart?,
 	Assembler: BasePart?,
+	UpgradeConsole: BasePart?,
+	StorageStation: BasePart?,
 	Plot: Model?,
 	PlotId: number?,
 	ProcessorControls: { [string]: BasePart }?,
@@ -62,6 +64,16 @@ end
 function PlotService.GetAssembler(player: Player): BasePart?
 	local config = getConfig(player)
 	return if config ~= nil then config.Assembler else nil
+end
+
+function PlotService.GetUpgradeConsole(player: Player): BasePart?
+	local config = getConfig(player)
+	return if config ~= nil then config.UpgradeConsole else nil
+end
+
+function PlotService.GetStorageStation(player: Player): BasePart?
+	local config = getConfig(player)
+	return if config ~= nil then config.StorageStation else nil
 end
 
 function PlotService.GetProcessorControl(player: Player, recipeId: string): BasePart?

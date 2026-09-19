@@ -63,6 +63,9 @@
           },
           "ZoneServiceUnderTest": {
             "$path": "src/server/Services/ZoneService.lua"
+          },
+          "UpgradeServiceUnderTest": {
+            "$path": "src/server/Services/UpgradeService.lua"
           }
         },
         "Tests": {
