@@ -30,7 +30,7 @@ local FactoryAssetRegistry: { [string]: FactoryAssetSpec } = {
 	BotAssemblerStation = table.freeze({
 		AssetId = 105480668154079,
 		DisplayName = "Bot Assembler Station",
-		TargetMaxDimension = 14,
+		TargetMaxDimension = 12,
 	}),
 }
 

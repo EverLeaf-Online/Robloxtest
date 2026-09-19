@@ -1,5 +1,7 @@
 --!strict
 
+local FactoryAssetLibrary = require(script.Parent.FactoryAssetLibrary)
+
 local NativeAssetBuilder = {}
 
 local COLORS = table.freeze({
@@ -294,48 +296,56 @@ function NativeAssetBuilder.BuildAssembler(anchor: BasePart, plotId: number): Mo
 	local cf = anchor.CFrame
 	local baseY = -(anchor.Size.Y / 2) + 0.55
 
-	part(
-		root,
-		plotId,
-		"Base",
-		Vector3.new(10.8, 1, 8.7),
-		cf * CFrame.new(0, baseY, 0),
-		COLORS.Dark,
-		Enum.Material.DiamondPlate,
-		nil
-	)
-	part(
-		root,
-		plotId,
-		"BackWall",
-		Vector3.new(10, 6.8, 1),
-		cf * CFrame.new(0, 0.25, 3.4),
-		COLORS.Steel,
-		Enum.Material.Metal,
-		nil
-	)
-	for x in { -4.3, 4.3 } do
+	local groundCFrame = cf * CFrame.new(0, -(anchor.Size.Y / 2) + 0.05, 0)
+	local importedAssembler =
+		FactoryAssetLibrary.TryPlace("BotAssemblerStation", root, groundCFrame, plotId)
+
+	if importedAssembler ~= nil then
+		importedAssembler.Name = "BotAssemblerStation"
+	else
 		part(
 			root,
 			plotId,
-			"GantryPost",
-			Vector3.new(0.9, 7, 0.9),
-			cf * CFrame.new(x, 0.4, 0.6),
+			"Base",
+			Vector3.new(10.8, 1, 8.7),
+			cf * CFrame.new(0, baseY, 0),
+			COLORS.Dark,
+			Enum.Material.DiamondPlate,
+			nil
+		)
+		part(
+			root,
+			plotId,
+			"BackWall",
+			Vector3.new(10, 6.8, 1),
+			cf * CFrame.new(0, 0.25, 3.4),
+			COLORS.Steel,
+			Enum.Material.Metal,
+			nil
+		)
+		for x in { -4.3, 4.3 } do
+			part(
+				root,
+				plotId,
+				"GantryPost",
+				Vector3.new(0.9, 7, 0.9),
+				cf * CFrame.new(x, 0.4, 0.6),
+				COLORS.SteelLight,
+				Enum.Material.Metal,
+				nil
+			)
+		end
+		part(
+			root,
+			plotId,
+			"GantryBeam",
+			Vector3.new(9.5, 0.9, 0.9),
+			cf * CFrame.new(0, 3.65, 0.6),
 			COLORS.SteelLight,
 			Enum.Material.Metal,
 			nil
 		)
 	end
-	part(
-		root,
-		plotId,
-		"GantryBeam",
-		Vector3.new(9.5, 0.9, 0.9),
-		cf * CFrame.new(0, 3.65, 0.6),
-		COLORS.SteelLight,
-		Enum.Material.Metal,
-		nil
-	)
 
 	local buildPlate = part(
 		root,
