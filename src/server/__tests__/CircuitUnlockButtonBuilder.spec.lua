@@ -1,6 +1,7 @@
 --!strict
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
 
 local JestGlobals = require(ReplicatedStorage.DevPackages.JestGlobals)
 local describe = JestGlobals.describe
@@ -22,6 +23,7 @@ end
 describe("CircuitUnlockButtonBuilder", function()
 	it("builds a committed low-profile floor button", function()
 		local plot = Instance.new("Model")
+		plot.Parent = Workspace
 		local anchor = makeAnchor()
 		anchor.Parent = plot
 
@@ -41,6 +43,7 @@ describe("CircuitUnlockButtonBuilder", function()
 
 	it("contains no runtime-loaded or executable third-party content", function()
 		local plot = Instance.new("Model")
+		plot.Parent = Workspace
 		local anchor = makeAnchor()
 		anchor.Parent = plot
 
@@ -62,6 +65,7 @@ describe("CircuitUnlockButtonBuilder", function()
 
 	it("keeps every visual part anchored and non-colliding", function()
 		local plot = Instance.new("Model")
+		plot.Parent = Workspace
 		local anchor = makeAnchor()
 		anchor.Parent = plot
 
