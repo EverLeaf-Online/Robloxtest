@@ -9,5 +9,8 @@
   "material_count": 1,
   "textures": "single baked PBR atlas embedded in GLB",
   "physics": "Roblox GLB import does not encode Anchored. Static placements must set Anchored=true.",
-  "reason": "Single-mesh export prevents the 144 source objects from separating under Roblox physics during Play."
+  "reason": "Single-mesh export prevents the 144 source objects from separating under Roblox physics during Play.",
+  "roblox_asset_id": 76139540142450,
+  "moderation": "Approved",
+  "runtime": "Loaded with AssetService:LoadAssetAsync; sanitized; every BasePart forced Anchored=true before parenting."
 }
