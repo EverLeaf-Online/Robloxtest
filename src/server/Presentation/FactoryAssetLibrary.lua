@@ -136,7 +136,8 @@ function FactoryAssetLibrary.TryPlace(
 	assetKey: string,
 	parent: Instance,
 	targetCFrame: CFrame,
-	plotId: number
+	plotId: number,
+	targetMaxDimensionOverride: number?
 ): Model?
 	local spec = FactoryAssetRegistry[assetKey]
 	local template = loadTemplate(assetKey)
@@ -146,7 +147,12 @@ function FactoryAssetLibrary.TryPlace(
 
 	local clone = template:Clone()
 	sanitizeStaticModel(clone, plotId)
-	scaleToTarget(clone, spec.TargetMaxDimension)
+	local targetMaxDimension = targetMaxDimensionOverride or spec.TargetMaxDimension
+	if targetMaxDimension <= 0 or targetMaxDimension ~= targetMaxDimension then
+		clone:Destroy()
+		return nil
+	end
+	scaleToTarget(clone, targetMaxDimension)
 	groundAndCenter(clone, targetCFrame)
 	clone.Parent = parent
 	return clone
