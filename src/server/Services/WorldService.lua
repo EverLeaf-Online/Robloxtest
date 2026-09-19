@@ -167,24 +167,56 @@ local function sanitizeCircuitUnlockAsset(model: Model, plotId: number): boolean
 	return partCount > 0
 end
 
-local function placeCircuitUnlockAsset(model: Model, anchor: BasePart): boolean
-	local _, nativeSize = model:GetBoundingBox()
-	if nativeSize.X <= 0.01 or nativeSize.Y <= 0.01 or nativeSize.Z <= 0.01 then
+local function orientCircuitUnlockAssetFlat(model: Model): boolean
+	local originalPivot = model:GetPivot()
+	local bestPivot: CFrame? = nil
+	local bestHeight = math.huge
+	local bestFootprintArea = -math.huge
+
+	for xQuarter = 0, 3 do
+		for yQuarter = 0, 3 do
+			for zQuarter = 0, 3 do
+				local rotation = CFrame.Angles(
+					math.rad(xQuarter * 90),
+					math.rad(yQuarter * 90),
+					math.rad(zQuarter * 90)
+				)
+				local candidatePivot = originalPivot * rotation
+				model:PivotTo(candidatePivot)
+
+				local _, size = model:GetBoundingBox()
+				if size.X <= 0.01 or size.Y <= 0.01 or size.Z <= 0.01 then
+					continue
+				end
+
+				local footprintArea = size.X * size.Z
+				local heightImproved = size.Y < bestHeight - 0.01
+				local sameHeight = math.abs(size.Y - bestHeight) <= 0.01
+				local footprintImproved = footprintArea > bestFootprintArea + 0.01
+
+				if heightImproved or (sameHeight and footprintImproved) then
+					bestHeight = size.Y
+					bestFootprintArea = footprintArea
+					bestPivot = candidatePivot
+				end
+			end
+		end
+	end
+
+	if bestPivot == nil then
+		model:PivotTo(originalPivot)
 		return false
 	end
 
-	-- Creator Store models do not guarantee that their authored "up" axis is Y.
-	-- The linked tycoon button is authored standing vertically. Treat the thinnest
-	-- bounding-box axis as the button's thickness and rotate that axis onto world Y.
-	local flattenRotation = CFrame.identity
-	if nativeSize.Z <= nativeSize.X and nativeSize.Z <= nativeSize.Y then
-		flattenRotation = CFrame.Angles(math.rad(90), 0, 0)
-	elseif nativeSize.X <= nativeSize.Y and nativeSize.X <= nativeSize.Z then
-		flattenRotation = CFrame.Angles(0, 0, math.rad(90))
-	end
+	model:PivotTo(bestPivot)
+	model:SetAttribute("ImportedFlatHeight", bestHeight)
+	model:SetAttribute("ImportedFlatFootprintArea", bestFootprintArea)
+	return true
+end
 
-	if flattenRotation ~= CFrame.identity then
-		model:PivotTo(model:GetPivot() * flattenRotation)
+local function placeCircuitUnlockAsset(model: Model, anchor: BasePart): boolean
+	if not orientCircuitUnlockAssetFlat(model) then
+		return false
 	end
 
 	local _, flattenedSize = model:GetBoundingBox()
@@ -199,13 +231,17 @@ local function placeCircuitUnlockAsset(model: Model, anchor: BasePart): boolean
 	end
 	model:ScaleTo(scale)
 
-	-- Translate only after rotation/scaling so the imported model keeps its corrected
-	-- floor orientation. Ground the visual on the factory floor beneath the prompt.
 	local boxCFrame, boxSize = model:GetBoundingBox()
 	local floorY = anchor.Position.Y - (anchor.Size.Y / 2) + 0.4
 	local targetCenter = Vector3.new(anchor.Position.X, floorY + (boxSize.Y / 2), anchor.Position.Z)
 	local translation = targetCenter - boxCFrame.Position
 	model:PivotTo(CFrame.new(translation) * model:GetPivot())
+
+	local _, groundedSize = model:GetBoundingBox()
+	if groundedSize.Y > math.max(groundedSize.X, groundedSize.Z) * 0.65 then
+		return false
+	end
+
 	return true
 end
 
