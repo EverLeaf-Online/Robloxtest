@@ -40,8 +40,8 @@ describe("CircuitUnlockButtonBuilder", function()
 		local domePart = dome :: BasePart
 		local floorY = anchor.Position.Y - (anchor.Size.Y / 2)
 
-		expect(basePart.Size.X >= 7).toBe(true)
-		expect(basePart.Size.Z >= 7).toBe(true)
+		expect(basePart.Size.X >= 9).toBe(true)
+		expect(basePart.Size.Z >= 9).toBe(true)
 		expect(domePart.Position.Y - floorY < 2).toBe(true)
 		expect(button:FindFirstChild("HazardPad1") ~= nil).toBe(true)
 
