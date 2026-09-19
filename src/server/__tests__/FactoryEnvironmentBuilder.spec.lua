@@ -6,6 +6,12 @@ local JestGlobals = require(ReplicatedStorage.DevPackages.JestGlobals)
 local describe = JestGlobals.describe
 local expect = JestGlobals.expect
 local it = JestGlobals.it
+local jest = JestGlobals.jest
+
+-- The first environment test intentionally exercises real approved Roblox
+-- asset loading. Cold Open Cloud workers can take several seconds even though
+-- the production builder preloads all unique assets concurrently.
+jest.setTimeout(15_000)
 
 local serverRoot = script.Parent.Parent
 local FactoryEnvironmentBuilder = require(serverRoot.Presentation.FactoryEnvironmentBuilder)
