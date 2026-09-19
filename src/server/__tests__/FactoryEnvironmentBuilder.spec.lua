@@ -48,8 +48,7 @@ describe("FactoryEnvironmentBuilder", function()
 		local environment = FactoryEnvironmentBuilder.Build(plot, 1, Vector3.zero)
 		local partCount = countBaseParts(environment)
 
-		expect(partCount >= 360).toBe(true)
-		expect(partCount <= 760).toBe(true)
+		expect(partCount <= 620).toBe(true)
 
 		plot:Destroy()
 	end)
@@ -65,7 +64,8 @@ describe("FactoryEnvironmentBuilder", function()
 			end
 		end
 
-		expect(collidable >= 110).toBe(true)
+		expect(collidable >= 70).toBe(true)
+		expect(collidable <= 220).toBe(true)
 		plot:Destroy()
 	end)
 
@@ -100,14 +100,62 @@ describe("FactoryEnvironmentBuilder", function()
 		local sorter = environment:FindFirstChild("MagneticSortingConveyor", true)
 		local baler = environment:FindFirstChild("HydraulicScrapBaler", true)
 		local hopper = environment:FindFirstChild("ReceivingHopper", true)
+		local infeed = environment:FindFirstChild("InfeedConveyorVisual", true)
+		local outfeed = environment:FindFirstChild("FinishedRobotOutfeedVisual", true)
+		local scrapPile = environment:FindFirstChild("ScrapPileVisual", true)
 
-		expect(shredder ~= nil and shredder:GetAttribute("FactoryImportedAsset") == true).toBe(true)
-		expect(sorter ~= nil and sorter:GetAttribute("FactoryImportedAsset") == true).toBe(true)
-		expect(baler ~= nil and baler:GetAttribute("FactoryImportedAsset") == true).toBe(true)
-		expect(hopper ~= nil and hopper:GetAttribute("FactoryImportedAsset") == true).toBe(true)
+		for _, imported in { shredder, sorter, baler, hopper, infeed, outfeed, scrapPile } do
+			expect(imported ~= nil and imported:GetAttribute("FactoryImportedAsset") == true).toBe(
+				true
+			)
+		end
+
+		for _, optimized in { sorter, baler, hopper, infeed, outfeed, scrapPile } do
+			local baseParts = 0
+			for _, descendant in (optimized :: Instance):GetDescendants() do
+				if descendant:IsA("BasePart") then
+					baseParts += 1
+				end
+			end
+			expect(baseParts <= 2).toBe(true)
+		end
 
 		plot:Destroy()
 	end)
+
+	it(
+		"loads optimized support assets without turning visual meshes into physics authority",
+		function()
+			local plot = Instance.new("Model")
+			local environment = FactoryEnvironmentBuilder.Build(plot, 1, Vector3.zero)
+
+			local light = environment:FindFirstChild("HallLight_-52_-25", true)
+			local storageRack = environment:FindFirstChild("WarehouseRack1", true)
+			local pipeRack = environment:FindFirstChild("UtilityPipeRack1", true)
+			local barrier = environment:FindFirstChild("ServiceBayBarrier1", true)
+			local cabinet = environment:FindFirstChild("RecoveryCabinetVisual", true)
+
+			for _, imported in { light, storageRack, pipeRack, barrier, cabinet } do
+				expect(imported ~= nil and imported:GetAttribute("FactoryImportedAsset") == true).toBe(
+					true
+				)
+				local baseParts = 0
+				for _, descendant in (imported :: Instance):GetDescendants() do
+					if descendant:IsA("BasePart") then
+						baseParts += 1
+						expect(descendant.Anchored).toBe(true)
+						expect(descendant.CanCollide).toBe(false)
+					end
+				end
+				expect(baseParts <= 2).toBe(true)
+			end
+
+			local cabinetCollision = environment:FindFirstChild("CabinetCollision", true)
+			expect(cabinetCollision ~= nil and (cabinetCollision :: BasePart).CanCollide).toBe(true)
+
+			plot:Destroy()
+		end
+	)
 
 	it("anchors every static factory part so Play mode cannot collapse the plant", function()
 		local plot = Instance.new("Model")
