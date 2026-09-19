@@ -51,7 +51,20 @@ jobs:
       - name: Install pinned project toolchain
         if: steps.config.outputs.ready == 'true'
         shell: bash
-        run: "$HOME/.rokit/bin/rokit install --no-trust-check"
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3 4; do
+            if "$HOME/.rokit/bin/rokit" install --no-trust-check; then
+              exit 0
+            fi
+            if [[ "$attempt" -eq 4 ]]; then
+              echo "::error::Rokit toolchain install failed after 4 attempts."
+              exit 1
+            fi
+            delay=$((attempt * 3))
+            echo "::warning::Rokit toolchain install attempt $attempt failed; retrying in ${delay}s."
+            sleep "$delay"
+          done
 
       - name: Prepare pinned OCALE build manifest
         if: steps.config.outputs.ready == 'true'
