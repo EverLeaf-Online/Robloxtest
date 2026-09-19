@@ -37,6 +37,7 @@ local BLOCKED_CLASSES: { [string]: boolean } = {
 }
 
 local templateCache: { [string]: Model } = {}
+local loadingTemplates: { [string]: boolean } = {}
 local warnedFailures: { [string]: boolean } = {}
 
 local function sanitizeStaticModel(model: Model, plotId: number?)
@@ -82,27 +83,48 @@ local function loadTemplate(assetKey: string): Model?
 		return nil
 	end
 
-	local ok, containerOrError = pcall(function()
-		return AssetService:LoadAssetAsync(spec.AssetId)
+	-- Multiple plot builders can cold-start at nearly the same time. Make each
+	-- registry key single-flight so those builders share one AssetService fetch
+	-- instead of multiplying network work and moderation/cache pressure.
+	if loadingTemplates[assetKey] then
+		while loadingTemplates[assetKey] do
+			task.wait()
+		end
+		return templateCache[assetKey]
+	end
+
+	loadingTemplates[assetKey] = true
+	local ok, templateOrError = pcall(function(): Model
+		local container = AssetService:LoadAssetAsync(spec.AssetId)
+		if not container:IsA("Model") then
+			error(
+				("asset %d returned %s instead of Model"):format(spec.AssetId, container.ClassName)
+			)
+		end
+
+		local template = container :: Model
+		template.Name = spec.DisplayName
+		sanitizeStaticModel(template, nil)
+		template.Parent = nil
+		return template
 	end)
-	if not ok or not containerOrError:IsA("Model") then
+	loadingTemplates[assetKey] = nil
+
+	if not ok then
 		if not warnedFailures[assetKey] then
 			warnedFailures[assetKey] = true
 			warn(
 				("[FactoryAssetLibrary] Could not load %s (%d): %s"):format(
 					assetKey,
 					spec.AssetId,
-					tostring(containerOrError)
+					tostring(templateOrError)
 				)
 			)
 		end
 		return nil
 	end
 
-	local template = containerOrError :: Model
-	template.Name = spec.DisplayName
-	sanitizeStaticModel(template, nil)
-	template.Parent = nil
+	local template = templateOrError :: Model
 	templateCache[assetKey] = template
 	return template
 end
@@ -154,6 +176,8 @@ function FactoryAssetLibrary.Preload(assetKeys: { string })
 	local completed = 0
 	for _, assetKey in pending do
 		task.spawn(function()
+			-- loadTemplate contains the entire fetch/sanitize path inside pcall, so
+			-- every worker reaches this counter even when an asset fails.
 			loadTemplate(assetKey)
 			completed += 1
 		end)
