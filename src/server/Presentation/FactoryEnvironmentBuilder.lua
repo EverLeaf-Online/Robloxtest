@@ -3,6 +3,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local WorldLayout = require(ReplicatedStorage.Shared.Config.WorldLayout)
+local FactoryAssetLibrary = require(script.Parent.FactoryAssetLibrary)
 local ScrapProcessAssetBuilder = require(script.Parent.ScrapProcessAssetBuilder)
 
 local FactoryEnvironmentBuilder = {}
@@ -622,6 +623,16 @@ local function buildScrapYard(root: Model, plotId: number, center: Vector3)
 			yardCenter + Vector3.new(28, 2.5, z),
 			COLORS.Safety
 		)
+	end
+
+	local receivingHopper = FactoryAssetLibrary.TryPlace(
+		"LargeScrapHopper",
+		yard,
+		CFrame.new(yardCenter + Vector3.new(16, 0.85, -20)) * CFrame.Angles(0, math.rad(90), 0),
+		plotId
+	)
+	if receivingHopper ~= nil then
+		receivingHopper.Name = "ReceivingHopper"
 	end
 
 	buildScrapGantry(root, plotId, center)

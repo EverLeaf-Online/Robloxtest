@@ -1,0 +1,50 @@
+{
+  "generator": "tools/assets/generate_factory_core_assets.py",
+  "style": "worn galvanized steel / charcoal steel / industrial yellow",
+  "source": "deterministic local Blender generation; no third-party geometry or textures",
+  "assets": [
+    {
+      "key": "HydraulicScrapBaler",
+      "roblox_asset_id": 76484892239245,
+      "moderation": "Approved",
+      "source_name": "hydraulic_scrap_baler",
+      "triangle_count": 1200,
+      "material_count": 5,
+      "runtime_use": "replaces procedural hydraulic baler visual; collision remains server-authored"
+    },
+    {
+      "key": "MagneticSortingConveyor",
+      "roblox_asset_id": 89816186092755,
+      "moderation": "Approved",
+      "source_name": "magnetic_sorting_conveyor",
+      "triangle_count": 2672,
+      "material_count": 5,
+      "runtime_use": "replaces procedural overband magnetic sorter visual; collision remains server-authored"
+    },
+    {
+      "key": "LargeScrapHopper",
+      "roblox_asset_id": 74192034279073,
+      "moderation": "Approved",
+      "source_name": "large_scrap_hopper",
+      "triangle_count": 602,
+      "material_count": 5,
+      "runtime_use": "scrap receiving yard presentation"
+    },
+    {
+      "key": "BotAssemblerStation",
+      "roblox_asset_id": 105480668154079,
+      "moderation": "Approved",
+      "source_name": "bot_assembler_station",
+      "triangle_count": 932,
+      "material_count": 5,
+      "runtime_use": "approved for later assembler visual replacement after machine-feedback integration"
+    }
+  ],
+  "runtime_policy": {
+    "load": "AssetService:LoadAssetAsync",
+    "anchored": true,
+    "scripts_stripped": true,
+    "constraints_stripped": true,
+    "collision": "server-authored"
+  }
+}

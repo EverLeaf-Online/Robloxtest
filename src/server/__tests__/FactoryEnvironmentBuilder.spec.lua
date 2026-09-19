@@ -92,6 +92,23 @@ describe("FactoryEnvironmentBuilder", function()
 		plot:Destroy()
 	end)
 
+	it("loads approved production meshes for the public factory presentation", function()
+		local plot = Instance.new("Model")
+		local environment = FactoryEnvironmentBuilder.Build(plot, 1, Vector3.zero)
+
+		local shredder = environment:FindFirstChild("Industrial Scrap Shredder", true)
+		local sorter = environment:FindFirstChild("MagneticSortingConveyor", true)
+		local baler = environment:FindFirstChild("HydraulicScrapBaler", true)
+		local hopper = environment:FindFirstChild("ReceivingHopper", true)
+
+		expect(shredder ~= nil and shredder:GetAttribute("FactoryImportedAsset") == true).toBe(true)
+		expect(sorter ~= nil and sorter:GetAttribute("FactoryImportedAsset") == true).toBe(true)
+		expect(baler ~= nil and baler:GetAttribute("FactoryImportedAsset") == true).toBe(true)
+		expect(hopper ~= nil and hopper:GetAttribute("FactoryImportedAsset") == true).toBe(true)
+
+		plot:Destroy()
+	end)
+
 	it("anchors every static factory part so Play mode cannot collapse the plant", function()
 		local plot = Instance.new("Model")
 		local environment = FactoryEnvironmentBuilder.Build(plot, 1, Vector3.zero)
