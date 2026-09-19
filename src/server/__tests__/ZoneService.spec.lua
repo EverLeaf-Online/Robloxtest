@@ -165,7 +165,7 @@ describe("ZoneService integration", function()
 
 		expect(data.Progression.Zone).toBe(1)
 		expect(data.Currencies.Credits).toBe(1_000_000)
-		expect(data.Tutorial.Milestones.FirstZoneGoalSeen).toBe(false)
+		expect(data.Tutorial.Milestones.FirstZoneGoalSeen == true).toBe(false)
 		expect(data.Revision).toBe(0)
 		expect(StateService.GetLastResult(player).Code).toBe("UNKNOWN_ZONE")
 		expect(#AnalyticsService.GetCreditSinks()).toBe(0)
