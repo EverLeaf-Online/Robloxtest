@@ -35,12 +35,6 @@
         "StreamingTargetRadius": 320
       }
     },
-    "AssetService": {
-      "$className": "AssetService",
-      "$properties": {
-        "AllowInsertFreeAssets": true
-      }
-    },
     "TextChatService": {
       "$className": "TextChatService",
       "$properties": {
