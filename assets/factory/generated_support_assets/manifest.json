@@ -1,0 +1,108 @@
+{
+  "generator": "tools/assets/generate_factory_support_assets.py",
+  "optimizer": "tools/assets/optimize_factory_glb.py",
+  "atlas_builder": "tools/assets/build_factory_material_atlas.py",
+  "style": "worn galvanized steel / charcoal steel / industrial yellow",
+  "source": "deterministic local Blender generation; no third-party geometry or textures",
+  "assets": [
+    {
+      "key": "ExpandedStorageRack",
+      "roblox_asset_id": 133330484140056,
+      "moderation": "Approved",
+      "source_name": "expanded_storage_rack",
+      "triangle_count": 880,
+      "material_count": 1,
+      "optimization": "atlas merged to one mesh/one material with base-color + metallic-roughness PBR textures",
+      "runtime_use": "warehouse storage presentation"
+    },
+    {
+      "key": "FactoryLightFixture",
+      "roblox_asset_id": 95471113233773,
+      "moderation": "Approved",
+      "source_name": "factory_light_fixture",
+      "triangle_count": 132,
+      "material_count": 1,
+      "optimization": "atlas merged to one mesh/one material with base-color + metallic-roughness PBR textures",
+      "runtime_use": "production hall lighting fixture; PointLight is server-authored"
+    },
+    {
+      "key": "FactoryStairs",
+      "roblox_asset_id": 127476836459285,
+      "moderation": "Approved",
+      "source_name": "factory_stairs_2m",
+      "triangle_count": 880,
+      "material_count": 1,
+      "optimization": "atlas merged to one mesh/one material with base-color + metallic-roughness PBR textures",
+      "runtime_use": "approved support asset reserved for stair/catwalk polish"
+    },
+    {
+      "key": "UtilityPipeRack",
+      "roblox_asset_id": 91418551606339,
+      "moderation": "Approved",
+      "source_name": "utility_pipe_rack_4m",
+      "triangle_count": 928,
+      "material_count": 1,
+      "optimization": "atlas merged to one mesh/one material with base-color + metallic-roughness PBR textures",
+      "runtime_use": "utility yard pipe-rack presentation"
+    },
+    {
+      "key": "SafetyBarrier",
+      "roblox_asset_id": 104919039194566,
+      "moderation": "Approved",
+      "source_name": "safety_barrier_3m",
+      "triangle_count": 528,
+      "material_count": 1,
+      "optimization": "atlas merged to one mesh/one material with base-color + metallic-roughness PBR textures",
+      "runtime_use": "robot service bay safety barrier presentation"
+    },
+    {
+      "key": "ElectricalCabinet",
+      "roblox_asset_id": 77920368437090,
+      "moderation": "Approved",
+      "source_name": "electrical_control_cabinet",
+      "triangle_count": 544,
+      "material_count": 1,
+      "optimization": "atlas merged to one mesh/one material with base-color + metallic-roughness PBR textures",
+      "runtime_use": "circuit annex control cabinet presentation; collision remains server-authored"
+    },
+    {
+      "key": "MaterialBin",
+      "roblox_asset_id": 90582751977534,
+      "moderation": "Approved",
+      "source_name": "material_bin",
+      "triangle_count": 308,
+      "material_count": 1,
+      "optimization": "atlas merged to one mesh/one material with base-color + metallic-roughness PBR textures",
+      "runtime_use": "approved support asset reserved for material handling polish"
+    },
+    {
+      "key": "CatwalkModule",
+      "roblox_asset_id": 110382675585798,
+      "moderation": "Approved",
+      "source_name": "catwalk_module_4m",
+      "triangle_count": 1364,
+      "material_count": 1,
+      "optimization": "atlas merged to one mesh/one material with base-color + metallic-roughness PBR textures",
+      "runtime_use": "approved support asset reserved for mezzanine polish"
+    },
+    {
+      "key": "StructuralColumn",
+      "roblox_asset_id": 84439007347573,
+      "moderation": "Approved",
+      "source_name": "structural_column_4_5m",
+      "triangle_count": 544,
+      "material_count": 1,
+      "optimization": "atlas merged to one mesh/one material with base-color + metallic-roughness PBR textures",
+      "runtime_use": "approved support asset reserved for structural polish"
+    }
+  ],
+  "runtime_policy": {
+    "load": "AssetService:LoadAssetAsync",
+    "anchored": true,
+    "scripts_stripped": true,
+    "constraints_stripped": true,
+    "collision": "server-authored where collision is required",
+    "optimized_meshes": true,
+    "pbr": "single atlas base-color + metallic-roughness"
+  }
+}

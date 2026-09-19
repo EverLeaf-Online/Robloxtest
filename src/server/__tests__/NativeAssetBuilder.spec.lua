@@ -32,6 +32,14 @@ describe("NativeAssetBuilder", function()
 		expect(busyBeacon ~= nil and busyBeacon:GetAttribute("BusyOnly") == true).toBe(true)
 		expect(anchor.Transparency).toBe(1)
 
+		local importedBaseParts = 0
+		for _, descendant in (imported :: Instance):GetDescendants() do
+			if descendant:IsA("BasePart") then
+				importedBaseParts += 1
+			end
+		end
+		expect(importedBaseParts <= 2).toBe(true)
+
 		for _, descendant in visual:GetDescendants() do
 			if descendant:IsA("BasePart") then
 				expect(descendant.Anchored).toBe(true)

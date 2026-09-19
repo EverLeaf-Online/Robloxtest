@@ -116,6 +116,31 @@ local function conveyor(
 	height: number
 ): Model
 	local result = model(parent, name)
+	local assetKey = if name == "FinishedRobotOutfeed" then "OutfeedConveyor" else "InfeedConveyor"
+	local imported = FactoryAssetLibrary.TryPlace(
+		assetKey,
+		result,
+		cframe * CFrame.Angles(0, math.rad(90), 0),
+		plotId,
+		length
+	)
+	if imported ~= nil then
+		imported.Name = name .. "Visual"
+		local collision = part(
+			result,
+			plotId,
+			name .. "Collision",
+			Vector3.new(width, 0.8, length),
+			cframe * CFrame.new(0, height, 0),
+			COLORS.Black,
+			Enum.Material.SmoothPlastic,
+			true,
+			nil
+		)
+		collision.Transparency = 1
+		collision.CastShadow = false
+		return result
+	end
 	part(
 		result,
 		plotId,
@@ -160,14 +185,42 @@ local function buildScrapStockpiles(root: Model, plotId: number, center: Vector3
 	local yard = model(root, "ScrapStockpiles")
 	local yardCenter = center + WorldLayout.Environment.ScrapYardCenterOffset
 	local piles = {
-		Vector3.new(-15, 1.2, -20),
-		Vector3.new(6, 1.2, -18),
-		Vector3.new(-13, 1.2, 15),
-		Vector3.new(9, 1.2, 17),
+		Vector3.new(-15, 0, -20),
+		Vector3.new(6, 0, -18),
+		Vector3.new(-13, 0, 15),
+		Vector3.new(9, 0, 17),
 	}
 
 	for pileIndex, pileOffset in piles do
 		local pile = model(yard, ("Pile%d"):format(pileIndex))
+		local targetSize = 10 + ((pileIndex * 3) % 4)
+		local position = yardCenter + pileOffset + Vector3.new(0, 0.84, 0)
+		local yaw = math.rad((pileIndex * 47) % 180)
+		local imported = FactoryAssetLibrary.TryPlace(
+			"ScrapPileMedium",
+			pile,
+			CFrame.new(position) * CFrame.Angles(0, yaw, 0),
+			plotId,
+			targetSize
+		)
+		if imported ~= nil then
+			imported.Name = "ScrapPileVisual"
+			local collision = part(
+				pile,
+				plotId,
+				"ScrapPileCollision",
+				Vector3.new(targetSize * 0.78, 3.6, targetSize * 0.86),
+				CFrame.new(position + Vector3.new(0, 1.8, 0)) * CFrame.Angles(0, yaw, 0),
+				COLORS.Rust,
+				Enum.Material.SmoothPlastic,
+				true,
+				nil
+			)
+			collision.Transparency = 1
+			collision.CastShadow = false
+			continue
+		end
+
 		for itemIndex = 1, 11 do
 			local x = ((itemIndex * 17 + pileIndex * 7) % 13) - 6
 			local z = ((itemIndex * 11 + pileIndex * 5) % 11) - 5

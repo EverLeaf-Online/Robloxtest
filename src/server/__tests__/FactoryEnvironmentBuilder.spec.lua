@@ -7,6 +7,14 @@ local describe = JestGlobals.describe
 local expect = JestGlobals.expect
 local it = JestGlobals.it
 
+local function environmentIt(name: string, testFn: () -> ())
+	-- The first environment test on a cold Open Cloud worker can spend several
+	-- seconds loading approved Roblox assets. The production builder preloads
+	-- unique assets concurrently, but the integration suite still needs a
+	-- network-tolerant ceiling.
+	it(name, testFn, 15_000)
+end
+
 local serverRoot = script.Parent.Parent
 local FactoryEnvironmentBuilder = require(serverRoot.Presentation.FactoryEnvironmentBuilder)
 
@@ -21,7 +29,7 @@ local function countBaseParts(root: Instance): number
 end
 
 describe("FactoryEnvironmentBuilder", function()
-	it("builds a compact scrap-processing plant with a real process train", function()
+	environmentIt("builds a compact scrap-processing plant with a real process train", function()
 		local plot = Instance.new("Model")
 		local environment = FactoryEnvironmentBuilder.Build(plot, 1, Vector3.zero)
 
@@ -43,18 +51,20 @@ describe("FactoryEnvironmentBuilder", function()
 		plot:Destroy()
 	end)
 
-	it("keeps the detailed private-instance environment within a bounded part budget", function()
-		local plot = Instance.new("Model")
-		local environment = FactoryEnvironmentBuilder.Build(plot, 1, Vector3.zero)
-		local partCount = countBaseParts(environment)
+	environmentIt(
+		"keeps the detailed private-instance environment within a bounded part budget",
+		function()
+			local plot = Instance.new("Model")
+			local environment = FactoryEnvironmentBuilder.Build(plot, 1, Vector3.zero)
+			local partCount = countBaseParts(environment)
 
-		expect(partCount >= 360).toBe(true)
-		expect(partCount <= 760).toBe(true)
+			expect(partCount <= 620).toBe(true)
 
-		plot:Destroy()
-	end)
+			plot:Destroy()
+		end
+	)
 
-	it("provides substantial collidable plant geometry for robot navigation", function()
+	environmentIt("provides substantial collidable plant geometry for robot navigation", function()
 		local plot = Instance.new("Model")
 		local environment = FactoryEnvironmentBuilder.Build(plot, 1, Vector3.zero)
 
@@ -65,11 +75,12 @@ describe("FactoryEnvironmentBuilder", function()
 			end
 		end
 
-		expect(collidable >= 110).toBe(true)
+		expect(collidable >= 70).toBe(true)
+		expect(collidable <= 220).toBe(true)
 		plot:Destroy()
 	end)
 
-	it("physically separates receiving, processing, shipping, and utilities", function()
+	environmentIt("physically separates receiving, processing, shipping, and utilities", function()
 		local plot = Instance.new("Model")
 		local environment = FactoryEnvironmentBuilder.Build(plot, 1, Vector3.zero)
 		local hall = environment:FindFirstChild("ProductionHall")
@@ -92,7 +103,7 @@ describe("FactoryEnvironmentBuilder", function()
 		plot:Destroy()
 	end)
 
-	it("loads approved production meshes for the public factory presentation", function()
+	environmentIt("loads approved production meshes for the public factory presentation", function()
 		local plot = Instance.new("Model")
 		local environment = FactoryEnvironmentBuilder.Build(plot, 1, Vector3.zero)
 
@@ -100,27 +111,78 @@ describe("FactoryEnvironmentBuilder", function()
 		local sorter = environment:FindFirstChild("MagneticSortingConveyor", true)
 		local baler = environment:FindFirstChild("HydraulicScrapBaler", true)
 		local hopper = environment:FindFirstChild("ReceivingHopper", true)
+		local infeed = environment:FindFirstChild("InfeedConveyorVisual", true)
+		local outfeed = environment:FindFirstChild("FinishedRobotOutfeedVisual", true)
+		local scrapPile = environment:FindFirstChild("ScrapPileVisual", true)
 
-		expect(shredder ~= nil and shredder:GetAttribute("FactoryImportedAsset") == true).toBe(true)
-		expect(sorter ~= nil and sorter:GetAttribute("FactoryImportedAsset") == true).toBe(true)
-		expect(baler ~= nil and baler:GetAttribute("FactoryImportedAsset") == true).toBe(true)
-		expect(hopper ~= nil and hopper:GetAttribute("FactoryImportedAsset") == true).toBe(true)
-
-		plot:Destroy()
-	end)
-
-	it("anchors every static factory part so Play mode cannot collapse the plant", function()
-		local plot = Instance.new("Model")
-		local environment = FactoryEnvironmentBuilder.Build(plot, 1, Vector3.zero)
-		local unanchored = {}
-
-		for _, descendant in environment:GetDescendants() do
-			if descendant:IsA("BasePart") and not descendant.Anchored then
-				table.insert(unanchored, descendant:GetFullName())
-			end
+		for _, imported in { shredder, sorter, baler, hopper, infeed, outfeed, scrapPile } do
+			expect(imported ~= nil and imported:GetAttribute("FactoryImportedAsset") == true).toBe(
+				true
+			)
 		end
 
-		expect(unanchored).toEqual({})
+		for _, optimized in { sorter, baler, hopper, infeed, outfeed, scrapPile } do
+			local baseParts = 0
+			for _, descendant in (optimized :: Instance):GetDescendants() do
+				if descendant:IsA("BasePart") then
+					baseParts += 1
+				end
+			end
+			expect(baseParts <= 2).toBe(true)
+		end
+
 		plot:Destroy()
 	end)
+
+	it(
+		"loads optimized support assets without turning visual meshes into physics authority",
+		function()
+			local plot = Instance.new("Model")
+			local environment = FactoryEnvironmentBuilder.Build(plot, 1, Vector3.zero)
+
+			local light = environment:FindFirstChild("HallLight_-52_-25", true)
+			local storageRack = environment:FindFirstChild("WarehouseRack1", true)
+			local pipeRack = environment:FindFirstChild("UtilityPipeRack1", true)
+			local barrier = environment:FindFirstChild("ServiceBayBarrier1", true)
+			local cabinet = environment:FindFirstChild("RecoveryCabinetVisual", true)
+
+			for _, imported in { light, storageRack, pipeRack, barrier, cabinet } do
+				expect(imported ~= nil and imported:GetAttribute("FactoryImportedAsset") == true).toBe(
+					true
+				)
+				local baseParts = 0
+				for _, descendant in (imported :: Instance):GetDescendants() do
+					if descendant:IsA("BasePart") then
+						baseParts += 1
+						expect(descendant.Anchored).toBe(true)
+						expect(descendant.CanCollide).toBe(false)
+					end
+				end
+				expect(baseParts <= 2).toBe(true)
+			end
+
+			local cabinetCollision = environment:FindFirstChild("CabinetCollision", true)
+			expect(cabinetCollision ~= nil and (cabinetCollision :: BasePart).CanCollide).toBe(true)
+
+			plot:Destroy()
+		end
+	)
+
+	environmentIt(
+		"anchors every static factory part so Play mode cannot collapse the plant",
+		function()
+			local plot = Instance.new("Model")
+			local environment = FactoryEnvironmentBuilder.Build(plot, 1, Vector3.zero)
+			local unanchored = {}
+
+			for _, descendant in environment:GetDescendants() do
+				if descendant:IsA("BasePart") and not descendant.Anchored then
+					table.insert(unanchored, descendant:GetFullName())
+				end
+			end
+
+			expect(unanchored).toEqual({})
+			plot:Destroy()
+		end
+	)
 end)

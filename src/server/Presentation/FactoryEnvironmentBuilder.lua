@@ -8,6 +8,22 @@ local ScrapProcessAssetBuilder = require(script.Parent.ScrapProcessAssetBuilder)
 
 local FactoryEnvironmentBuilder = {}
 
+local PRELOAD_ASSET_KEYS = table.freeze({
+	"IndustrialScrapShredder",
+	"HydraulicScrapBaler",
+	"MagneticSortingConveyor",
+	"LargeScrapHopper",
+	"BotAssemblerStation",
+	"InfeedConveyor",
+	"OutfeedConveyor",
+	"ScrapPileMedium",
+	"ExpandedStorageRack",
+	"FactoryLightFixture",
+	"UtilityPipeRack",
+	"SafetyBarrier",
+	"ElectricalCabinet",
+})
+
 local COLORS = table.freeze({
 	Concrete = Color3.fromRGB(82, 85, 84),
 	ConcreteDark = Color3.fromRGB(58, 62, 64),
@@ -131,6 +147,23 @@ local function safetyStripe(
 end
 
 local function workLight(parent: Instance, plotId: number, name: string, position: Vector3)
+	local imported =
+		FactoryAssetLibrary.TryPlace("FactoryLightFixture", parent, CFrame.new(position), plotId, 5)
+	if imported ~= nil then
+		imported.Name = name
+		local emitter = imported:FindFirstChildWhichIsA("BasePart", true)
+		if emitter ~= nil then
+			local light = Instance.new("PointLight")
+			light.Name = "WorkLight"
+			light.Brightness = 0.7
+			light.Color = Color3.fromRGB(210, 236, 240)
+			light.Range = 24
+			light.Shadows = false
+			light.Parent = emitter
+		end
+		return
+	end
+
 	local housing = part(
 		parent,
 		plotId,
@@ -967,6 +1000,19 @@ local function buildWorkerBay(root: Model, plotId: number, center: Vector3)
 		end
 	end
 
+	for index, x in { -15, 15 } do
+		local barrier = FactoryAssetLibrary.TryPlace(
+			"SafetyBarrier",
+			bay,
+			CFrame.new(bayCenter + Vector3.new(x, 0.84, -14)),
+			plotId,
+			10
+		)
+		if barrier ~= nil then
+			barrier.Name = ("ServiceBayBarrier%d"):format(index)
+		end
+	end
+
 	local sign = part(
 		bay,
 		plotId,
@@ -1065,6 +1111,19 @@ local function buildLoadingDock(root: Model, plotId: number, center: Vector3)
 				true,
 				nil
 			)
+		end
+	end
+
+	for index, z in { -24, 0, 24 } do
+		local rack = FactoryAssetLibrary.TryPlace(
+			"ExpandedStorageRack",
+			dock,
+			CFrame.new(dockCenter + Vector3.new(-5.5, 0.84, z)) * CFrame.Angles(0, math.rad(90), 0),
+			plotId,
+			13
+		)
+		if rack ~= nil then
+			rack.Name = ("WarehouseRack%d"):format(index)
 		end
 	end
 
@@ -1174,6 +1233,19 @@ local function buildUtilities(root: Model, plotId: number, center: Vector3)
 		)
 	end
 
+	for index, x in { -20, 20 } do
+		local rack = FactoryAssetLibrary.TryPlace(
+			"UtilityPipeRack",
+			utilities,
+			CFrame.new(utilityCenter + Vector3.new(x, 0.84, -1)),
+			plotId,
+			14
+		)
+		if rack ~= nil then
+			rack.Name = ("UtilityPipeRack%d"):format(index)
+		end
+	end
+
 	local sign = part(
 		utilities,
 		plotId,
@@ -1278,23 +1350,48 @@ local function buildCircuitAnnex(root: Model, plotId: number, center: Vector3)
 
 	for index, x in { -27, 0, 27 } do
 		local cabinet = model(annex, ("RecoveryCabinet%d"):format(index))
-		part(
+		local basePosition = islandCenter + Vector3.new(x, 0.84, -25)
+		local imported = FactoryAssetLibrary.TryPlace(
+			"ElectricalCabinet",
 			cabinet,
+			CFrame.new(basePosition),
 			plotId,
-			"Cabinet",
-			Vector3.new(12, 7.5, 5.5),
-			CFrame.new(islandCenter + Vector3.new(x, 4.3, -25)),
-			COLORS.Steel,
-			Enum.Material.Metal,
-			true,
-			nil
+			8
 		)
+		if imported ~= nil then
+			imported.Name = "RecoveryCabinetVisual"
+			local collision = part(
+				cabinet,
+				plotId,
+				"CabinetCollision",
+				Vector3.new(5.2, 8, 3.4),
+				CFrame.new(basePosition + Vector3.new(0, 4, 0)),
+				COLORS.Steel,
+				Enum.Material.SmoothPlastic,
+				true,
+				nil
+			)
+			collision.Transparency = 1
+			collision.CastShadow = false
+		else
+			part(
+				cabinet,
+				plotId,
+				"Cabinet",
+				Vector3.new(12, 7.5, 5.5),
+				CFrame.new(islandCenter + Vector3.new(x, 4.3, -25)),
+				COLORS.Steel,
+				Enum.Material.Metal,
+				true,
+				nil
+			)
+		end
 		part(
 			cabinet,
 			plotId,
 			"Status",
-			Vector3.new(7.5, 0.5, 0.2),
-			CFrame.new(islandCenter + Vector3.new(x, 5.4, -27.85)),
+			Vector3.new(4.2, 0.5, 0.2),
+			CFrame.new(islandCenter + Vector3.new(x, 5.4, -27.0)),
 			COLORS.Cyan,
 			Enum.Material.Neon,
 			false,
@@ -1322,6 +1419,11 @@ function FactoryEnvironmentBuilder.Build(plot: Model, plotId: number, center: Ve
 		assert(existing:IsA("Model"), "FactoryEnvironment must be a Model")
 		return existing
 	end
+
+	-- AssetService calls can each yield on a cold server. Load the unique public
+	-- factory kit concurrently so startup cost approaches the slowest asset load
+	-- instead of the sum of every imported machine and support prop.
+	FactoryAssetLibrary.Preload(PRELOAD_ASSET_KEYS)
 
 	local root = model(plot, "FactoryEnvironment")
 	buildSiteSurface(root, plotId, center)
