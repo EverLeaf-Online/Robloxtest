@@ -57,6 +57,9 @@
           },
           "WorldService": {
             "$path": "tests/server/Fakes/WorldService.lua"
+          },
+          "MonetizationServiceUnderTest": {
+            "$path": "src/server/Services/MonetizationService.lua"
           }
         },
         "Tests": {
