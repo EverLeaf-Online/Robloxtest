@@ -41,7 +41,7 @@ end
 
 local function resourceClusterSize(mode: LayoutMode): UDim2
 	if mode == "Phone" then
-		return UDim2.fromOffset(360, 44)
+		return UDim2.new(1, -20, 0, 44)
 	elseif mode == "Tablet" then
 		return UDim2.fromOffset(570, 52)
 	end
@@ -50,7 +50,7 @@ end
 
 local function resourceClusterPosition(mode: LayoutMode): UDim2
 	if mode == "Phone" then
-		return UDim2.new(0.61, 0, 0, 8)
+		return UDim2.new(0.5, 0, 0, 8)
 	elseif mode == "Tablet" then
 		return UDim2.new(0.55, 0, 0, 9)
 	end
@@ -416,10 +416,12 @@ local function App()
 						ZIndex = 22,
 					}),
 					Close = React.createElement("TextButton", {
+						Active = true,
 						BackgroundColor3 = COLORS.PanelSoft,
 						Font = Enum.Font.GothamBold,
-						Position = UDim2.new(1, -82, 0, 12),
-						Size = UDim2.fromOffset(66, 30),
+						Position = UDim2.new(1, -88, 0, 10),
+						Selectable = true,
+						Size = UDim2.fromOffset(72, 44),
 						Text = "Close",
 						TextColor3 = COLORS.Text,
 						TextSize = 12,
@@ -544,14 +546,16 @@ local function App()
 						ZIndex = 42,
 					}),
 					Continue = React.createElement("TextButton", {
+						Active = true,
 						AnchorPoint = Vector2.new(0.5, 1),
 						BackgroundColor3 = rarityColor(revealDefinition.Rarity),
 						BorderSizePixel = 0,
 						Font = Enum.Font.GothamBold,
 						Position = UDim2.new(0.5, 0, 1, -18),
+						Selectable = true,
 						Size = if isPhone
-							then UDim2.new(1, -40, 0, 38)
-							else UDim2.fromOffset(220, 42),
+							then UDim2.new(1, -40, 0, 44)
+							else UDim2.fromOffset(220, 44),
 						Text = "KEEP BUILDING",
 						TextColor3 = Color3.fromRGB(18, 21, 27),
 						TextSize = if isPhone then 12 else 13,
