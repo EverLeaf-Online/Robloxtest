@@ -28,14 +28,21 @@ describe("CircuitUnlockButtonBuilder", function()
 		anchor.Parent = plot
 
 		local button = CircuitUnlockButtonBuilder.Build(plot, 1, anchor)
-		local _, size = button:GetBoundingBox()
+		local base = button:FindFirstChild("LowerBase")
+		local dome = button:FindFirstChild("ButtonDome")
 
 		expect(button:GetAttribute("AuthoredInRepo")).toBe(true)
 		expect(button:GetAttribute("RequiredZone")).toBe(2)
-		expect(size.X >= 7).toBe(true)
-		expect(size.Z >= 7).toBe(true)
-		expect(size.Y < 3).toBe(true)
-		expect(button:FindFirstChild("ButtonDome") ~= nil).toBe(true)
+		expect(base ~= nil and base:IsA("BasePart")).toBe(true)
+		expect(dome ~= nil and dome:IsA("BasePart")).toBe(true)
+
+		local basePart = base :: BasePart
+		local domePart = dome :: BasePart
+		local floorY = anchor.Position.Y - (anchor.Size.Y / 2)
+
+		expect(basePart.Size.X >= 7).toBe(true)
+		expect(basePart.Size.Z >= 7).toBe(true)
+		expect(domePart.Position.Y - floorY < 2).toBe(true)
 		expect(button:FindFirstChild("HazardPad1") ~= nil).toBe(true)
 
 		plot:Destroy()
