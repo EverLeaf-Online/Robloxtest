@@ -8,6 +8,8 @@ local DataService = {}
 
 local dataByPlayer: { [Player]: any } = {}
 local busyByPlayer: { [Player]: boolean } = {}
+local saveResultByPlayer: { [Player]: boolean } = {}
+local saveCountByPlayer: { [Player]: number } = {}
 
 local profileLoadedEvent = Instance.new("BindableEvent")
 DataService.ProfileLoaded = profileLoadedEvent.Event
@@ -15,6 +17,8 @@ DataService.ProfileLoaded = profileLoadedEvent.Event
 function DataService.Reset()
 	table.clear(dataByPlayer)
 	table.clear(busyByPlayer)
+	table.clear(saveResultByPlayer)
+	table.clear(saveCountByPlayer)
 end
 
 function DataService.SetData(player: Player, data: any)
@@ -25,12 +29,25 @@ function DataService.SetBusy(player: Player, busy: boolean)
 	busyByPlayer[player] = if busy then true else nil
 end
 
+function DataService.SetSaveResult(player: Player, success: boolean)
+	saveResultByPlayer[player] = success
+end
+
+function DataService.GetSaveCount(player: Player): number
+	return saveCountByPlayer[player] or 0
+end
+
 function DataService.GetData(player: Player): any?
 	return dataByPlayer[player]
 end
 
 function DataService.IsReady(player: Player): boolean
 	return dataByPlayer[player] ~= nil
+end
+
+function DataService.SaveNow(player: Player): boolean
+	saveCountByPlayer[player] = (saveCountByPlayer[player] or 0) + 1
+	return saveResultByPlayer[player] ~= false and dataByPlayer[player] ~= nil
 end
 
 function DataService.Transaction(
