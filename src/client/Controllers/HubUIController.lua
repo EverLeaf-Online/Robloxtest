@@ -22,6 +22,8 @@ local populationLabel: TextLabel? = nil
 local activePanel: PanelName? = nil
 local panelFrame: Frame? = nil
 local panelTween: Tween? = nil
+local launcherFrame: Frame? = nil
+local phoneLayout = false
 local launcherHints: { [PanelName]: TextLabel } = {}
 
 local function corner(parent: Instance, radius: number)
@@ -116,7 +118,9 @@ local function createLauncher(
 	button.BorderSizePixel = 0
 	button.Size = UDim2.fromOffset(158, 54)
 	button.Text = ""
+	button.Active = true
 	button.AutoButtonColor = false
+	button.Selectable = true
 	button.Parent = parent
 
 	if iconKind == "Shop" then
@@ -364,6 +368,9 @@ function HubUIController.OpenPanel(panelName: PanelName?)
 		)
 		panelTween.Completed:Once(function()
 			panel.Visible = false
+			if launcherFrame ~= nil then
+				launcherFrame.Visible = true
+			end
 			panelTween = nil
 		end)
 		panelTween:Play()
@@ -372,10 +379,22 @@ function HubUIController.OpenPanel(panelName: PanelName?)
 
 	renderPanel(panelName)
 	panel.Visible = true
+
+	local camera = Workspace.CurrentCamera
+	local viewportWidth = if camera ~= nil then camera.ViewportSize.X else 390
+	local targetWidth = if phoneLayout then math.clamp(viewportWidth - 20, 280, 340) else 310
+	local targetHeight = if phoneLayout then 218 else 230
+	panel.Position = if phoneLayout then UDim2.fromScale(0.5, 0.54) else UDim2.new(0, 188, 0.58, 0)
+	panel.AnchorPoint = if phoneLayout then Vector2.new(0.5, 0.5) else Vector2.new(0, 0.5)
+
+	if launcherFrame ~= nil then
+		launcherFrame.Visible = not phoneLayout
+	end
+
 	panelTween = TweenService:Create(
 		panel,
 		TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-		{ Size = UDim2.fromOffset(310, panel.Size.Y.Offset) }
+		{ Size = UDim2.fromOffset(targetWidth, targetHeight) }
 	)
 	panelTween.Completed:Once(function()
 		panelTween = nil
@@ -463,6 +482,7 @@ local function createLaunchers(gui: ScreenGui)
 	launchers.Position = UDim2.new(0, 18, 0.58, 0)
 	launchers.Size = UDim2.fromOffset(158, 178)
 	launchers.Parent = gui
+	launcherFrame = launchers
 
 	local list = Instance.new("UIListLayout")
 	list.FillDirection = Enum.FillDirection.Vertical
@@ -487,6 +507,26 @@ local function createLaunchers(gui: ScreenGui)
 	panel.Parent = gui
 	corner(panel, 10)
 	stroke(panel, Color3.fromRGB(68, 81, 96), 0.2)
+
+	local closeButton = Instance.new("TextButton")
+	closeButton.Name = "Close"
+	closeButton.AnchorPoint = Vector2.new(1, 0)
+	closeButton.BackgroundColor3 = COLORS.PanelSoft
+	closeButton.BorderSizePixel = 0
+	closeButton.Font = Enum.Font.GothamBold
+	closeButton.Position = UDim2.new(1, -12, 0, 10)
+	closeButton.Selectable = true
+	closeButton.Size = UDim2.fromOffset(72, 44)
+	closeButton.Text = "CLOSE"
+	closeButton.TextColor3 = COLORS.Text
+	closeButton.TextSize = 11
+	closeButton.ZIndex = 2
+	closeButton.Parent = panel
+	corner(closeButton, 8)
+	closeButton.Activated:Connect(function()
+		HubUIController.OpenPanel(nil)
+	end)
+
 	panelFrame = panel
 end
 
@@ -543,16 +583,31 @@ local function bindResponsiveLayout(gui: ScreenGui)
 
 		local function refresh()
 			local phone = camera.ViewportSize.X <= 760
+			phoneLayout = phone
 			local status = gui:FindFirstChild("HubStatus")
 			local launchers = gui:FindFirstChild("HubLaunchers")
 			local panel = gui:FindFirstChild("HubPanel")
 			local objective = gui:FindFirstChild("HubObjective")
 
 			if status ~= nil and status:IsA("Frame") then
-				status.Position = if phone
-					then UDim2.new(0.59, 0, 0, 8)
-					else UDim2.new(0.5, 0, 0, 10)
-				status.Size = if phone then UDim2.fromOffset(310, 46) else UDim2.fromOffset(390, 52)
+				local statusWidth = if phone
+					then math.clamp(camera.ViewportSize.X - 20, 280, 390)
+					else 390
+				status.Position = UDim2.new(0.5, 0, 0, if phone then 8 else 10)
+				status.Size = UDim2.fromOffset(statusWidth, if phone then 46 else 52)
+
+				local district = status:FindFirstChild("District")
+				if district ~= nil and district:IsA("Frame") then
+					district.Size = if phone
+						then UDim2.fromScale(0.62, 1)
+						else UDim2.fromOffset(230, 52)
+				end
+				local population = status:FindFirstChild("Population")
+				if population ~= nil and population:IsA("Frame") then
+					population.Size = if phone
+						then UDim2.fromScale(0.36, 1)
+						else UDim2.fromOffset(145, 52)
+				end
 			end
 
 			if launchers ~= nil and launchers:IsA("Frame") then
@@ -562,13 +617,23 @@ local function bindResponsiveLayout(gui: ScreenGui)
 				launchers.Size = if phone
 					then UDim2.fromOffset(132, 160)
 					else UDim2.fromOffset(158, 178)
+				launchers.Visible = not (phone and activePanel ~= nil)
+				for _, child in launchers:GetChildren() do
+					if child:IsA("TextButton") then
+						child.Size = if phone
+							then UDim2.fromOffset(132, 48)
+							else UDim2.fromOffset(158, 54)
+					end
+				end
 			end
 
 			if panel ~= nil and panel:IsA("Frame") then
+				panel.AnchorPoint = if phone then Vector2.new(0.5, 0.5) else Vector2.new(0, 0.5)
 				panel.Position = if phone
-					then UDim2.new(0, 154, 0.54, 0)
+					then UDim2.fromScale(0.5, 0.54)
 					else UDim2.new(0, 188, 0.58, 0)
-				local width = if activePanel == nil then 0 else if phone then 286 else 310
+				local phoneWidth = math.clamp(camera.ViewportSize.X - 20, 280, 340)
+				local width = if activePanel == nil then 0 else if phone then phoneWidth else 310
 				panel.Size = UDim2.fromOffset(width, if phone then 218 else 230)
 			end
 
