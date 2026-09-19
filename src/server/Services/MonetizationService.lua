@@ -11,6 +11,7 @@ local RobloxIds = require(ReplicatedStorage.Shared.Config.RobloxIds)
 local RemoteNames = require(ReplicatedStorage.Shared.Networking.RemoteNames)
 
 local DataService = require(script.Parent.DataService)
+local DeveloperProductRules = require(script.Parent.Parent.Domain.DeveloperProductRules)
 local EconomyService = require(script.Parent.EconomyService)
 local PlotService = require(script.Parent.PlotService)
 local RemoteService = require(script.Parent.RemoteService)
@@ -25,7 +26,6 @@ local initialized = false
 local PRODUCT = RobloxIds.DeveloperProducts
 local PASSES = RobloxIds.Passes
 local FACTORY_CLUB = RobloxIds.Subscription.FactoryClub
-local RECEIPT_CAP = GameConfig.Economy.MaxReceiptHistory
 local ReceiptLedgerStore = DataStoreService:GetDataStore("ScrapToBot_ReceiptLedger_v1")
 local PASS_NAMES = table.freeze({
 	"Production2x",
@@ -184,62 +184,6 @@ local function addTokens(data: ProfileData, amount: number): boolean
 	return true
 end
 
-local function receiptExists(data: ProfileData, purchaseId: string): boolean
-	return table.find(data.Receipts.RecentPurchaseIds, purchaseId) ~= nil
-end
-
-local function recordReceipt(data: ProfileData, purchaseId: string)
-	if receiptExists(data, purchaseId) then
-		return
-	end
-	table.insert(data.Receipts.RecentPurchaseIds, purchaseId)
-	while #data.Receipts.RecentPurchaseIds > RECEIPT_CAP do
-		table.remove(data.Receipts.RecentPurchaseIds, 1)
-	end
-end
-
-local function grantProduct(data: ProfileData, productId: number): (boolean, string)
-	if productId == PRODUCT.MaterialSupplyCrate then
-		if not addMaterialBundle(data) then
-			return false, "MATERIAL_HARD_CAP"
-		end
-		return true, "MaterialSupplyCrate"
-	elseif productId == PRODUCT.FactoryOverclock15m then
-		local now = os.time()
-		data.Entitlements.PersonalOverclockUntil = math.max(
-			data.Entitlements.PersonalOverclockUntil,
-			now
-		) + 15 * 60
-		return true, "FactoryOverclock15m"
-	elseif productId == PRODUCT.InstantProcessTokens then
-		if not addTokens(data, 5) then
-			return false, "TOKEN_CAPACITY_FULL"
-		end
-		return true, "InstantProcessTokens"
-	elseif productId == PRODUCT.StarterPack then
-		local repeatPurchase = data.Entitlements.StarterPackClaimed == true
-		if not addMaterialBundle(data) then
-			return false, "MATERIAL_HARD_CAP"
-		end
-		if not addTokens(data, 3) then
-			return false, "TOKEN_CAPACITY_FULL"
-		end
-		if not EconomyService.GrantCreditsExact(data, 1_000) then
-			return false, "CREDIT_CAPACITY_FULL"
-		end
-		data.Entitlements.StarterPackClaimed = true
-		return true, if repeatPurchase then "StarterPackRepeatPurchase" else "StarterPack"
-	elseif productId == PRODUCT.ServerOverclock then
-		local now = os.time()
-		data.Entitlements.ServerOverclockUntil = math.max(
-			data.Entitlements.ServerOverclockUntil,
-			now
-		) + 15 * 60
-		return true, "ServerOverclock"
-	end
-	return false, "UnknownProduct"
-end
-
 local function acknowledgeRecordedReceipt(
 	player: Player,
 	purchaseId: string,
@@ -269,7 +213,7 @@ local function processReceipt(receiptInfo: { [string]: any }): Enum.ProductPurch
 	if existing == nil then
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
-	if receiptExists(existing, purchaseId) then
+	if DeveloperProductRules.HasReceipt(existing, purchaseId) then
 		return acknowledgeRecordedReceipt(player, purchaseId, receiptInfo.ProductId)
 	end
 
@@ -283,16 +227,14 @@ local function processReceipt(receiptInfo: { [string]: any }): Enum.ProductPurch
 
 	local productName = ""
 	local executed, result = DataService.Transaction(player, function(data)
-		if receiptExists(data, purchaseId) then
-			return true, "AlreadyGranted"
-		end
-
-		local granted, resolvedName = grantProduct(data, receiptInfo.ProductId)
+		local granted, resolvedName =
+			DeveloperProductRules.ApplyReceipt(data, purchaseId, receiptInfo.ProductId, os.time())
 		if not granted then
 			return false, resolvedName
 		end
-		productName = resolvedName
-		recordReceipt(data, purchaseId)
+		if resolvedName ~= "AlreadyGranted" then
+			productName = resolvedName
+		end
 		return true, resolvedName
 	end)
 
