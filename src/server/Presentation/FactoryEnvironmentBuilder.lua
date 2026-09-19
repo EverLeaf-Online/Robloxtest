@@ -8,6 +8,22 @@ local ScrapProcessAssetBuilder = require(script.Parent.ScrapProcessAssetBuilder)
 
 local FactoryEnvironmentBuilder = {}
 
+local PRELOAD_ASSET_KEYS = table.freeze({
+	"IndustrialScrapShredder",
+	"HydraulicScrapBaler",
+	"MagneticSortingConveyor",
+	"LargeScrapHopper",
+	"BotAssemblerStation",
+	"InfeedConveyor",
+	"OutfeedConveyor",
+	"ScrapPileMedium",
+	"ExpandedStorageRack",
+	"FactoryLightFixture",
+	"UtilityPipeRack",
+	"SafetyBarrier",
+	"ElectricalCabinet",
+})
+
 local COLORS = table.freeze({
 	Concrete = Color3.fromRGB(82, 85, 84),
 	ConcreteDark = Color3.fromRGB(58, 62, 64),
@@ -1403,6 +1419,11 @@ function FactoryEnvironmentBuilder.Build(plot: Model, plotId: number, center: Ve
 		assert(existing:IsA("Model"), "FactoryEnvironment must be a Model")
 		return existing
 	end
+
+	-- AssetService calls can each yield on a cold server. Load the unique public
+	-- factory kit concurrently so startup cost approaches the slowest asset load
+	-- instead of the sum of every imported machine and support prop.
+	FactoryAssetLibrary.Preload(PRELOAD_ASSET_KEYS)
 
 	local root = model(plot, "FactoryEnvironment")
 	buildSiteSurface(root, plotId, center)
