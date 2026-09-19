@@ -6,12 +6,14 @@ local JestGlobals = require(ReplicatedStorage.DevPackages.JestGlobals)
 local describe = JestGlobals.describe
 local expect = JestGlobals.expect
 local it = JestGlobals.it
-local jest = JestGlobals.jest
 
--- The first environment test intentionally exercises real approved Roblox
--- asset loading. Cold Open Cloud workers can take several seconds even though
--- the production builder preloads all unique assets concurrently.
-jest.setTimeout(15_000)
+local function environmentIt(name: string, testFn: () -> ())
+	-- The first environment test on a cold Open Cloud worker can spend several
+	-- seconds loading approved Roblox assets. The production builder preloads
+	-- unique assets concurrently, but the integration suite still needs a
+	-- network-tolerant ceiling.
+	it(name, testFn, 15_000)
+end
 
 local serverRoot = script.Parent.Parent
 local FactoryEnvironmentBuilder = require(serverRoot.Presentation.FactoryEnvironmentBuilder)
@@ -27,7 +29,7 @@ local function countBaseParts(root: Instance): number
 end
 
 describe("FactoryEnvironmentBuilder", function()
-	it("builds a compact scrap-processing plant with a real process train", function()
+	environmentIt("builds a compact scrap-processing plant with a real process train", function()
 		local plot = Instance.new("Model")
 		local environment = FactoryEnvironmentBuilder.Build(plot, 1, Vector3.zero)
 
@@ -49,17 +51,20 @@ describe("FactoryEnvironmentBuilder", function()
 		plot:Destroy()
 	end)
 
-	it("keeps the detailed private-instance environment within a bounded part budget", function()
-		local plot = Instance.new("Model")
-		local environment = FactoryEnvironmentBuilder.Build(plot, 1, Vector3.zero)
-		local partCount = countBaseParts(environment)
+	environmentIt(
+		"keeps the detailed private-instance environment within a bounded part budget",
+		function()
+			local plot = Instance.new("Model")
+			local environment = FactoryEnvironmentBuilder.Build(plot, 1, Vector3.zero)
+			local partCount = countBaseParts(environment)
 
-		expect(partCount <= 620).toBe(true)
+			expect(partCount <= 620).toBe(true)
 
-		plot:Destroy()
-	end)
+			plot:Destroy()
+		end
+	)
 
-	it("provides substantial collidable plant geometry for robot navigation", function()
+	environmentIt("provides substantial collidable plant geometry for robot navigation", function()
 		local plot = Instance.new("Model")
 		local environment = FactoryEnvironmentBuilder.Build(plot, 1, Vector3.zero)
 
@@ -75,7 +80,7 @@ describe("FactoryEnvironmentBuilder", function()
 		plot:Destroy()
 	end)
 
-	it("physically separates receiving, processing, shipping, and utilities", function()
+	environmentIt("physically separates receiving, processing, shipping, and utilities", function()
 		local plot = Instance.new("Model")
 		local environment = FactoryEnvironmentBuilder.Build(plot, 1, Vector3.zero)
 		local hall = environment:FindFirstChild("ProductionHall")
@@ -98,7 +103,7 @@ describe("FactoryEnvironmentBuilder", function()
 		plot:Destroy()
 	end)
 
-	it("loads approved production meshes for the public factory presentation", function()
+	environmentIt("loads approved production meshes for the public factory presentation", function()
 		local plot = Instance.new("Model")
 		local environment = FactoryEnvironmentBuilder.Build(plot, 1, Vector3.zero)
 
@@ -163,18 +168,21 @@ describe("FactoryEnvironmentBuilder", function()
 		end
 	)
 
-	it("anchors every static factory part so Play mode cannot collapse the plant", function()
-		local plot = Instance.new("Model")
-		local environment = FactoryEnvironmentBuilder.Build(plot, 1, Vector3.zero)
-		local unanchored = {}
+	environmentIt(
+		"anchors every static factory part so Play mode cannot collapse the plant",
+		function()
+			local plot = Instance.new("Model")
+			local environment = FactoryEnvironmentBuilder.Build(plot, 1, Vector3.zero)
+			local unanchored = {}
 
-		for _, descendant in environment:GetDescendants() do
-			if descendant:IsA("BasePart") and not descendant.Anchored then
-				table.insert(unanchored, descendant:GetFullName())
+			for _, descendant in environment:GetDescendants() do
+				if descendant:IsA("BasePart") and not descendant.Anchored then
+					table.insert(unanchored, descendant:GetFullName())
+				end
 			end
-		end
 
-		expect(unanchored).toEqual({})
-		plot:Destroy()
-	end)
+			expect(unanchored).toEqual({})
+			plot:Destroy()
+		end
+	)
 end)
