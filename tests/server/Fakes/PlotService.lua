@@ -5,6 +5,7 @@ export type StationConfig = {
 	RecycleStation: BasePart?,
 	Assembler: BasePart?,
 	Plot: Model?,
+	PlotId: number?,
 	ProcessorControls: { [string]: BasePart }?,
 }
 
@@ -22,6 +23,15 @@ function PlotService.SetStations(player: Player, config: StationConfig)
 	stationByPlayer[player] = config
 end
 
+function PlotService.SetPlotId(player: Player, plotId: number?)
+	local config = stationByPlayer[player]
+	if config == nil then
+		config = {}
+		stationByPlayer[player] = config
+	end
+	config.PlotId = plotId
+end
+
 function PlotService.GetRefreshCount(player: Player): number
 	return refreshCountByPlayer[player] or 0
 end
@@ -32,6 +42,11 @@ end
 
 local function getConfig(player: Player): StationConfig?
 	return stationByPlayer[player]
+end
+
+function PlotService.GetPlotId(player: Player): number?
+	local config = getConfig(player)
+	return if config ~= nil then config.PlotId else nil
 end
 
 function PlotService.GetBotConsole(player: Player): BasePart?
@@ -60,8 +75,9 @@ function PlotService.GetPlot(player: Player): Model?
 	return if config ~= nil then config.Plot else nil
 end
 
-function PlotService.OwnsPart(_player: Player, _part: BasePart): boolean
-	return true
+function PlotService.OwnsPart(player: Player, part: BasePart): boolean
+	local plotId = PlotService.GetPlotId(player)
+	return plotId ~= nil and part:GetAttribute("PlotId") == plotId
 end
 
 return PlotService
