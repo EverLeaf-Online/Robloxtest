@@ -3,6 +3,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local GamepadNavigationController = require(script.Parent.Controllers.GamepadNavigationController)
 local StudioRuntimeSelectorController =
 	require(script.Parent.Controllers.StudioRuntimeSelectorController)
 
@@ -12,6 +13,7 @@ local function startHubClient()
 	local HubUIController = require(script.Parent.Controllers.HubUIController)
 
 	HubUIController.Init()
+	GamepadNavigationController.Init()
 	print("[ScrapToBotFactory] Hub client initialized")
 end
 
@@ -57,6 +59,7 @@ local function startFactoryClient()
 	MachineEffectsController.Init()
 	RobotWorkerController.Init()
 	WorldLabelController.Init()
+	GamepadNavigationController.Init()
 
 	local role = waitForFactoryRole()
 	if role ~= "Owner" then

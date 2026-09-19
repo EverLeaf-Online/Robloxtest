@@ -56,10 +56,12 @@ end
 
 function Components.Button(text: string, enabled: boolean, callback: (() -> ())?): any
 	local props: any = {
+		Active = enabled,
 		AutoButtonColor = enabled,
 		BackgroundColor3 = if enabled then COLORS.AccentDark else COLORS.PanelSoft,
 		Font = Enum.Font.GothamBold,
-		Size = UDim2.fromOffset(92, 32),
+		Selectable = enabled,
+		Size = UDim2.fromOffset(104, 44),
 		Text = text,
 		TextColor3 = if enabled then COLORS.Text else COLORS.Muted,
 		TextSize = 13,
