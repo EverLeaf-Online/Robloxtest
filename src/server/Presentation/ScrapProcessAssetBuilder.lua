@@ -731,6 +731,39 @@ local function buildMaterialBunkers(root: Model, plotId: number, center: Vector3
 	for _, spec in specs do
 		local bunker = model(bunkers, spec.name)
 		local base = center + spec.offset
+		local imported =
+			FactoryAssetLibrary.TryPlace("MaterialBin", bunker, CFrame.new(base), plotId, 13)
+		if imported ~= nil then
+			imported.Name = spec.name .. "Visual"
+			local collision = part(
+				bunker,
+				plotId,
+				"BunkerCollision",
+				Vector3.new(12, 5.5, 10),
+				CFrame.new(base + Vector3.new(0, 2.75, 0)),
+				spec.color,
+				Enum.Material.SmoothPlastic,
+				true,
+				nil
+			)
+			collision.Transparency = 1
+			collision.CastShadow = false
+
+			local label = part(
+				bunker,
+				plotId,
+				"Label",
+				Vector3.new(11, 1.8, 0.4),
+				CFrame.new(base + Vector3.new(0, 6.8, 5.4)),
+				COLORS.Black,
+				Enum.Material.Metal,
+				false,
+				nil
+			)
+			addSign(label, string.upper(spec.name:gsub("Bunker", "")), Enum.NormalId.Front)
+			continue
+		end
+
 		part(
 			bunker,
 			plotId,

@@ -145,8 +145,18 @@ describe("FactoryEnvironmentBuilder", function()
 			local pipeRack = environment:FindFirstChild("UtilityPipeRack1", true)
 			local barrier = environment:FindFirstChild("ServiceBayBarrier1", true)
 			local cabinet = environment:FindFirstChild("RecoveryCabinetVisual", true)
+			local structuralColumn = environment:FindFirstChild("HallColumnVisual", true)
 
-			for _, imported in { light, storageRack, pipeRack, barrier, cabinet } do
+			for _, imported in
+				{
+					light,
+					storageRack,
+					pipeRack,
+					barrier,
+					cabinet,
+					structuralColumn,
+				}
+			do
 				expect(imported ~= nil and imported:GetAttribute("FactoryImportedAsset") == true).toBe(
 					true
 				)
@@ -163,6 +173,8 @@ describe("FactoryEnvironmentBuilder", function()
 
 			local cabinetCollision = environment:FindFirstChild("CabinetCollision", true)
 			expect(cabinetCollision ~= nil and (cabinetCollision :: BasePart).CanCollide).toBe(true)
+			local columnCollision = environment:FindFirstChild("HallColumnCollision", true)
+			expect(columnCollision ~= nil and (columnCollision :: BasePart).CanCollide).toBe(true)
 
 			plot:Destroy()
 		end
