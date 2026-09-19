@@ -4,6 +4,8 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local RemoteNames = require(ReplicatedStorage.Shared.Networking.RemoteNames)
+local RequestPolicy = require(ReplicatedStorage.Shared.Networking.RequestPolicy)
+
 local DataService = require(script.Parent.DataService)
 local RateLimiter = require(script.Parent.RateLimiter)
 
@@ -100,11 +102,17 @@ function RemoteService.BindRequest(name: string, handler: (Player, ...any) -> ()
 			return
 		end
 
+		local arguments = table.pack(...)
 		if not RateLimiter.Consume(player, name) then
 			return
 		end
 
-		local ok, err = pcall(handler, player, ...)
+		local validArguments = RequestPolicy.Validate(name, table.unpack(arguments, 1, arguments.n))
+		if not validArguments then
+			return
+		end
+
+		local ok, err = pcall(handler, player, table.unpack(arguments, 1, arguments.n))
 		if not ok then
 			warn(
 				("[RemoteService] %s failed for %d: %s"):format(name, player.UserId, tostring(err))

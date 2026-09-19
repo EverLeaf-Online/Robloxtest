@@ -27,6 +27,9 @@
           "$className": "Folder",
           "EconomyService": {
             "$path": "src/server/Services/EconomyService.lua"
+          },
+          "RateLimiter": {
+            "$path": "src/server/Services/RateLimiter.lua"
           }
         },
         "Tests": {
