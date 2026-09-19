@@ -30,10 +30,43 @@
           },
           "RateLimiter": {
             "$path": "src/server/Services/RateLimiter.lua"
+          },
+          "AnalyticsService": {
+            "$path": "tests/server/Fakes/AnalyticsService.lua"
+          },
+          "DataService": {
+            "$path": "tests/server/Fakes/DataService.lua"
+          },
+          "MachineService": {
+            "$path": "src/server/Services/MachineService.lua"
+          },
+          "MonetizationService": {
+            "$path": "tests/server/Fakes/MonetizationService.lua"
+          },
+          "PlotService": {
+            "$path": "tests/server/Fakes/PlotService.lua"
+          },
+          "RemoteService": {
+            "$path": "tests/server/Fakes/RemoteService.lua"
+          },
+          "RobotService": {
+            "$path": "src/server/Services/RobotService.lua"
+          },
+          "StateService": {
+            "$path": "tests/server/Fakes/StateService.lua"
+          },
+          "WorldService": {
+            "$path": "tests/server/Fakes/WorldService.lua"
           }
         },
         "Tests": {
           "$path": "src/server/__tests__"
+        },
+        "Util": {
+          "$className": "Folder",
+          "PlayerCharacter": {
+            "$path": "tests/server/Fakes/PlayerCharacter.lua"
+          }
         }
       }
     },
