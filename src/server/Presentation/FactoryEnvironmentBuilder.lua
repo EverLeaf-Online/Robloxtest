@@ -3,6 +3,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local WorldLayout = require(ReplicatedStorage.Shared.Config.WorldLayout)
+local ScrapProcessAssetBuilder = require(script.Parent.ScrapProcessAssetBuilder)
 
 local FactoryEnvironmentBuilder = {}
 
@@ -57,27 +58,6 @@ local function part(
 	if shape ~= nil then
 		result.Shape = shape
 	end
-	configure(result, plotId, collidable == true)
-	result.Parent = parent
-	return result
-end
-
-local function wedge(
-	parent: Instance,
-	plotId: number,
-	name: string,
-	size: Vector3,
-	cframe: CFrame,
-	color: Color3,
-	material: Enum.Material?,
-	collidable: boolean?
-): WedgePart
-	local result = Instance.new("WedgePart")
-	result.Name = name
-	result.Size = size
-	result.CFrame = cframe
-	result.Color = color
-	result.Material = material or Enum.Material.Metal
 	configure(result, plotId, collidable == true)
 	result.Parent = parent
 	return result
@@ -246,58 +226,6 @@ local function guardRail(
 	end
 end
 
-local function conveyorSegment(
-	parent: Instance,
-	plotId: number,
-	name: string,
-	cframe: CFrame,
-	length: number,
-	width: number
-)
-	local conveyor = model(parent, name)
-	part(
-		conveyor,
-		plotId,
-		"Bed",
-		Vector3.new(width, 0.7, length),
-		cframe,
-		COLORS.SteelBlack,
-		Enum.Material.Metal,
-		true,
-		nil
-	)
-
-	for _, x in { -(width / 2 - 0.32), width / 2 - 0.32 } do
-		part(
-			conveyor,
-			plotId,
-			"SideRail",
-			Vector3.new(0.32, 1.5, length),
-			cframe * CFrame.new(x, 0.95, 0),
-			COLORS.SteelLight,
-			Enum.Material.Metal,
-			true,
-			nil
-		)
-	end
-
-	for z = -(length / 2 - 1), length / 2 - 1, 2.4 do
-		local roller = part(
-			conveyor,
-			plotId,
-			"Roller",
-			Vector3.new(0.4, width - 1, width - 1),
-			cframe * CFrame.new(0, 0.55, z) * CFrame.Angles(0, 0, math.rad(90)),
-			COLORS.Steel,
-			Enum.Material.Metal,
-			false,
-			Enum.PartType.Cylinder
-		)
-		roller:SetAttribute("MachineEffect", "Spin")
-		roller:SetAttribute("EffectSpeedDegrees", 110)
-	end
-end
-
 local function buildSiteSurface(root: Model, plotId: number, center: Vector3)
 	local site = model(root, "FactorySite")
 
@@ -305,7 +233,7 @@ local function buildSiteSurface(root: Model, plotId: number, center: Vector3)
 		site,
 		plotId,
 		"PlantApron",
-		Vector3.new(258, 0.18, 196),
+		Vector3.new(228, 0.18, 178),
 		center + Vector3.new(0, 0.6, 0),
 		Color3.fromRGB(69, 71, 70),
 		Enum.Material.Concrete
@@ -315,8 +243,8 @@ local function buildSiteSurface(root: Model, plotId: number, center: Vector3)
 		site,
 		plotId,
 		"MainServiceRoad",
-		Vector3.new(236, 0.12, 24),
-		center + Vector3.new(2, 0.71, -72),
+		Vector3.new(214, 0.12, 22),
+		center + Vector3.new(2, 0.71, -68),
 		Color3.fromRGB(48, 51, 53),
 		Enum.Material.Concrete
 	)
@@ -324,8 +252,8 @@ local function buildSiteSurface(root: Model, plotId: number, center: Vector3)
 		site,
 		plotId,
 		"WestServiceRoad",
-		Vector3.new(24, 0.12, 142),
-		center + Vector3.new(-126, 0.71, 6),
+		Vector3.new(20, 0.12, 120),
+		center + Vector3.new(-108, 0.71, 7),
 		Color3.fromRGB(48, 51, 53),
 		Enum.Material.Concrete
 	)
@@ -333,24 +261,24 @@ local function buildSiteSurface(root: Model, plotId: number, center: Vector3)
 		site,
 		plotId,
 		"EastServiceRoad",
-		Vector3.new(24, 0.12, 142),
-		center + Vector3.new(126, 0.71, 6),
+		Vector3.new(20, 0.12, 120),
+		center + Vector3.new(108, 0.71, 7),
 		Color3.fromRGB(48, 51, 53),
 		Enum.Material.Concrete
 	)
 
-	for x = -104, 106, 21 do
+	for x = -92, 92, 23 do
 		safetyStripe(
 			site,
 			plotId,
 			("RoadDash_%d"):format(x),
 			Vector3.new(9, 0.06, 0.28),
-			center + Vector3.new(x, 0.79, -72)
+			center + Vector3.new(x, 0.79, -68)
 		)
 	end
 
-	for _, x in { -118, 116 } do
-		for z = -52, 58, 22 do
+	for _, x in { -103, 103 } do
+		for z = -44, 44, 22 do
 			bollard(
 				site,
 				plotId,
@@ -370,8 +298,8 @@ local function buildEntry(root: Model, plotId: number, center: Vector3)
 		gate,
 		plotId,
 		"EntryApron",
-		Vector3.new(42, 0.18, 38),
-		center + Vector3.new(8, 0.74, -88),
+		Vector3.new(40, 0.18, 30),
+		center + Vector3.new(8, 0.74, -78),
 		COLORS.ConcreteDark,
 		Enum.Material.Concrete
 	)
@@ -382,7 +310,7 @@ local function buildEntry(root: Model, plotId: number, center: Vector3)
 			plotId,
 			"GatePost",
 			Vector3.new(1.8, 10, 1.8),
-			CFrame.new(center + Vector3.new(x, 5.5, -101)),
+			CFrame.new(center + Vector3.new(x, 5.5, -91)),
 			COLORS.SteelBlack,
 			Enum.Material.Metal,
 			true,
@@ -393,7 +321,7 @@ local function buildEntry(root: Model, plotId: number, center: Vector3)
 			plotId,
 			"GateBeacon",
 			Vector3.new(0.7, 0.7, 0.7),
-			CFrame.new(center + Vector3.new(x, 10.7, -101)),
+			CFrame.new(center + Vector3.new(x, 10.7, -91)),
 			COLORS.Orange,
 			Enum.Material.Neon,
 			false,
@@ -406,7 +334,7 @@ local function buildEntry(root: Model, plotId: number, center: Vector3)
 		plotId,
 		"GateHeader",
 		Vector3.new(40, 1.6, 1.7),
-		CFrame.new(center + Vector3.new(8, 9.1, -101)),
+		CFrame.new(center + Vector3.new(8, 9.1, -91)),
 		COLORS.Steel,
 		Enum.Material.Metal,
 		false,
@@ -419,7 +347,7 @@ local function buildEntry(root: Model, plotId: number, center: Vector3)
 		plotId,
 		"SecurityBooth",
 		Vector3.new(10, 7.5, 9),
-		CFrame.new(center + Vector3.new(34, 4.25, -84)),
+		CFrame.new(center + Vector3.new(33, 4.25, -76)),
 		COLORS.Steel,
 		Enum.Material.Metal,
 		true,
@@ -439,13 +367,61 @@ local function buildEntry(root: Model, plotId: number, center: Vector3)
 	boothWindow.Transparency = 0.35
 	boothWindow.CanQuery = false
 
+	local scaleDeck = part(
+		gate,
+		plotId,
+		"TruckWeighbridge",
+		Vector3.new(13, 0.4, 25),
+		CFrame.new(center + Vector3.new(8, 0.96, -69)),
+		COLORS.SteelDark,
+		Enum.Material.DiamondPlate,
+		true,
+		nil
+	)
+	for _, z in { -9.5, 0, 9.5 } do
+		part(
+			gate,
+			plotId,
+			"ScaleSensor",
+			Vector3.new(11.5, 0.12, 0.45),
+			scaleDeck.CFrame * CFrame.new(0, 0.27, z),
+			COLORS.Safety,
+			Enum.Material.Metal,
+			false,
+			nil
+		)
+	end
+	local scaleDisplay = part(
+		gate,
+		plotId,
+		"ScaleDisplay",
+		Vector3.new(4.2, 5.5, 1.2),
+		CFrame.new(center + Vector3.new(18, 3.45, -63)),
+		COLORS.SteelBlack,
+		Enum.Material.Metal,
+		true,
+		nil
+	)
+	local scaleScreen = part(
+		gate,
+		plotId,
+		"ScaleScreen",
+		Vector3.new(3.2, 1.5, 0.16),
+		scaleDisplay.CFrame * CFrame.new(0, 0.65, -0.68),
+		COLORS.Green,
+		Enum.Material.Neon,
+		false,
+		nil
+	)
+	addSurfaceSign(scaleScreen, "WEIGH IN", Enum.NormalId.Front)
+
 	for _, x in { 2, 14 } do
 		safetyStripe(
 			gate,
 			plotId,
 			("EntryLane_%d"):format(x),
 			Vector3.new(0.3, 0.06, 32),
-			center + Vector3.new(x, 0.83, -86)
+			center + Vector3.new(x, 0.83, -78)
 		)
 	end
 
@@ -464,8 +440,8 @@ end
 local function buildScrapGantry(root: Model, plotId: number, center: Vector3)
 	local crane = model(root, "ScrapGantryCrane")
 	local yardCenter = center + WorldLayout.Environment.ScrapYardCenterOffset
-	local xSpan = 58
-	local zSpan = 58
+	local xSpan = 50
+	local zSpan = 56
 	local postHeight = 20
 
 	for _, x in { -xSpan / 2, xSpan / 2 } do
@@ -556,14 +532,14 @@ local function buildScrapYard(root: Model, plotId: number, center: Vector3)
 		yard,
 		plotId,
 		"ScrapYardFloor",
-		Vector3.new(70, 0.2, 76),
+		Vector3.new(58, 0.2, 70),
 		yardCenter + Vector3.new(0, 0.72, 0),
 		Color3.fromRGB(77, 74, 67),
 		Enum.Material.Concrete
 	)
 
-	for _, x in { -34, 34 } do
-		for z = -32, 32, 16 do
+	for _, x in { -28, 28 } do
+		for z = -30, 30, 15 do
 			part(
 				yard,
 				plotId,
@@ -578,8 +554,8 @@ local function buildScrapYard(root: Model, plotId: number, center: Vector3)
 		end
 	end
 
-	for _, z in { -37, 37 } do
-		for x = -27, 27, 18 do
+	for _, z in { -34, 34 } do
+		for x = -21, 21, 14 do
 			part(
 				yard,
 				plotId,
@@ -594,13 +570,13 @@ local function buildScrapYard(root: Model, plotId: number, center: Vector3)
 		end
 	end
 
-	for _, z in { -36, 36 } do
+	for _, z in { -33, 33 } do
 		for _, y in { 2.2, 4.6 } do
 			part(
 				yard,
 				plotId,
 				"FenceRail",
-				Vector3.new(56, 0.35, 0.35),
+				Vector3.new(44, 0.35, 0.35),
 				CFrame.new(yardCenter + Vector3.new(-4, y, z)),
 				COLORS.SteelLight,
 				Enum.Material.Metal,
@@ -615,21 +591,21 @@ local function buildScrapYard(root: Model, plotId: number, center: Vector3)
 			yard,
 			plotId,
 			"WestFenceRail",
-			Vector3.new(0.35, 0.35, 68),
-			CFrame.new(yardCenter + Vector3.new(-34, y, 0)),
+			Vector3.new(0.35, 0.35, 62),
+			CFrame.new(yardCenter + Vector3.new(-28, y, 0)),
 			COLORS.SteelLight,
 			Enum.Material.Metal,
 			true,
 			nil
 		)
 		-- East edge has a 16-stud opening that feeds the plant intake.
-		for _, z in { -23, 23 } do
+		for _, z in { -21, 21 } do
 			part(
 				yard,
 				plotId,
 				"EastFenceRail",
-				Vector3.new(0.35, 0.35, 30),
-				CFrame.new(yardCenter + Vector3.new(34, y, z)),
+				Vector3.new(0.35, 0.35, 26),
+				CFrame.new(yardCenter + Vector3.new(28, y, z)),
 				COLORS.SteelLight,
 				Enum.Material.Metal,
 				true,
@@ -643,64 +619,9 @@ local function buildScrapYard(root: Model, plotId: number, center: Vector3)
 			yard,
 			plotId,
 			"YardGateBollard",
-			yardCenter + Vector3.new(34, 2.5, z),
+			yardCenter + Vector3.new(28, 2.5, z),
 			COLORS.Safety
 		)
-	end
-
-	local hopper = model(yard, "PrimaryIntakeHopper")
-	for _, side in { -1, 1 } do
-		wedge(
-			hopper,
-			plotId,
-			"HopperWall",
-			Vector3.new(9, 6.2, 12),
-			CFrame.new(yardCenter + Vector3.new(25 + side * 3.5, 4, -2))
-				* CFrame.Angles(0, if side < 0 then 0 else math.rad(180), 0),
-			COLORS.Steel,
-			Enum.Material.Metal,
-			true
-		)
-	end
-	part(
-		hopper,
-		plotId,
-		"HopperThroat",
-		Vector3.new(7.5, 3.2, 8),
-		CFrame.new(yardCenter + Vector3.new(25, 2.2, 6)),
-		COLORS.SteelBlack,
-		Enum.Material.Metal,
-		true,
-		nil
-	)
-
-	for index, z in { -24, 0, 24 } do
-		local bin = model(yard, ("SortingBin%d"):format(index))
-		local binCenter = yardCenter + Vector3.new(-20, 3, z)
-		part(
-			bin,
-			plotId,
-			"Back",
-			Vector3.new(0.7, 6, 16),
-			CFrame.new(binCenter + Vector3.new(-7, 0, 0)),
-			COLORS.RustDark,
-			Enum.Material.Metal,
-			true,
-			nil
-		)
-		for _, sz in { -7.5, 7.5 } do
-			part(
-				bin,
-				plotId,
-				"Side",
-				Vector3.new(14, 6, 0.7),
-				CFrame.new(binCenter + Vector3.new(0, 0, sz)),
-				COLORS.Rust,
-				Enum.Material.Metal,
-				true,
-				nil
-			)
-		end
 	end
 
 	buildScrapGantry(root, plotId, center)
@@ -722,8 +643,8 @@ end
 local function buildHallShell(root: Model, plotId: number, center: Vector3)
 	local hall = model(root, "ProductionHall")
 	local hallCenter = center + WorldLayout.Environment.ProductionHallCenterOffset
-	local width = 178
-	local depth = 112
+	local width = 160
+	local depth = 104
 	local wallHeight = 17
 	local roofY = 22
 
@@ -817,7 +738,7 @@ local function buildHallShell(root: Model, plotId: number, center: Vector3)
 	end
 
 	-- Structural columns/trusses.
-	for x = -84, 84, 28 do
+	for x = -72, 72, 24 do
 		for _, z in { -(depth / 2 - 2), depth / 2 - 2 } do
 			part(
 				hall,
@@ -844,7 +765,7 @@ local function buildHallShell(root: Model, plotId: number, center: Vector3)
 		)
 	end
 
-	for z = -45, 45, 18 do
+	for z = -42, 42, 21 do
 		part(
 			hall,
 			plotId,
@@ -859,12 +780,12 @@ local function buildHallShell(root: Model, plotId: number, center: Vector3)
 	end
 
 	-- Sawtooth-style partial roof strips leave sightlines into the hall.
-	for _, x in { -72, -36, 0, 36, 72 } do
+	for _, x in { -64, -32, 0, 32, 64 } do
 		local roof = part(
 			hall,
 			plotId,
 			"RoofPanel",
-			Vector3.new(26, 0.34, depth - 6),
+			Vector3.new(22, 0.34, depth - 6),
 			CFrame.new(hallCenter + Vector3.new(x, roofY + 1, 0)),
 			COLORS.SteelBlack,
 			Enum.Material.Metal,
@@ -873,7 +794,7 @@ local function buildHallShell(root: Model, plotId: number, center: Vector3)
 		)
 		roof.CanQuery = false
 	end
-	for _, x in { -54, -18, 18, 54 } do
+	for _, x in { -48, -16, 16, 48 } do
 		local skylight = part(
 			hall,
 			plotId,
@@ -889,7 +810,7 @@ local function buildHallShell(root: Model, plotId: number, center: Vector3)
 		skylight.CanQuery = false
 	end
 
-	for _, x in { -60, -20, 20, 60 } do
+	for _, x in { -52, -18, 18, 52 } do
 		for _, z in { -25, 20 } do
 			workLight(
 				hall,
@@ -904,8 +825,8 @@ local function buildHallShell(root: Model, plotId: number, center: Vector3)
 		hall,
 		plotId,
 		"PlantSign",
-		Vector3.new(42, 5, 0.8),
-		CFrame.new(hallCenter + Vector3.new(-10, 12.5, -(depth / 2 + 0.8))),
+		Vector3.new(38, 5, 0.8),
+		CFrame.new(hallCenter + Vector3.new(-5, 12.5, -(depth / 2 + 0.8))),
 		COLORS.SteelBlack,
 		Enum.Material.Metal,
 		false,
@@ -914,134 +835,22 @@ local function buildHallShell(root: Model, plotId: number, center: Vector3)
 	addSurfaceSign(sign, "PROCESSING  •  ROBOT ASSEMBLY", Enum.NormalId.Front)
 end
 
-local function buildProductionLine(root: Model, plotId: number, center: Vector3)
-	local line = model(root, "ProductionLine")
-
-	-- Scrap hopper to processor.
-	conveyorSegment(
-		line,
-		plotId,
-		"ScrapFeed",
-		CFrame.new(center + Vector3.new(-72, 2.2, 18)) * CFrame.Angles(0, math.rad(90), 0),
-		44,
-		7
-	)
-	-- Processor to assembler.
-	conveyorSegment(
-		line,
-		plotId,
-		"ProcessorTransfer",
-		CFrame.new(center + Vector3.new(-20, 2.2, 18)) * CFrame.Angles(0, math.rad(90), 0),
-		34,
-		7
-	)
-	-- Assembler to storage.
-	conveyorSegment(
-		line,
-		plotId,
-		"AssemblerOutfeed",
-		CFrame.new(center + Vector3.new(29, 2.2, 18)) * CFrame.Angles(0, math.rad(90), 0),
-		34,
-		7
-	)
-	conveyorSegment(
-		line,
-		plotId,
-		"StorageFeed",
-		CFrame.new(center + Vector3.new(47, 2.2, 25)),
-		15,
-		7
-	)
-
-	-- Machine guarding around the line.
-	for _, x in { -58, -27, 17, 50 } do
-		bollard(
-			line,
-			plotId,
-			("LineBollardA_%d"):format(x),
-			center + Vector3.new(x, 2.5, 8),
-			COLORS.Safety
-		)
-		bollard(
-			line,
-			plotId,
-			("LineBollardB_%d"):format(x),
-			center + Vector3.new(x, 2.5, 29),
-			COLORS.Safety
-		)
-	end
-
-	guardRail(line, plotId, "NorthLineGuard", center + Vector3.new(-10, 0, 32), 108, true)
-
-	-- Overhead extraction duct above processor/assembler.
-	for _, x in { -42, 2, 46 } do
-		part(
-			line,
-			plotId,
-			"ExtractionDrop",
-			Vector3.new(1.3, 9, 1.3),
-			CFrame.new(center + Vector3.new(x, 14.5, 18)),
-			COLORS.Steel,
-			Enum.Material.Metal,
-			false,
-			Enum.PartType.Cylinder
-		)
-	end
-	part(
-		line,
-		plotId,
-		"ExtractionMain",
-		Vector3.new(1.7, 94, 1.7),
-		CFrame.new(center + Vector3.new(2, 19, 18)) * CFrame.Angles(0, 0, math.rad(90)),
-		COLORS.SteelLight,
-		Enum.Material.Metal,
-		false,
-		Enum.PartType.Cylinder
-	)
-
-	-- Cable trays above the service aisle.
-	for _, z in { -3, 37 } do
-		part(
-			line,
-			plotId,
-			"CableTray",
-			Vector3.new(126, 0.55, 2.2),
-			CFrame.new(center + Vector3.new(8, 12.5, z)),
-			COLORS.SteelBlack,
-			Enum.Material.Metal,
-			false,
-			nil
-		)
-	end
-
-	-- Main pedestrian/service aisles.
-	for x = -74, 76, 15 do
-		safetyStripe(
-			line,
-			plotId,
-			("AisleMark_%d"):format(x),
-			Vector3.new(0.26, 0.06, 82),
-			center + Vector3.new(x, 0.86, -2)
-		)
-	end
-end
-
 local function buildMezzanine(root: Model, plotId: number, center: Vector3)
 	local mezz = model(root, "ServiceMezzanine")
-	local deckCenter = center + Vector3.new(11, 10.5, 55)
+	local deckCenter = center + Vector3.new(8, 10.5, 58)
 
 	part(
 		mezz,
 		plotId,
 		"MezzanineDeck",
-		Vector3.new(90, 0.75, 10),
+		Vector3.new(78, 0.75, 10),
 		CFrame.new(deckCenter),
 		COLORS.SteelDark,
 		Enum.Material.DiamondPlate,
 		true,
 		nil
 	)
-	for _, x in { -44, -22, 0, 22, 44 } do
+	for _, x in { -36, -18, 0, 18, 36 } do
 		part(
 			mezz,
 			plotId,
@@ -1169,7 +978,7 @@ local function buildLoadingDock(root: Model, plotId: number, center: Vector3)
 		dock,
 		plotId,
 		"DockApron",
-		Vector3.new(44, 0.18, 86),
+		Vector3.new(34, 0.18, 78),
 		dockCenter + Vector3.new(0, 0.76, 0),
 		Color3.fromRGB(60, 63, 64),
 		Enum.Material.Concrete
@@ -1179,8 +988,8 @@ local function buildLoadingDock(root: Model, plotId: number, center: Vector3)
 		dock,
 		plotId,
 		"WarehouseWall",
-		Vector3.new(1.4, 17, 86),
-		CFrame.new(dockCenter + Vector3.new(-20, 9, 0)),
+		Vector3.new(1.4, 17, 78),
+		CFrame.new(dockCenter + Vector3.new(-11, 9, 0)),
 		COLORS.SteelDark,
 		Enum.Material.Metal,
 		true,
@@ -1193,7 +1002,7 @@ local function buildLoadingDock(root: Model, plotId: number, center: Vector3)
 			plotId,
 			("DockDoor%d"):format(index),
 			Vector3.new(0.45, 10, 16),
-			CFrame.new(dockCenter + Vector3.new(-20.8, 5.6, z)),
+			CFrame.new(dockCenter + Vector3.new(-11.8, 5.6, z)),
 			Color3.fromRGB(50, 55, 59),
 			Enum.Material.DiamondPlate,
 			false,
@@ -1217,7 +1026,7 @@ local function buildLoadingDock(root: Model, plotId: number, center: Vector3)
 			plotId,
 			"DockBumper",
 			Vector3.new(2, 1.3, 17),
-			CFrame.new(dockCenter + Vector3.new(-18.8, 1.2, z)),
+			CFrame.new(dockCenter + Vector3.new(-9.8, 1.2, z)),
 			COLORS.SteelBlack,
 			Enum.Material.SmoothPlastic,
 			true,
@@ -1253,7 +1062,7 @@ local function buildLoadingDock(root: Model, plotId: number, center: Vector3)
 		plotId,
 		"ShippingSign",
 		Vector3.new(4, 24, 0.7),
-		CFrame.new(dockCenter + Vector3.new(-21, 13, 0)) * CFrame.Angles(0, math.rad(90), 0),
+		CFrame.new(dockCenter + Vector3.new(-12, 13, 0)) * CFrame.Angles(0, math.rad(90), 0),
 		COLORS.SteelBlack,
 		Enum.Material.Metal,
 		false,
@@ -1270,13 +1079,13 @@ local function buildUtilities(root: Model, plotId: number, center: Vector3)
 		utilities,
 		plotId,
 		"UtilityPad",
-		Vector3.new(72, 0.18, 40),
+		Vector3.new(64, 0.18, 32),
 		utilityCenter + Vector3.new(0, 0.75, 0),
 		Color3.fromRGB(57, 61, 63),
 		Enum.Material.Concrete
 	)
 
-	for _, x in { -20, 0, 20 } do
+	for _, x in { -18, 0, 18 } do
 		part(
 			utilities,
 			plotId,
@@ -1327,7 +1136,7 @@ local function buildUtilities(root: Model, plotId: number, center: Vector3)
 		)
 	end
 
-	for _, x in { -34, 34 } do
+	for _, x in { -30, 30 } do
 		part(
 			utilities,
 			plotId,
@@ -1345,7 +1154,7 @@ local function buildUtilities(root: Model, plotId: number, center: Vector3)
 			utilities,
 			plotId,
 			("UtilityPipe%d"):format(index),
-			Vector3.new(0.8, 68, 0.8),
+			Vector3.new(0.8, 60, 0.8),
 			CFrame.new(utilityCenter + Vector3.new(0, y, 0)) * CFrame.Angles(0, 0, math.rad(90)),
 			if index == 1 then COLORS.Copper else COLORS.SteelLight,
 			Enum.Material.Metal,
@@ -1376,8 +1185,8 @@ local function buildCircuitApproach(root: Model, plotId: number, center: Vector3
 		approach,
 		plotId,
 		"BridgeThreshold",
-		Vector3.new(28, 0.18, 18),
-		center + Vector3.new(bridge.BoundaryOpeningCenterX, 0.78, -101),
+		Vector3.new(28, 0.18, 16),
+		center + Vector3.new(bridge.BoundaryOpeningCenterX, 0.78, -87),
 		COLORS.SteelDark,
 		Enum.Material.DiamondPlate
 	)
@@ -1387,7 +1196,7 @@ local function buildCircuitApproach(root: Model, plotId: number, center: Vector3
 			approach,
 			plotId,
 			"BridgeBollard",
-			center + Vector3.new(bridge.BoundaryOpeningCenterX + x, 2.5, -103),
+			center + Vector3.new(bridge.BoundaryOpeningCenterX + x, 2.5, -89),
 			COLORS.Safety
 		)
 	end
@@ -1397,8 +1206,8 @@ local function buildCircuitApproach(root: Model, plotId: number, center: Vector3
 			approach,
 			plotId,
 			"BridgeHazardStripe",
-			Vector3.new(2.8, 0.07, 15),
-			center + Vector3.new(bridge.BoundaryOpeningCenterX + x, 0.9, -101)
+			Vector3.new(2.8, 0.07, 13),
+			center + Vector3.new(bridge.BoundaryOpeningCenterX + x, 0.9, -87)
 		)
 	end
 
@@ -1407,7 +1216,7 @@ local function buildCircuitApproach(root: Model, plotId: number, center: Vector3
 		plotId,
 		"CircuitAccessSign",
 		Vector3.new(22, 3.5, 0.7),
-		CFrame.new(center + Vector3.new(bridge.BoundaryOpeningCenterX, 7.5, -108)),
+		CFrame.new(center + Vector3.new(bridge.BoundaryOpeningCenterX, 7.5, -93)),
 		COLORS.SteelBlack,
 		Enum.Material.Metal,
 		false,
@@ -1508,7 +1317,7 @@ function FactoryEnvironmentBuilder.Build(plot: Model, plotId: number, center: Ve
 	buildEntry(root, plotId, center)
 	buildScrapYard(root, plotId, center)
 	buildHallShell(root, plotId, center)
-	buildProductionLine(root, plotId, center)
+	ScrapProcessAssetBuilder.Build(root, plotId, center)
 	buildMezzanine(root, plotId, center)
 	buildWorkerBay(root, plotId, center)
 	buildLoadingDock(root, plotId, center)
