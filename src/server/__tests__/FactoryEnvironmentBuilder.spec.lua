@@ -91,4 +91,19 @@ describe("FactoryEnvironmentBuilder", function()
 
 		plot:Destroy()
 	end)
+
+	it("anchors every static factory part so Play mode cannot collapse the plant", function()
+		local plot = Instance.new("Model")
+		local environment = FactoryEnvironmentBuilder.Build(plot, 1, Vector3.zero)
+		local unanchored = {}
+
+		for _, descendant in environment:GetDescendants() do
+			if descendant:IsA("BasePart") and not descendant.Anchored then
+				table.insert(unanchored, descendant:GetFullName())
+			end
+		end
+
+		expect(unanchored).toEqual({})
+		plot:Destroy()
+	end)
 end)

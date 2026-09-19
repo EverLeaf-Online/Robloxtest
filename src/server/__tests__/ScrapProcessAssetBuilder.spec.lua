@@ -49,4 +49,19 @@ describe("ScrapProcessAssetBuilder", function()
 
 		parent:Destroy()
 	end)
+
+	it("anchors the complete process train before physics starts", function()
+		local parent = Instance.new("Model")
+		local train = ScrapProcessAssetBuilder.Build(parent, 1, Vector3.zero)
+		local unanchored = {}
+
+		for _, descendant in train:GetDescendants() do
+			if descendant:IsA("BasePart") and not descendant.Anchored then
+				table.insert(unanchored, descendant:GetFullName())
+			end
+		end
+
+		expect(unanchored).toEqual({})
+		parent:Destroy()
+	end)
 end)

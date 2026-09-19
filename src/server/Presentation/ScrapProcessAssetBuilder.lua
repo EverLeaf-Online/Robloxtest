@@ -3,6 +3,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local WorldLayout = require(ReplicatedStorage.Shared.Config.WorldLayout)
+local FactoryAssetLibrary = require(script.Parent.FactoryAssetLibrary)
 
 local ScrapProcessAssetBuilder = {}
 
@@ -213,6 +214,38 @@ local function buildShredderFeed(root: Model, plotId: number, center: Vector3)
 		8,
 		2
 	)
+
+	local importedShredder =
+		FactoryAssetLibrary.TryPlace("IndustrialScrapShredder", shredder, CFrame.new(base), plotId)
+	if importedShredder ~= nil then
+		local collision = part(
+			shredder,
+			plotId,
+			"ShredderCollision",
+			Vector3.new(15.5, 8, 11.5),
+			CFrame.new(base + Vector3.new(0, 4, 0)),
+			COLORS.Black,
+			Enum.Material.SmoothPlastic,
+			true,
+			nil
+		)
+		collision.Transparency = 1
+		collision.CastShadow = false
+
+		local header = part(
+			shredder,
+			plotId,
+			"ShredderHeader",
+			Vector3.new(12, 1.4, 0.8),
+			CFrame.new(base + Vector3.new(0, 9.6, -5.7)),
+			COLORS.Black,
+			Enum.Material.Metal,
+			false,
+			nil
+		)
+		addSign(header, "PRIMARY SHREDDER", Enum.NormalId.Front)
+		return
+	end
 
 	for _, side in { -1, 1 } do
 		wedge(

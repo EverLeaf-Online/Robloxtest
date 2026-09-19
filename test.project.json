@@ -11,6 +11,9 @@
         "jest.config": {
           "$path": "src/shared/jest.config.lua"
         },
+        "Content": {
+          "$path": "src/server/Content"
+        },
         "Data": {
           "$path": "src/server/Data"
         },
