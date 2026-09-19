@@ -8,6 +8,49 @@ local initialized = false
 
 local activeSpinners: { [BasePart]: number } = {}
 local boundMachines: { [BasePart]: boolean } = {}
+local heartbeatConnection: RBXScriptConnection? = nil
+
+local function hasActiveSpinners(): boolean
+	return next(activeSpinners) ~= nil
+end
+
+local function stopHeartbeatIfIdle()
+	if heartbeatConnection ~= nil and not hasActiveSpinners() then
+		heartbeatConnection:Disconnect()
+		heartbeatConnection = nil
+	end
+end
+
+local function stepSpinners(deltaTime: number)
+	for spinner, degreesPerSecond in activeSpinners do
+		if spinner.Parent == nil then
+			activeSpinners[spinner] = nil
+			continue
+		end
+
+		local radians = math.rad(degreesPerSecond) * deltaTime
+		spinner.CFrame *= CFrame.Angles(radians, 0, 0)
+	end
+
+	stopHeartbeatIfIdle()
+end
+
+local function ensureHeartbeat()
+	if heartbeatConnection ~= nil or not hasActiveSpinners() then
+		return
+	end
+
+	heartbeatConnection = RunService.Heartbeat:Connect(stepSpinners)
+end
+
+local function clearVisualSpinners(visual: Instance)
+	for _, descendant in visual:GetDescendants() do
+		if descendant:IsA("BasePart") then
+			activeSpinners[descendant] = nil
+		end
+	end
+	stopHeartbeatIfIdle()
+end
 
 local function updateMachine(anchor: BasePart, visualName: string)
 	local plot = anchor.Parent
@@ -31,6 +74,12 @@ local function updateMachine(anchor: BasePart, visualName: string)
 			end
 		end
 	end
+
+	if busy then
+		ensureHeartbeat()
+	else
+		stopHeartbeatIfIdle()
+	end
 end
 
 local function bindMachine(plot: Model, anchorName: string, visualName: string)
@@ -44,7 +93,17 @@ local function bindMachine(plot: Model, anchorName: string, visualName: string)
 		updateMachine(anchor, visualName)
 	end
 
-	anchor:GetAttributeChangedSignal("Busy"):Connect(refresh)
+	local busyConnection = anchor:GetAttributeChangedSignal("Busy"):Connect(refresh)
+	anchor.Destroying:Once(function()
+		busyConnection:Disconnect()
+		boundMachines[anchor] = nil
+
+		local visual = plot:FindFirstChild(visualName)
+		if visual ~= nil then
+			clearVisualSpinners(visual)
+		end
+	end)
+
 	refresh()
 end
 
@@ -90,17 +149,6 @@ function MachineEffectsController.Init()
 				bindPlot(child)
 			end
 		end)
-	end)
-
-	RunService.Heartbeat:Connect(function(deltaTime)
-		for spinner, degreesPerSecond in activeSpinners do
-			if spinner.Parent == nil then
-				activeSpinners[spinner] = nil
-				continue
-			end
-			local radians = math.rad(degreesPerSecond) * deltaTime
-			spinner.CFrame *= CFrame.Angles(radians, 0, 0)
-		end
 	end)
 end
 
