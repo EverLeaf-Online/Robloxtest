@@ -15,6 +15,8 @@ local ProfileTemplate = require(serverRoot.Data.ProfileTemplate)
 
 local PROFILE_COUNT = 8
 local SAMPLE_ITERATIONS = 10
+local SNAPSHOT_AVERAGE_BUDGET_MS = 5
+local EXECUTE_AVERAGE_BUDGET_MS = 5
 
 local function deepCopy(value: any): any
 	if typeof(value) ~= "table" then
@@ -105,17 +107,23 @@ describe("Transaction performance profile", function()
 		local executeCount = PROFILE_COUNT * SAMPLE_ITERATIONS
 		local executeAverageMs = (executeSeconds * 1_000) / executeCount
 
+		local estimatedEightPlayerTickMs = executeAverageMs * PROFILE_COUNT
 		print(
-			("[TransactionPerf] players=%d robots_per_player=%d samples=%d snapshot_avg_ms=%.3f execute_avg_ms=%.3f"):format(
+			("[TransactionPerf] players=%d robots_per_player=%d samples=%d snapshot_avg_ms=%.3f execute_avg_ms=%.3f estimated_8p_tick_ms=%.3f"):format(
 				PROFILE_COUNT,
 				GameConfig.Economy.MaxOwnedRobots,
 				SAMPLE_ITERATIONS,
 				snapshotAverageMs,
-				executeAverageMs
+				executeAverageMs,
+				estimatedEightPlayerTickMs
 			)
 		)
 
-		expect(snapshotAverageMs > 0).toBe(true)
-		expect(executeAverageMs > 0).toBe(true)
+		-- First OCALE baseline on 2026-09-19 measured ~0.64 ms for Snapshot and
+		-- ~0.58 ms for Execute at 500 robots/profile. A 5 ms average ceiling is
+		-- intentionally loose enough for cloud-runtime jitter while still catching
+		-- an order-of-magnitude regression in the deep-copy transaction path.
+		expect(snapshotAverageMs <= SNAPSHOT_AVERAGE_BUDGET_MS).toBe(true)
+		expect(executeAverageMs <= EXECUTE_AVERAGE_BUDGET_MS).toBe(true)
 	end, 15_000)
 end)
