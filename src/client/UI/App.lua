@@ -453,7 +453,12 @@ local function App()
 						ScrollBarThickness = 4,
 						Size = UDim2.new(1, -32, 1, -104),
 						ZIndex = 22,
-					}, PanelContent.Content(openPanel :: string, snapshot, extraWorkSlots)),
+					}, PanelContent.Content(
+						openPanel :: string,
+						snapshot,
+						extraWorkSlots,
+						isPhone
+					)),
 				}),
 			})
 			else nil,
