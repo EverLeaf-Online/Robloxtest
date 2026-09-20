@@ -278,10 +278,8 @@ local function scheduleRecoveryRetry(player: Player)
 	end
 	state.FailureCount += 1
 	local exponent = math.min(state.FailureCount - 1, 4)
-	local delaySeconds = math.min(
-		RECOVERY_BACKOFF_MAX_SECONDS,
-		RECOVERY_TICK_SECONDS * (2 ^ exponent)
-	)
+	local delaySeconds =
+		math.min(RECOVERY_BACKOFF_MAX_SECONDS, RECOVERY_TICK_SECONDS * (2 ^ exponent))
 	state.NextAttemptAt = os.clock() + delaySeconds
 end
 
