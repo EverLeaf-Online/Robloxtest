@@ -56,6 +56,26 @@ describe("FactoryReadyDeliveryRules", function()
 		expect(afterClaim.Status).toBe("cancelled")
 	end)
 
+	it("honors a live legacy lock before adopting its queued generation", function()
+		local legacy = {
+			Owner = "server-old",
+			ExpiresAt = 130,
+		}
+
+		local blocked, accepted, code =
+			FactoryReadyDeliveryRules.Claim(legacy, "legacy-100", 100, "server-new", 110, 45)
+		expect(accepted).toBe(false)
+		expect(code).toBe("BUSY")
+		expect(blocked.Owner).toBe("server-old")
+		expect(blocked.ClaimUntil).toBe(130)
+
+		local adopted, claimed =
+			FactoryReadyDeliveryRules.Claim(blocked, "legacy-100", 100, "server-new", 131, 45)
+		expect(claimed).toBe(true)
+		expect(adopted.Generation).toBe("legacy-100")
+		expect(adopted.Owner).toBe("server-new")
+	end)
+
 	it("keeps another poller out while an in-flight send renews its claim", function()
 		local scheduled = FactoryReadyDeliveryRules.Schedule("gen-a", 100, 90)
 		assert(scheduled ~= nil, "schedule should succeed")
