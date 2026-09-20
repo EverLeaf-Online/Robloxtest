@@ -14,11 +14,14 @@ local ProfileTypes = require(script.Parent.Parent.Data.ProfileTypes)
 local FactorySessionService = require(script.Parent.FactorySessionService)
 
 type ProfileData = ProfileTypes.ProfileData
+type SaveValidator = (ProfileData) -> boolean
 
 local ServerPackages = ServerScriptService:WaitForChild("ServerPackages")
 local ProfileStore = require(ServerPackages:WaitForChild("ProfileStore"))
 
 local STORE_NAME = "ScrapToBot_Player_v1"
+local IMMEDIATE_SAVE_TIMEOUT_SECONDS = 15
+local SAVE_CONFIRM_POLL_SECONDS = 0.05
 local PlayerStore = ProfileStore.New(STORE_NAME, ProfileTemplate)
 
 if RunService:IsStudio() then
@@ -208,24 +211,92 @@ function DataService.GetData(player: Player): ProfileData?
 	return profile.Data :: ProfileData
 end
 
-function DataService.SaveNow(player: Player): boolean
+local function savedSnapshotMatches(
+	snapshot: any,
+	minimumRevision: number,
+	validator: SaveValidator?
+): boolean
+	if typeof(snapshot) ~= "table" then
+		return false
+	end
+	local revision = snapshot.Revision
+	if typeof(revision) ~= "number" or revision < minimumRevision then
+		return false
+	end
+	if validator == nil then
+		return true
+	end
+	local ok, result = pcall(validator, snapshot :: ProfileData)
+	return ok and result == true
+end
+
+function DataService.SaveNow(
+	player: Player,
+	validator: SaveValidator?
+): (boolean, ProfileData?)
 	local profile = profiles[player]
 	if profile == nil or profile:IsActive() ~= true then
-		return false
+		return false, nil
+	end
+
+	local data = profile.Data :: ProfileData
+	data.Timestamps.LastSave = os.time()
+	local minimumRevision = data.Revision
+	local confirmedSnapshot: ProfileData? = nil
+
+	local function inspect(snapshot: any)
+		if confirmedSnapshot == nil and savedSnapshotMatches(snapshot, minimumRevision, validator) then
+			confirmedSnapshot = snapshot :: ProfileData
+		end
+	end
+
+	-- Connect before requesting the save so a fast mock or DataStore completion cannot
+	-- fire OnAfterSave between the Save() call and listener registration.
+	local afterSaveConnection = profile.OnAfterSave:Connect(inspect)
+	inspect(profile.LastSavedData)
+	if confirmedSnapshot ~= nil then
+		afterSaveConnection:Disconnect()
+		return true, confirmedSnapshot
 	end
 
 	local ok, err = pcall(function()
-		local data = profile.Data :: ProfileData
-		data.Timestamps.LastSave = os.time()
 		profile:Save()
 	end)
 	if not ok then
+		afterSaveConnection:Disconnect()
 		warn(
-			("[DataService] Immediate save failed for %d: %s"):format(player.UserId, tostring(err))
+			("[DataService] Immediate save request failed for %d: %s"):format(
+				player.UserId,
+				tostring(err)
+			)
 		)
-		return false
+		return false, nil
 	end
-	return profile:IsActive() == true
+
+	local deadline = os.clock() + IMMEDIATE_SAVE_TIMEOUT_SECONDS
+	while confirmedSnapshot == nil and os.clock() < deadline do
+		if profiles[player] ~= profile or profile:IsActive() ~= true then
+			break
+		end
+		task.wait(SAVE_CONFIRM_POLL_SECONDS)
+	end
+
+	inspect(profile.LastSavedData)
+	afterSaveConnection:Disconnect()
+
+	if confirmedSnapshot == nil then
+		warn(
+			("[DataService] Immediate save was not durably confirmed for %d within %.1fs"):format(
+				player.UserId,
+				IMMEDIATE_SAVE_TIMEOUT_SECONDS
+			)
+		)
+		return false, nil
+	end
+	if profiles[player] ~= profile or profile:IsActive() ~= true then
+		return false, nil
+	end
+	return true, confirmedSnapshot
 end
 
 function DataService.Transaction(
