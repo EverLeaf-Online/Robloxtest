@@ -1,0 +1,133 @@
+name: Deploy Beta Place
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scrap-to-bot-beta-place
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      ROBLOX_API_KEY: ${{ secrets.ROBLOX_API_KEY }}
+      ROBLOX_UNIVERSE_ID: "10766713640"
+      ROBLOX_PLACE_ID: "75490500628229"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Check Roblox deployment configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${ROBLOX_API_KEY:-}" ]]; then
+            echo "::error::ROBLOX_API_KEY is not configured."
+            exit 1
+          fi
+
+      - name: Install Rokit
+        shell: bash
+        run: |
+          ROKIT_INSTALLER_URL="https://raw.githubusercontent.com/rojo-rbx/rokit/2f2618428ef31279e2fc80b0b1d73485bc929ddd/scripts/install.sh"
+          curl --fail --silent --show-error --location \
+            --retry 4 --retry-delay 2 --retry-all-errors \
+            "$ROKIT_INSTALLER_URL" | bash -s -- 1.2.0
+          echo "$HOME/.rokit/bin" >> "$GITHUB_PATH"
+
+      - name: Install pinned toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3 4; do
+            if "$HOME/.rokit/bin/rokit" install --no-trust-check; then
+              exit 0
+            fi
+            if [[ "$attempt" -eq 4 ]]; then
+              echo "::error::Rokit toolchain install failed after 4 attempts."
+              exit 1
+            fi
+            delay=$((attempt * 3))
+            echo "::warning::Rokit toolchain install attempt $attempt failed; retrying in ${delay}s."
+            sleep "$delay"
+          done
+
+      - name: Install Wally packages
+        run: wally install
+
+      - name: Verify lockfile
+        run: git diff --exit-code -- wally.lock
+
+      - name: Validate Luau
+        shell: bash
+        run: |
+          stylua --check src spec.lua
+          selene src spec.lua
+
+      - name: Build shipping place
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build
+          rojo build default.project.json --output build/ScrapToBotFactory.rbxlx
+          rojo build default.project.json --output build/ScrapToBotFactory.rbxl
+          grep -q '<token name="ChatVersion">1</token>' build/ScrapToBotFactory.rbxlx
+          grep -q 'Bootstrap' build/ScrapToBotFactory.rbxlx
+          grep -q 'UIController' build/ScrapToBotFactory.rbxlx
+          grep -q 'HubUIController' build/ScrapToBotFactory.rbxlx
+
+      - name: Publish beta place
+        id: publish
+        shell: bash
+        run: |
+          set -euo pipefail
+          response_file="$RUNNER_TEMP/place-publish-response.json"
+          publish_url="https://apis.roblox.com/universes/v1/${ROBLOX_UNIVERSE_ID}/places/${ROBLOX_PLACE_ID}/versions?versionType=Published"
+
+          set +e
+          http_code="$(curl --silent --show-error --location \
+            --connect-timeout 20 \
+            --max-time 120 \
+            --output "$response_file" \
+            --write-out '%{http_code}' \
+            --request POST "$publish_url" \
+            --header "x-api-key: ${ROBLOX_API_KEY}" \
+            --header "Content-Type: application/octet-stream" \
+            --header "Accept: application/json" \
+            --data-binary "@build/ScrapToBotFactory.rbxl")"
+          curl_status=$?
+          set -e
+
+          if [[ $curl_status -ne 0 || ! "$http_code" =~ ^2[0-9][0-9]$ ]]; then
+            cat "$response_file" >&2 || true
+            echo "::error::Roblox place publish failed (curl=$curl_status, HTTP=${http_code:-none})."
+            exit 1
+          fi
+
+          version="$(jq -r '.versionNumber // empty' "$response_file")"
+          if [[ ! "$version" =~ ^[1-9][0-9]*$ ]]; then
+            cat "$response_file" >&2 || true
+            echo "::error::Roblox publish response did not contain a valid versionNumber."
+            exit 1
+          fi
+
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Published Scrap-to-Bot Factory beta place version $version."
+
+      - name: Deployment summary
+        shell: bash
+        run: |
+          {
+            echo "## Scrap-to-Bot Factory beta deployment"
+            echo
+            echo "- Universe: $ROBLOX_UNIVERSE_ID"
+            echo "- Place: $ROBLOX_PLACE_ID"
+            echo "- Published version: ${{ steps.publish.outputs.version }}"
+            echo "- Source commit: $GITHUB_SHA"
+          } >> "$GITHUB_STEP_SUMMARY"

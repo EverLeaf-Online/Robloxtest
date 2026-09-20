@@ -13,6 +13,13 @@ require_env ROBLOX_API_KEY
 require_env ROBLOX_UNIVERSE_ID
 require_env ROBLOX_PLACE_ID
 
+PRODUCTION_PLACE_ID="${ROBLOX_PRODUCTION_PLACE_ID:-75490500628229}"
+if [[ "$ROBLOX_PLACE_ID" == "$PRODUCTION_PLACE_ID" ]]; then
+  echo "Refusing to publish the OCALE test project over the production/beta place ($PRODUCTION_PLACE_ID)." >&2
+  echo "Configure ROBLOX_OCALE_PLACE_ID to a separate dedicated test place." >&2
+  exit 6
+fi
+
 REPO_ROOT="$(pwd)"
 ROCALE_CLI="${ROCALE_CLI:-rocale-cli}"
 ROCALE_WORKDIR="${ROCALE_WORKDIR:-$REPO_ROOT}"
