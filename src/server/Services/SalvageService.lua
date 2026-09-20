@@ -51,6 +51,13 @@ local function setNodeActive(nodeId: string, active: boolean)
 	end
 end
 
+local function ensureNodeState(nodeId: string)
+	if nodeActive[nodeId] == nil then
+		nodeActive[nodeId] = true
+		nodeClaimed[nodeId] = false
+	end
+end
+
 local function claimNode(nodeId: string): boolean
 	if nodeActive[nodeId] ~= true or nodeClaimed[nodeId] == true then
 		return false
@@ -98,6 +105,7 @@ function SalvageService.Collect(player: Player, nodeId: any)
 		StateService.ActionResult(player, RemoteNames.RequestCollect, false, "UNKNOWN_NODE", nil)
 		return
 	end
+	ensureNodeState(nodeId)
 	if nodeActive[nodeId] ~= true then
 		StateService.ActionResult(player, RemoteNames.RequestCollect, false, "NODE_RESPAWNING", nil)
 		return
@@ -182,13 +190,23 @@ function SalvageService.Collect(player: Player, nodeId: any)
 
 	if not executed then
 		releaseNodeClaim(nodeId)
-		StateService.ActionResult(
-			player,
-			RemoteNames.RequestCollect,
-			false,
-			tostring(transactionResult),
-			nil
-		)
+		if typeof(transactionResult) == "table" then
+			StateService.ActionResult(
+				player,
+				RemoteNames.RequestCollect,
+				false,
+				tostring(transactionResult.Code),
+				transactionResult.Payload
+			)
+		else
+			StateService.ActionResult(
+				player,
+				RemoteNames.RequestCollect,
+				false,
+				tostring(transactionResult),
+				nil
+			)
+		end
 		return
 	end
 	if typeof(transactionResult) ~= "table" then
@@ -224,7 +242,7 @@ function SalvageService.Collect(player: Player, nodeId: any)
 	end)
 end
 
-local function autoCollectNearest(player: Player)
+function SalvageService.TryAutoCollect(player: Player)
 	if not MonetizationService.HasAutoCollect(player) or not DataService.IsReady(player) then
 		return
 	end
@@ -240,6 +258,7 @@ local function autoCollectNearest(player: Player)
 	local bestId: string? = nil
 	local bestDistance = math.huge
 	for nodeId, node in WorldService.GetSalvageNodes() do
+		ensureNodeState(nodeId)
 		if nodeActive[nodeId] == true and nodeClaimed[nodeId] ~= true then
 			local zoneId = node:GetAttribute("ZoneId")
 			local nodePlotIdAttribute = node:GetAttribute("PlotId")
@@ -278,8 +297,7 @@ function SalvageService.Init()
 	end
 	initialized = true
 	for nodeId, node in WorldService.GetSalvageNodes() do
-		nodeActive[nodeId] = true
-		nodeClaimed[nodeId] = false
+		ensureNodeState(nodeId)
 		local prompt = node:FindFirstChildOfClass("ProximityPrompt")
 		if prompt then
 			prompt.Triggered:Connect(function(player)
@@ -296,7 +314,7 @@ function SalvageService.Init()
 		while true do
 			task.wait(1.25)
 			for _, player in Players:GetPlayers() do
-				autoCollectNearest(player)
+				SalvageService.TryAutoCollect(player)
 			end
 		end
 	end)
