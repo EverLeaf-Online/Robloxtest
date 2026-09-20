@@ -34,7 +34,8 @@ local PRODUCT = RobloxIds.DeveloperProducts
 local PASSES = RobloxIds.Passes
 local FACTORY_CLUB = RobloxIds.Subscription.FactoryClub
 local ReceiptLedgerStore = DataStoreService:GetDataStore("ScrapToBot_ReceiptLedger_v1")
-local ReceiptRecoveryAuditStore = DataStoreService:GetDataStore("ScrapToBot_ReceiptRecoveryAudit_v1")
+local ReceiptRecoveryAuditStore =
+	DataStoreService:GetDataStore("ScrapToBot_ReceiptRecoveryAudit_v1")
 local PASS_NAMES = table.freeze({
 	"Production2x",
 	"ExpandedStorage",
@@ -105,8 +106,11 @@ local function receiptRecoveryAuditContains(userId: number, purchaseId: string):
 	if RunService:IsStudio() then
 		return false
 	end
-	local ok, auditOrError =
-		pcall(ReceiptRecoveryAuditStore.GetAsync, ReceiptRecoveryAuditStore, receiptLedgerKey(userId))
+	local ok, auditOrError = pcall(
+		ReceiptRecoveryAuditStore.GetAsync,
+		ReceiptRecoveryAuditStore,
+		receiptLedgerKey(userId)
+	)
 	if not ok then
 		warn(
 			("[MonetizationService] Receipt recovery audit read failed for %d: %s"):format(

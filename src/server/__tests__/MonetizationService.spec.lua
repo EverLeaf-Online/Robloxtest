@@ -158,21 +158,20 @@ describe("MonetizationService integration", function()
 			return true
 		end
 
-		local missingLedgerSuccess, missingLedgerCode =
-			MonetizationService.RecoverHistoricalReceiptForTests(
-				player,
-				evidence,
-				function()
-					return false
-				end,
-				function()
-					return false
-				end,
-				markRecovery,
-				function()
-					return 1_700_000_000
-				end
-			)
+		local missingLedgerSuccess, missingLedgerCode = MonetizationService.RecoverHistoricalReceiptForTests(
+			player,
+			evidence,
+			function()
+				return false
+			end,
+			function()
+				return false
+			end,
+			markRecovery,
+			function()
+				return 1_700_000_000
+			end
+		)
 		expect(missingLedgerSuccess).toBe(false)
 		expect(missingLedgerCode).toBe("LEDGER_ENTRY_NOT_FOUND")
 		expect(data.Consumables.InstantProcessTokens).toBe(0)

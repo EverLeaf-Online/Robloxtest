@@ -106,7 +106,8 @@ describe("ReceiptRecoveryRules", function()
 			EvidenceReference = "incident-unknown",
 			ExpectedRevision = 0,
 		}
-		local unknownValid, unknownCode = ReceiptRecoveryRules.ValidateEvidence(unknownProduct :: any)
+		local unknownValid, unknownCode =
+			ReceiptRecoveryRules.ValidateEvidence(unknownProduct :: any)
 		expect(unknownValid).toBe(false)
 		expect(unknownCode).toBe("UNSUPPORTED_PRODUCT")
 	end)
