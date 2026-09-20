@@ -8,6 +8,7 @@ local expect = JestGlobals.expect
 local it = JestGlobals.it
 
 local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
+local Upgrades = require(ReplicatedStorage.Shared.Config.Upgrades)
 
 local serverRoot = script.Parent.Parent
 local ProfileSanitizer = require(serverRoot.Data.ProfileSanitizer)
@@ -108,7 +109,7 @@ describe("ProfileSanitizer", function()
 		expect(data.Robots.NextUid).toBe(1)
 		expect(next(data.Assignments.WorkPads)).toBe(nil)
 
-		expect(data.Machines.ProcessorLevel).toBe(1)
+		expect(data.Machines.ProcessorLevel).toBe(#Upgrades.ProcessorSpeed.Levels)
 		expect(data.Machines.ProcessorJob.Active).toBe(false)
 		expect(data.Machines.ProcessorJob.RecipeId).toBe("")
 		expect(data.Machines.ProcessorJob.StartedAt).toBe(0)
@@ -136,12 +137,12 @@ describe("ProfileSanitizer", function()
 		data.Materials.ScrapMetal = 12
 		data.Materials.Wiring = 4
 		data.Consumables.InstantProcessTokens = 3
-		data.Robots.OwnedByUid.R000001 = {
+		data.Robots.OwnedByUid.R1 = {
 			RobotId = "TinScout",
 			AcquiredAt = 1_800_000_000,
 		}
 		data.Robots.NextUid = 2
-		data.Assignments.WorkPads.Pad1 = "R000001"
+		data.Assignments.WorkPads.Pad1 = "R1"
 		data.Machines.ProcessorJob = {
 			Active = true,
 			RecipeId = "MakeWiring",
@@ -167,8 +168,8 @@ describe("ProfileSanitizer", function()
 		expect(data.Materials.ScrapMetal).toBe(12)
 		expect(data.Materials.Wiring).toBe(4)
 		expect(data.Consumables.InstantProcessTokens).toBe(3)
-		expect(data.Robots.OwnedByUid.R000001.RobotId).toBe("TinScout")
-		expect(data.Assignments.WorkPads.Pad1).toBe("R000001")
+		expect(data.Robots.OwnedByUid.R1.RobotId).toBe("TinScout")
+		expect(data.Assignments.WorkPads.Pad1).toBe("R1")
 		expect(data.Machines.ProcessorJob.Active).toBe(true)
 		expect(data.Machines.ProcessorJob.RecipeId).toBe("MakeWiring")
 		expect(data.Machines.AssemblerJob.Active).toBe(true)
