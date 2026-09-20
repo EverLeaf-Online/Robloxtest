@@ -8,6 +8,7 @@ local expect = JestGlobals.expect
 local it = JestGlobals.it
 
 local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
+local RobloxIds = require(ReplicatedStorage.Shared.Config.RobloxIds)
 
 local serverRoot = script.Parent.Parent
 local ProfileTemplate = require(serverRoot.Data.ProfileTemplate)
@@ -29,6 +30,21 @@ end
 
 local function makeFakePlayer(): Player
 	return Instance.new("Folder") :: any
+end
+
+local function makeReceiptPlayer(userId: number): Player
+	local attributes: { [string]: any } = {}
+	local fake: any = {
+		UserId = userId,
+	}
+	function fake:SetAttribute(name: string, value: any)
+		attributes[name] = value
+	end
+	function fake:GetAttribute(name: string): any
+		return attributes[name]
+	end
+	function fake:Destroy() end
+	return fake :: Player
 end
 
 local function resetFakes()
@@ -73,6 +89,50 @@ describe("MonetizationService integration", function()
 
 		data.Entitlements.PersonalOverclockUntil = os.time() - 1
 		expect(MonetizationService.GetProductionMultiplier(player)).toBe(2)
+
+		player:Destroy()
+	end)
+
+	it("never acknowledges paid value before the receipt grant is durably saved", function()
+		resetFakes()
+		local player = makeReceiptPlayer(7001)
+		local data = deepCopy(ProfileTemplate)
+		DataService.SetData(player, data)
+		DataService.SetPersistedData(player, deepCopy(data))
+		DataService.SetSaveResult(player, false)
+
+		local purchaseId = "durability-regression-1"
+		local receipt = {
+			PlayerId = player.UserId,
+			PurchaseId = purchaseId,
+			ProductId = RobloxIds.DeveloperProducts.InstantProcessTokens,
+		}
+
+		local firstDecision = MonetizationService.ProcessReceiptForPlayerForStudio(player, receipt)
+		expect(firstDecision).toBe(Enum.ProductPurchaseDecision.NotProcessedYet)
+		expect(data.Consumables.InstantProcessTokens).toBe(5)
+		expect(table.find(data.Receipts.RecentPurchaseIds, purchaseId)).never.toBe(nil)
+
+		local beforeCrash = DataService.GetPersistedData(player)
+		assert(beforeCrash ~= nil)
+		expect(beforeCrash.Consumables.InstantProcessTokens).toBe(0)
+		expect(table.find(beforeCrash.Receipts.RecentPurchaseIds, purchaseId)).toBe(nil)
+
+		expect(DataService.SimulateCrashReload(player)).toBe(true)
+		local reloaded = DataService.GetData(player)
+		assert(reloaded ~= nil)
+		expect(reloaded.Consumables.InstantProcessTokens).toBe(0)
+		expect(table.find(reloaded.Receipts.RecentPurchaseIds, purchaseId)).toBe(nil)
+
+		DataService.SetSaveResult(player, true)
+		local retryDecision = MonetizationService.ProcessReceiptForPlayerForStudio(player, receipt)
+		expect(retryDecision).toBe(Enum.ProductPurchaseDecision.PurchaseGranted)
+
+		local persisted = DataService.GetPersistedData(player)
+		assert(persisted ~= nil)
+		expect(persisted.Consumables.InstantProcessTokens).toBe(5)
+		expect(table.find(persisted.Receipts.RecentPurchaseIds, purchaseId)).never.toBe(nil)
+		expect(DataService.GetSaveCount(player)).toBe(2)
 
 		player:Destroy()
 	end)
