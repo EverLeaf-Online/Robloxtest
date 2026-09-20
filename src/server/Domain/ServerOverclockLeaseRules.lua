@@ -2,6 +2,8 @@
 
 local ServerOverclockLeaseRules = {}
 
+local MAX_IDENTIFIER_LENGTH = 128
+
 export type LeaseRecord = {
 	BoostUntil: number,
 	OwnerJobId: string,
@@ -10,11 +12,19 @@ export type LeaseRecord = {
 	AppliedPurchases: { [string]: boolean },
 }
 
-local function cloneApplied(source: { [string]: boolean }): { [string]: boolean }
+local function isFiniteNonNegative(value: any): boolean
+	return typeof(value) == "number" and value == value and value >= 0 and value < math.huge
+end
+
+local function isBoundedIdentifier(value: any): boolean
+	return typeof(value) == "string" and #value > 0 and #value <= MAX_IDENTIFIER_LENGTH
+end
+
+local function cloneApplied(source: { [any]: any }): { [string]: boolean }
 	local result: { [string]: boolean } = {}
 	for purchaseId, applied in source do
-		if applied == true then
-			result[purchaseId] = true
+		if isBoundedIdentifier(purchaseId) and applied == true then
+			result[purchaseId :: string] = true
 		end
 	end
 	return result
@@ -26,10 +36,10 @@ function ServerOverclockLeaseRules.Normalize(value: any): LeaseRecord
 		then record.AppliedPurchases
 		else {}
 	return {
-		BoostUntil = if typeof(record.BoostUntil) == "number" then record.BoostUntil else 0,
-		OwnerJobId = if typeof(record.OwnerJobId) == "string" then record.OwnerJobId else "",
-		LeaseUntil = if typeof(record.LeaseUntil) == "number" then record.LeaseUntil else 0,
-		UpdatedAt = if typeof(record.UpdatedAt) == "number" then record.UpdatedAt else 0,
+		BoostUntil = if isFiniteNonNegative(record.BoostUntil) then record.BoostUntil else 0,
+		OwnerJobId = if isBoundedIdentifier(record.OwnerJobId) then record.OwnerJobId else "",
+		LeaseUntil = if isFiniteNonNegative(record.LeaseUntil) then record.LeaseUntil else 0,
+		UpdatedAt = if isFiniteNonNegative(record.UpdatedAt) then record.UpdatedAt else 0,
 		AppliedPurchases = cloneApplied(sourceApplied),
 	}
 end
@@ -51,6 +61,15 @@ function ServerOverclockLeaseRules.ApplyPurchase(
 	leaseSeconds: number
 ): (LeaseRecord, boolean)
 	local nextRecord = ServerOverclockLeaseRules.Normalize(record)
+	if
+		not isBoundedIdentifier(sessionId)
+		or not isBoundedIdentifier(purchaseId)
+		or not isFiniteNonNegative(now)
+		or not isFiniteNonNegative(boostSeconds)
+		or not isFiniteNonNegative(leaseSeconds)
+	then
+		return nextRecord, false
+	end
 	if not ServerOverclockLeaseRules.CanClaim(nextRecord, sessionId, now) then
 		return nextRecord, false
 	end
@@ -72,6 +91,13 @@ function ServerOverclockLeaseRules.Claim(
 	leaseSeconds: number
 ): (LeaseRecord, boolean)
 	local nextRecord = ServerOverclockLeaseRules.Normalize(record)
+	if
+		not isBoundedIdentifier(sessionId)
+		or not isFiniteNonNegative(now)
+		or not isFiniteNonNegative(leaseSeconds)
+	then
+		return nextRecord, false
+	end
 	if nextRecord.BoostUntil <= now then
 		return nextRecord, false
 	end
@@ -92,6 +118,13 @@ function ServerOverclockLeaseRules.Renew(
 	leaseSeconds: number
 ): (LeaseRecord, boolean)
 	local nextRecord = ServerOverclockLeaseRules.Normalize(record)
+	if
+		not isBoundedIdentifier(sessionId)
+		or not isFiniteNonNegative(now)
+		or not isFiniteNonNegative(leaseSeconds)
+	then
+		return nextRecord, false
+	end
 	if nextRecord.OwnerJobId ~= sessionId or nextRecord.BoostUntil <= now then
 		return nextRecord, false
 	end
@@ -106,6 +139,9 @@ function ServerOverclockLeaseRules.Release(
 	now: number
 ): LeaseRecord
 	local nextRecord = ServerOverclockLeaseRules.Normalize(record)
+	if not isBoundedIdentifier(sessionId) or not isFiniteNonNegative(now) then
+		return nextRecord
+	end
 	if nextRecord.OwnerJobId == sessionId then
 		nextRecord.OwnerJobId = ""
 		nextRecord.LeaseUntil = 0
