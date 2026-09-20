@@ -330,10 +330,10 @@ local function App()
 		}),
 
 		MachineStatus = React.createElement("Frame", {
-			AnchorPoint = Vector2.new(0, 0.5),
+			AnchorPoint = if isPhone then Vector2.new(1, 0.5) else Vector2.new(0, 0.5),
 			BackgroundTransparency = 1,
 			BorderSizePixel = 0,
-			Position = if isPhone then UDim2.new(0, 10, 0.38, 0) else UDim2.new(0, 18, 0.42, 0),
+			Position = if isPhone then UDim2.new(1, -10, 0.42, 0) else UDim2.new(0, 18, 0.42, 0),
 			Size = if isPhone then UDim2.fromOffset(132, 98) else UDim2.fromOffset(158, 114),
 		}, {
 			Layout = React.createElement("UIListLayout", {
