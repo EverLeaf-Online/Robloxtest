@@ -166,9 +166,19 @@ local function renewDeliveryClaim(userId: number, generation: string): boolean
 end
 
 local function stillOwnsDelivery(userId: number, generation: string): boolean
-	local now = os.time()
-	local ok, stateOrError =
-		pcall(deliveryStateStore.GetAsync, deliveryStateStore, stateKey(userId))
+	local ownsClaim = false
+	local ok, stateOrError = pcall(function()
+		return deliveryStateStore:UpdateAsync(stateKey(userId), function(old)
+			local state = FactoryReadyDeliveryRules.Normalize(old)
+			ownsClaim = FactoryReadyDeliveryRules.IsOwnedClaim(
+				state,
+				generation,
+				DELIVERY_OWNER_ID,
+				os.time()
+			)
+			return state
+		end)
+	end)
 	if not ok then
 		warn(
 			("[FactoryReadyNotificationService] Claim revalidation failed for %d/%s: %s"):format(
@@ -179,7 +189,7 @@ local function stillOwnsDelivery(userId: number, generation: string): boolean
 		)
 		return false
 	end
-	return FactoryReadyDeliveryRules.IsOwnedClaim(stateOrError, generation, DELIVERY_OWNER_ID, now)
+	return ownsClaim
 end
 
 local function completeDelivery(userId: number, generation: string): boolean
@@ -315,7 +325,7 @@ local function processDue()
 
 		local claimed, claimCode = claimDelivery(userId, generation, dueAt)
 		if not claimed then
-			if claimCode == "STALE" or claimCode == "NOT_DUE" then
+			if claimCode == "STALE" then
 				removeQueueEntry(entry.key)
 			end
 			continue
