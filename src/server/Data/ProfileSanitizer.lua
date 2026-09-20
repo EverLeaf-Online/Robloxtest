@@ -237,6 +237,8 @@ function ProfileSanitizer.Sanitize(data: any)
 		clampInteger(entitlements.PersonalOverclockUntil, 0, 4_102_444_800, 0)
 	entitlements.ServerOverclockUntil =
 		clampInteger(entitlements.ServerOverclockUntil, 0, 4_102_444_800, 0)
+	entitlements.ServerOverclockLeaseId =
+		sanitizeBoundedString(entitlements.ServerOverclockLeaseId, 128, "")
 	entitlements.FactoryClubActiveCached =
 		sanitizeBoolean(entitlements.FactoryClubActiveCached, false)
 	entitlements.FactoryClubLastGrantedCycle =
