@@ -11,11 +11,9 @@ local RemoteNames = require(ReplicatedStorage.Shared.Networking.RemoteNames)
 local DataService = require(script.Parent.DataService)
 local EconomyService = require(script.Parent.EconomyService)
 local NotificationService = require(script.Parent.NotificationService)
+local ReferralProgressService = require(script.Parent.ReferralProgressService)
 local RemoteService = require(script.Parent.RemoteService)
 local StateService = require(script.Parent.StateService)
-local ProfileTypes = require(script.Parent.Parent.Data.ProfileTypes)
-
-type ProfileData = ProfileTypes.ProfileData
 
 local ReferralService = {}
 local initialized = false
@@ -163,38 +161,16 @@ local function claimQueuedRewards(player: Player)
 	)
 end
 
-local function isNewPlayerReferralCandidate(data: ProfileData): boolean
-	return data.Stats.LifetimePlaySeconds == 0
-		and data.Stats.LifetimeRobotsBuilt == 0
-		and next(data.Tutorial.Milestones) == nil
-end
-
 local function initializeReferral(player: Player)
 	local data = DataService.GetData(player)
 	if data == nil then
 		return
 	end
 
-	if data.Referrals.PendingInviterUserId == 0 and isNewPlayerReferralCandidate(data) then
-		local joinData = player:GetJoinData()
-		local referredBy = joinData.ReferredByPlayerId
-		if
-			typeof(referredBy) == "number"
-			and referredBy % 1 == 0
-			and referredBy > 0
-			and referredBy ~= player.UserId
-		then
-			DataService.Transaction(player, function(profileData)
-				if profileData.Referrals.PendingInviterUserId ~= 0 then
-					return true, nil
-				end
-				profileData.Referrals.PendingInviterUserId = referredBy
-				profileData.Referrals.PendingStartedAt = os.time()
-				profileData.Referrals.PendingPlaySeconds = 0
-				return true, nil
-			end)
-		end
-	end
+	-- Referral attribution/playtime is experience-wide and starts in the Hub.
+	-- The Factory profile is only used as a second eligibility check if the Hub
+	-- could not verify prior profile state before teleport.
+	ReferralProgressService.VerifyFromProfile(player, data)
 
 	lastPersistAt[player] = os.clock()
 	claimQueuedRewards(player)
