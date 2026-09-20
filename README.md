@@ -7,7 +7,7 @@ This repository contains Scrap-to-Bot Factory and its supporting production rese
 
 ## Current rule
 
-**`docs/ROADMAP.md` is the single current execution roadmap. `docs/MASTER_PRODUCTION_PLAN.md` remains the product/design/architecture specification, and `docs/PUBLIC_LAUNCH_STATUS_2026-09-20.md` contains the detailed evidence behind the current Public Beta gate. Dated status/audit documents are historical snapshots unless the roadmap explicitly promotes them to an active gate.**
+**`docs/ROADMAP.md` is the single current execution roadmap. `docs/MASTER_PRODUCTION_PLAN.md` remains the product/design/architecture specification. Historical launch/validation snapshots live under `docs/archive/` and do not compete with current status.**
 
 ## Git / Rojo runtime source of truth
 
@@ -46,18 +46,17 @@ The first playable is implemented and has moved beyond planning-only status. Cur
 - `FactoryReady` delivery left pending until the experience reaches Roblox's required visit threshold for meaningful delivery testing;
 - real charged-Robux receipts and a real Factory Club subscription remain intentionally unverified because the current test account has no Robux available for those production purchases.
 
-See `docs/ROADMAP.md` for current priorities and phase status, and `docs/PUBLIC_LAUNCH_STATUS_2026-09-20.md` for the detailed Public Beta validation matrix.
+See `docs/ROADMAP.md` for current priorities, phase status, and the Public Beta validation matrix.
 
 ## Planning and research documents
 
 - `docs/ROADMAP.md` — **single current execution roadmap**: Closed/Limited Beta, Public Beta gate, 1.0, post-launch progression, LiveOps, and explicit non-blockers.
-- `docs/PUBLIC_LAUNCH_STATUS_2026-09-20.md` — **detailed current launch-gate evidence** and the real Roblox/live-device validation matrix.
 - `docs/MASTER_PRODUCTION_PLAN.md` — **product/design/architecture specification**: locked v1 scope, first-session progression, economy, profile model, services, networking, security, UI/art, analytics, monetization, and testing.
 - `docs/INSTANCED_FACTORY_ARCHITECTURE.md` — **active scale architecture**: shared Hub, reserved personal Factory servers, secure MemoryStore route capabilities, and owner/visitor authority.
-- `docs/LIVE_VALIDATION_STATUS_2026-09-17.md` — **historical live-validation snapshot** retained as evidence.
 - `docs/BRANCH_RUNTIME_RECONCILIATION_2026-09-17.md` — **Git/Rojo runtime source of truth** and branch-switch safety rules.
 - `docs/FULL_GIT_CONTENT_AUDIT_2026-09-17.md` — **full content-level reconciliation** of the legacy branch stack, selective ports, rejected duplicate implementations, and cleanup disposition.
-- `docs/MESHY_FACTORY_ASSET_PIPELINE.md` — **factory visual-production specification**: original art direction, asset budgets, pivots, collision policy, and Roblox import acceptance gates.
+- `docs/FACTORY_ASSET_PIPELINE.md` — **active tool-agnostic factory asset specification**: Blender/manual production, licensed/free source policy, art direction, budgets, pivots, collision policy, and Roblox import gates.
+- `docs/archive/README.md` — **documentation archive index** for historical status snapshots and retired workflows.
 - `docs/ROBLOX_GAME_PRODUCTION_RESEARCH_MASTER_2026-09-16.md` — **master research gate** covering product, architecture, networking, exploit resistance, persistence, economy, monetization, analytics, UI/input, performance, testing, assets, operations, safety, and discovery.
 - `docs/ROBLOX_CREATOR_HUB_BASELINE.md` — **primary implementation authority** translating current official Roblox guidance into project rules.
 - `docs/PRODUCT_STRATEGY.md` — product requirements, concept direction, and business/product rationale.

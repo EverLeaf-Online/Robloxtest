@@ -12,10 +12,10 @@ Use the supporting documents for detail, not for competing phase status:
 
 - `docs/ROADMAP.md` — current priorities, phase status, launch gates, and post-launch order.
 - `docs/MASTER_PRODUCTION_PLAN.md` — product/design/architecture specification and long-term blueprint.
-- `docs/PUBLIC_LAUNCH_STATUS_2026-09-20.md` — detailed evidence for the current public-launch gate.
-- `docs/LIVE_VALIDATION_STATUS_2026-09-17.md` — historical live-validation snapshot.
 - `docs/INSTANCED_FACTORY_ARCHITECTURE.md` — current Hub + reserved personal Factory architecture.
-- dated audit/research/status documents — historical evidence unless this roadmap links to them as an active gate.
+- `docs/FACTORY_ASSET_PIPELINE.md` — active tool-agnostic visual-asset production/import specification.
+- `docs/archive/` — historical status snapshots and retired workflows; evidence only.
+- dated audit/research documents — historical/reference evidence unless this roadmap explicitly links them as an active gate.
 
 When phase status changes, update **this file first**.
 

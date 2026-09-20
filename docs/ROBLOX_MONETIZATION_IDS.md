@@ -35,7 +35,7 @@ These IDs belong to the dedicated Roblox test experience for **Scrap-to-Bot Fact
 |---|---|---:|---|
 | Factory Club | `EXP-418664834641560145` | 49 R$/month | Enabled |
 
-Factory Club benefits implemented in the game are monthly material/token rewards, a retained monthly collectible cosmetic, an active-member nameplate, and a +10% storage-capacity convenience benefit. Live billing-cycle behavior still requires a real paid subscription validation; see `docs/LIVE_VALIDATION_STATUS_2026-09-17.md`.
+Factory Club benefits implemented in the game are monthly material/token rewards, a retained monthly collectible cosmetic, an active-member nameplate, and a +10% storage-capacity convenience benefit. Live billing-cycle behavior still requires a real paid subscription validation; see the Public Beta gate in `docs/ROADMAP.md`.
 
 ## Implementation rules
 

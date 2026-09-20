@@ -34,7 +34,7 @@ The parallel branch has 32 surviving changed files relative to its merge base. E
 |---|---|
 | `default.project.json` | Superseded by current project mapping. Current main also carries the required TextChatService configuration. |
 | `selene.toml`, `stylua.toml`, `wally.toml` | Superseded by the current pinned/linted/tested toolchain. |
-| `docs/IMPLEMENTATION_STATUS_2026-09-17.md` | Superseded by `LIVE_VALIDATION_STATUS_2026-09-17.md`; useful missing feature notes were audited individually. |
+| `docs/IMPLEMENTATION_STATUS_2026-09-17.md` | Superseded by `docs/archive/status/LIVE_VALIDATION_STATUS_2026-09-17.md`; useful missing feature notes were audited individually. |
 | `docs/ROBLOX_BADGE_IDS.md` | **Ported and refreshed** into the canonical docs. |
 | `docs/ROBLOX_CREATOR_DASHBOARD_CONFIG.md` | **Selectively ported and refreshed** as a configuration record; stale implementation checklists were not copied. |
 | `docs/ROBLOX_MONETIZATION_IDS.md` | Existing canonical doc retained; **Factory Club subscription data reconciled** into it. |

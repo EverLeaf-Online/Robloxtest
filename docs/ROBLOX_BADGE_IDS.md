@@ -28,4 +28,4 @@ These badge IDs belong to the Roblox test experience **Scrap-to-Bot Factory - Te
 - Do not trust the client to report progression milestones.
 - Badge conditions are derived from authoritative server progression state.
 
-Runtime IDs are mirrored in `src/shared/Config/RobloxIds.lua`. See `docs/LIVE_VALIDATION_STATUS_2026-09-17.md` for current runtime validation status.
+Runtime IDs are mirrored in `src/shared/Config/RobloxIds.lua`. See `docs/ROADMAP.md` for current runtime validation and release status.

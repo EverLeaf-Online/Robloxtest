@@ -1,3 +1,5 @@
+> **Archived 2026-09-20:** this paid Meshy-based workflow is retired and is not part of the active production pipeline. Use `docs/FACTORY_ASSET_PIPELINE.md`. It is retained only as historical design/provenance evidence.
+
 # Meshy Factory Asset Pipeline
 
 Status: generation-ready batch specification. Roblox Studio is not required for this stage.

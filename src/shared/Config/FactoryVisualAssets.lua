@@ -23,19 +23,19 @@ export type AssetSpec = {
 	CollisionPolicy: CollisionPolicy,
 	PivotPolicy: PivotPolicy,
 	RobloxAssetId: number?,
-	MeshyPrompt: string,
+	AssetBrief: string,
 }
 
-local BASE_STYLE = table.concat({
+local BASE_STYLE_BRIEF = table.concat({
 	"Original stylized low-poly industrial game asset for Scrap-to-Bot Factory.",
 	"Chunky readable silhouette, rounded machine guards, modular bolted panels,",
-	"scrapyard-built manufacturing aesthetic, muted steel with warm brass/copper accents,",
-	"small cyan status lights, clean PBR materials, efficient UVs, no text, no logos,",
+	"scrapyard-built manufacturing aesthetic, worn galvanized steel and charcoal structural steel,",
+	"industrial-yellow safety accents, restrained copper/brass mechanics, small cyan status lights, clean PBR materials, efficient UVs, no text, no logos,",
 	"no copyrighted branding, isolated object, production-ready topology.",
 }, " ")
 
-local function prompt(subject: string): string
-	return BASE_STYLE .. " " .. subject
+local function brief(subject: string): string
+	return BASE_STYLE_BRIEF .. " " .. subject
 end
 
 local function asset(
@@ -61,7 +61,7 @@ local function asset(
 		CollisionPolicy = collisionPolicy,
 		PivotPolicy = pivotPolicy,
 		RobloxAssetId = nil,
-		MeshyPrompt = prompt(subject),
+		AssetBrief = brief(subject),
 	})
 end
 
@@ -375,7 +375,7 @@ local UpgradeVariants = table.freeze({
 })
 
 return table.freeze({
-	BaseStylePrompt = BASE_STYLE,
+	BaseStyleBrief = BASE_STYLE_BRIEF,
 	Assets = table.freeze(Assets),
 	UpgradeVariants = UpgradeVariants,
 })

@@ -3,7 +3,7 @@
 Status: **Active test-experience configuration**  
 Last reconciled: **2026-09-17**
 
-This document preserves the useful Creator Dashboard configuration that previously existed only on the parallel implementation branch. Runtime verification belongs in `docs/LIVE_VALIDATION_STATUS_2026-09-17.md`; this file is configuration/reference only.
+This document preserves the useful Creator Dashboard configuration that previously existed only on the parallel implementation branch. Runtime/release verification belongs in `docs/ROADMAP.md`; this file is configuration/reference only.
 
 ## Experience identity
 
@@ -80,7 +80,7 @@ Configured notification string asset IDs:
 | `FactoryClubReward` | `9de31ecb-88a8-4645-843a-b90c1952419d` |
 | `NewContent` | `e1abb235-8da6-814a-a388-a99aefb23213` |
 
-Delivery eligibility and current validation limitations are tracked in `docs/LIVE_VALIDATION_STATUS_2026-09-17.md`.
+Delivery eligibility and current validation limitations are tracked in `docs/ROADMAP.md`.
 
 ## Referral configuration
 
@@ -113,5 +113,5 @@ Delivery eligibility and current validation limitations are tracked in `docs/LIV
 When this configuration record disagrees with runtime code or a newer live-validation record:
 
 1. `src/shared/Config/RobloxIds.lua` is authoritative for IDs used by code.
-2. `docs/LIVE_VALIDATION_STATUS_2026-09-17.md` is authoritative for what has actually been runtime-validated.
+2. `docs/ROADMAP.md` is authoritative for current runtime-validation and release status.
 3. This document records Creator Dashboard configuration and should be updated when dashboard settings change.

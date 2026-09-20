@@ -40,14 +40,14 @@ describe("FactoryVisualAssets", function()
 		end
 	end)
 
-	it("keeps every asset prompt original-brand safe and generation-ready", function()
+	it("keeps every asset brief original-brand safe and production-ready", function()
 		for _, spec in FactoryVisualAssets.Assets do
-			expect(#spec.MeshyPrompt > 120).toBe(true)
-			expect(string.find(string.lower(spec.MeshyPrompt), "no logos", 1, true) ~= nil).toBe(
+			expect(#spec.AssetBrief > 120).toBe(true)
+			expect(string.find(string.lower(spec.AssetBrief), "no logos", 1, true) ~= nil).toBe(
 				true
 			)
 			expect(
-				string.find(string.lower(spec.MeshyPrompt), "no copyrighted branding", 1, true)
+				string.find(string.lower(spec.AssetBrief), "no copyrighted branding", 1, true)
 					~= nil
 			).toBe(true)
 		end

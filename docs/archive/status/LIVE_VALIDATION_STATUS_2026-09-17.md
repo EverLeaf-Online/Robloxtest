@@ -4,7 +4,7 @@ Status date: **2026-09-17**
 Source branch after merge: `main`  
 Normal Rojo project: `default.project.json`
 
-> **Historical status:** this 2026-09-17 file is retained as validation evidence. Use `docs/ROADMAP.md` for current phase/priorities and `docs/PUBLIC_LAUNCH_STATUS_2026-09-20.md` for the current launch-gate evidence.
+> **Historical status:** this 2026-09-17 file is retained as validation evidence. Use `docs/ROADMAP.md` for current phase/priorities. The later 2026-09-20 evidence snapshot is archived beside this file as `PUBLIC_LAUNCH_STATUS_2026-09-20.md`.
 
 This is the execution and validation record for the Scrap-to-Bot Factory first playable. It supersedes older 2026-09-16 runtime assumptions where they conflict.
 
