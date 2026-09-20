@@ -12,7 +12,7 @@ local FactoryReadyDeliveryRules = require(script.Parent.Parent.Domain.FactoryRea
 describe("FactoryReadyDeliveryRules", function()
 	it("rejects a stale page after another poller has fully delivered the generation", function()
 		local state = FactoryReadyDeliveryRules.Schedule("gen-a", 100, 90)
-		expect(state).never.toBe(nil)
+		assert(state ~= nil)
 
 		local claimed, firstAccepted =
 			FactoryReadyDeliveryRules.Claim(state, "gen-a", 100, "server-a", 100, 45)
@@ -32,8 +32,8 @@ describe("FactoryReadyDeliveryRules", function()
 	it("does not let an old page claim or overwrite a newer schedule", function()
 		local first = FactoryReadyDeliveryRules.Schedule("gen-a", 100, 90)
 		local rescheduled = FactoryReadyDeliveryRules.Schedule("gen-b", 200, 95)
-		expect(first).never.toBe(nil)
-		expect(rescheduled).never.toBe(nil)
+		assert(first ~= nil)
+		assert(rescheduled ~= nil)
 
 		local afterStaleClaim, accepted, code =
 			FactoryReadyDeliveryRules.Claim(rescheduled, "gen-a", 100, "server-a", 101, 45)
@@ -46,7 +46,7 @@ describe("FactoryReadyDeliveryRules", function()
 
 	it("rejects a page that was cancelled before lock acquisition", function()
 		local scheduled = FactoryReadyDeliveryRules.Schedule("gen-a", 100, 90)
-		expect(scheduled).never.toBe(nil)
+		assert(scheduled ~= nil)
 		local cancelled = FactoryReadyDeliveryRules.Cancel(scheduled, 95)
 
 		local afterClaim, accepted, code =
@@ -58,7 +58,7 @@ describe("FactoryReadyDeliveryRules", function()
 
 	it("keeps another poller out while an in-flight send renews its claim", function()
 		local scheduled = FactoryReadyDeliveryRules.Schedule("gen-a", 100, 90)
-		expect(scheduled).never.toBe(nil)
+		assert(scheduled ~= nil)
 		local claimed, accepted =
 			FactoryReadyDeliveryRules.Claim(scheduled, "gen-a", 100, "server-a", 100, 30)
 		expect(accepted).toBe(true)
@@ -77,13 +77,13 @@ describe("FactoryReadyDeliveryRules", function()
 
 	it("prevents stale completion from erasing a rescheduled generation", function()
 		local scheduled = FactoryReadyDeliveryRules.Schedule("gen-a", 100, 90)
-		expect(scheduled).never.toBe(nil)
+		assert(scheduled ~= nil)
 		local claimed, accepted =
 			FactoryReadyDeliveryRules.Claim(scheduled, "gen-a", 100, "server-a", 100, 45)
 		expect(accepted).toBe(true)
 
 		local rescheduled = FactoryReadyDeliveryRules.Schedule("gen-b", 200, 101)
-		expect(rescheduled).never.toBe(nil)
+		assert(rescheduled ~= nil)
 		local afterCompletion, completed =
 			FactoryReadyDeliveryRules.Complete(rescheduled, "gen-a", "server-a", 102)
 		expect(completed).toBe(false)
