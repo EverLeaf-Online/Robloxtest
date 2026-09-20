@@ -44,7 +44,9 @@ end
 function FactoryReadyDeliveryRules.Normalize(value: any): DeliveryState
 	local state = if typeof(value) == "table" then value else {}
 	local generation = if isGeneration(state.Generation) then state.Generation else ""
-	local owner = if typeof(state.Owner) == "string" and #state.Owner <= 128 then state.Owner else ""
+	local owner = if typeof(state.Owner) == "string" and #state.Owner <= 128
+		then state.Owner
+		else ""
 	local claimUntil = if isFiniteNonNegative(state.ClaimUntil)
 		then state.ClaimUntil
 		elseif isFiniteNonNegative(state.ExpiresAt) then state.ExpiresAt
