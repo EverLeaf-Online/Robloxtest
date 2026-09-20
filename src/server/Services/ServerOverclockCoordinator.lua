@@ -22,12 +22,19 @@ type PurchaseRecord = {
 	UpdatedAt: number,
 }
 
+type RecoveryState = {
+	FailureCount: number,
+	NextAttemptAt: number,
+}
+
 local ServerOverclockCoordinator = {}
 
 local LEASE_STORE_NAME = "ScrapToBot_ServerOverclockLease_v1"
 local PURCHASE_STORE_NAME = "ScrapToBot_ServerOverclockPurchase_v1"
 local LEASE_SECONDS = 75
 local HEARTBEAT_SECONDS = 30
+local RECOVERY_TICK_SECONDS = 5
+local RECOVERY_BACKOFF_MAX_SECONDS = 30
 local BOOST_SECONDS = 15 * 60
 local SERVER_OVERCLOCK_PRODUCT_ID = RobloxIds.DeveloperProducts.ServerOverclock
 local LeaseStore = DataStoreService:GetDataStore(LEASE_STORE_NAME)
@@ -41,6 +48,7 @@ local activeLeaseId = ""
 local activeBoostUntil = 0
 local activeLeaseUntil = 0
 local attributeWriteActive = false
+local recoveryStateByPlayer: { [Player]: RecoveryState } = {}
 
 local function leaseKey(leaseId: string): string
 	return "Lease_" .. leaseId
@@ -255,17 +263,50 @@ local function ensurePurchaseApplied(player: Player, purchaseId: string): boolea
 	return true
 end
 
-local function tryRecoverForPlayer(player: Player)
-	if hasEffectiveServerOverclock() or not DataService.IsReady(player) then
-		return
+local function clearRecoveryState(player: Player)
+	recoveryStateByPlayer[player] = nil
+end
+
+local function scheduleRecoveryRetry(player: Player)
+	local state = recoveryStateByPlayer[player]
+	if state == nil then
+		state = {
+			FailureCount = 0,
+			NextAttemptAt = 0,
+		}
+		recoveryStateByPlayer[player] = state
 	end
+	state.FailureCount += 1
+	local exponent = math.min(state.FailureCount - 1, 4)
+	local delaySeconds =
+		math.min(RECOVERY_BACKOFF_MAX_SECONDS, RECOVERY_TICK_SECONDS * (2 ^ exponent))
+	state.NextAttemptAt = os.clock() + delaySeconds
+end
+
+local function tryRecoverForPlayer(player: Player): boolean
+	if hasEffectiveServerOverclock() then
+		clearRecoveryState(player)
+		return true
+	end
+	if not DataService.IsReady(player) then
+		clearRecoveryState(player)
+		return false
+	end
+
 	local data = DataService.GetData(player)
 	if data == nil then
-		return
+		clearRecoveryState(player)
+		return false
 	end
 	local leaseId = data.Entitlements.ServerOverclockLeaseId
 	if not isValidLeaseId(leaseId) or data.Entitlements.ServerOverclockUntil <= os.time() then
-		return
+		clearRecoveryState(player)
+		return false
+	end
+
+	local state = recoveryStateByPlayer[player]
+	if state ~= nil and state.NextAttemptAt > os.clock() then
+		return false
 	end
 
 	local claimed = false
@@ -281,7 +322,27 @@ local function tryRecoverForPlayer(player: Player)
 		and updated.OwnerJobId == SESSION_ID
 		and updated.BoostUntil > os.time()
 	then
+		clearRecoveryState(player)
 		adoptLease(leaseId, updated)
+		return true
+	end
+
+	-- A live lease on the crashed/previous server and a transient DataStore failure
+	-- are both retryable. Keep the original BoostUntil; Claim only moves LeaseUntil.
+	scheduleRecoveryRetry(player)
+	return false
+end
+
+local function recoveryTick()
+	if hasEffectiveServerOverclock() then
+		return
+	end
+	for _, player in Players:GetPlayers() do
+		if DataService.IsReady(player) then
+			tryRecoverForPlayer(player)
+		else
+			clearRecoveryState(player)
+		end
 	end
 end
 
@@ -373,8 +434,10 @@ function ServerOverclockCoordinator.Init()
 	end
 
 	DataService.ProfileLoaded:Connect(function(player)
+		clearRecoveryState(player)
 		task.spawn(tryRecoverForPlayer, player)
 	end)
+	DataService.ProfileReleased:Connect(clearRecoveryState)
 
 	-- MonetizationService still owns the legacy presentation attributes. Keep them
 	-- corrected to lease-backed effective state if that legacy path writes them.
@@ -401,6 +464,12 @@ function ServerOverclockCoordinator.Init()
 		while true do
 			task.wait(HEARTBEAT_SECONDS)
 			heartbeat()
+		end
+	end)
+	task.spawn(function()
+		while true do
+			task.wait(RECOVERY_TICK_SECONDS)
+			recoveryTick()
 		end
 	end)
 end

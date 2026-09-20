@@ -107,6 +107,30 @@ describe("ServerOverclockLeaseRules", function()
 		expect(recovered.OwnerJobId).toBe("server-a")
 	end)
 
+	it("recovers on a later retry after the previous server lease expires", function()
+		local purchased = ServerOverclockLeaseRules.ApplyPurchase(
+			emptyRecord(),
+			"server-a",
+			"purchase-1",
+			1_000,
+			900,
+			75
+		)
+
+		local blocked, firstClaimed =
+			ServerOverclockLeaseRules.Claim(purchased, "server-b", 1_050, 75)
+		expect(firstClaimed).toBe(false)
+		expect(blocked.OwnerJobId).toBe("server-a")
+		expect(blocked.BoostUntil).toBe(1_900)
+
+		local recovered, secondClaimed =
+			ServerOverclockLeaseRules.Claim(blocked, "server-b", 1_076, 75)
+		expect(secondClaimed).toBe(true)
+		expect(recovered.OwnerJobId).toBe("server-b")
+		expect(recovered.BoostUntil).toBe(1_900)
+		expect(recovered.BoostUntil - 1_076).toBe(824)
+	end)
+
 	it("renews only for the current owner and releases on shutdown", function()
 		local first = ServerOverclockLeaseRules.ApplyPurchase(
 			emptyRecord(),
