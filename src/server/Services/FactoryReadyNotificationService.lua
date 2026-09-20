@@ -7,11 +7,9 @@ local RunService = game:GetService("RunService")
 
 local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
 
-local DataService = require(script.Parent.DataService)
 local NotificationService = require(script.Parent.NotificationService)
 
 local FactoryReadyNotificationService = {}
-local initialized = false
 
 local QUEUE_STORE_NAME = "ScrapToBot_FactoryReadyQueue_v1"
 local LOCK_STORE_NAME = "ScrapToBot_FactoryReadyLocks_v1"
@@ -23,48 +21,18 @@ local RETRY_DELAY_SECONDS = 10 * 60
 local queueStore = DataStoreService:GetOrderedDataStore(QUEUE_STORE_NAME)
 local lockStore = DataStoreService:GetDataStore(LOCK_STORE_NAME)
 
+local pollerInitialized = false
+local factorySchedulingInitialized = false
+
 local function queueKey(userId: number): string
 	return ("User_%d"):format(userId)
-end
-
-local function hasFactoryActivity(player: Player): boolean
-	local data = DataService.GetData(player)
-	if data == nil then
-		return false
-	end
-	if next(data.Assignments.WorkPads) ~= nil then
-		return true
-	end
-	return data.Machines.ProcessorJob.Active == true or data.Machines.AssemblerJob.Active == true
-end
-
-local function schedule(player: Player)
-	if
-		RunService:IsStudio()
-		or not DataService.IsReady(player)
-		or not hasFactoryActivity(player)
-	then
-		return
-	end
-
-	local dueAt = os.time() + GameConfig.Engagement.FactoryReadyDelaySeconds
-	local ok, err = pcall(function()
-		queueStore:SetAsync(queueKey(player.UserId), dueAt)
-	end)
-	if not ok then
-		warn(
-			("[FactoryReadyNotificationService] Failed scheduling %d: %s"):format(
-				player.UserId,
-				tostring(err)
-			)
-		)
-	end
 end
 
 local function cancel(userId: number)
 	if RunService:IsStudio() then
 		return
 	end
+
 	local ok, err = pcall(function()
 		queueStore:RemoveAsync(queueKey(userId))
 	end)
@@ -137,9 +105,17 @@ end
 
 local function deferRetry(userId: number)
 	local retryAt = os.time() + RETRY_DELAY_SECONDS
-	pcall(function()
+	local ok, err = pcall(function()
 		queueStore:SetAsync(queueKey(userId), retryAt)
 	end)
+	if not ok then
+		warn(
+			("[FactoryReadyNotificationService] Failed deferring %d: %s"):format(
+				userId,
+				tostring(err)
+			)
+		)
+	end
 end
 
 local function processDue()
@@ -193,7 +169,7 @@ local function processDue()
 		if sent then
 			cancel(userId)
 		else
-			-- Keep failed deliveries queued so a later active server can retry after
+			-- Keep failed deliveries queued so another active server can retry after
 			-- transient API failures or after the Open Cloud package becomes available.
 			deferRetry(userId)
 		end
@@ -201,20 +177,16 @@ local function processDue()
 	end
 end
 
-function FactoryReadyNotificationService.Init()
-	if initialized then
+function FactoryReadyNotificationService.InitPoller()
+	if pollerInitialized then
 		return
 	end
-	initialized = true
+	pollerInitialized = true
 
 	Players.PlayerAdded:Connect(function(player)
-		-- Rejoining means the push is no longer useful; their next leave will create
-		-- a fresh due time if their factory is active.
+		-- Rejoining makes the push obsolete. A later Factory leave will schedule a
+		-- fresh due time if that player still has active factory production.
 		task.spawn(cancel, player.UserId)
-	end)
-
-	Players.PlayerRemoving:Connect(function(player)
-		schedule(player)
 	end)
 
 	if RunService:IsStudio() then
@@ -227,6 +199,61 @@ function FactoryReadyNotificationService.Init()
 			task.wait(POLL_SECONDS)
 		end
 	end)
+end
+
+function FactoryReadyNotificationService.InitFactoryScheduling()
+	if factorySchedulingInitialized then
+		return
+	end
+	factorySchedulingInitialized = true
+
+	FactoryReadyNotificationService.InitPoller()
+
+	-- Keep the profile/data stack out of Hub servers. Only Factory servers need
+	-- profile access to decide whether a leaving owner has active production.
+	local DataService = require(script.Parent.DataService)
+
+	local function hasFactoryActivity(player: Player): boolean
+		local data = DataService.GetData(player)
+		if data == nil then
+			return false
+		end
+		if next(data.Assignments.WorkPads) ~= nil then
+			return true
+		end
+		return data.Machines.ProcessorJob.Active == true
+			or data.Machines.AssemblerJob.Active == true
+	end
+
+	local function schedule(player: Player)
+		if
+			RunService:IsStudio()
+			or not DataService.IsReady(player)
+			or not hasFactoryActivity(player)
+		then
+			return
+		end
+
+		local dueAt = os.time() + GameConfig.Engagement.FactoryReadyDelaySeconds
+		local ok, err = pcall(function()
+			queueStore:SetAsync(queueKey(player.UserId), dueAt)
+		end)
+		if not ok then
+			warn(
+				("[FactoryReadyNotificationService] Failed scheduling %d: %s"):format(
+					player.UserId,
+					tostring(err)
+				)
+			)
+		end
+	end
+
+	Players.PlayerRemoving:Connect(schedule)
+end
+
+-- Backwards-compatible Factory initializer. New call sites should be explicit.
+function FactoryReadyNotificationService.Init()
+	FactoryReadyNotificationService.InitFactoryScheduling()
 end
 
 return FactoryReadyNotificationService
