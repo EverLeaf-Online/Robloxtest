@@ -252,10 +252,12 @@ function DataService.SaveNow(player: Player, validator: SaveValidator?): (boolea
 	-- Connect before requesting the save so a fast mock or DataStore completion cannot
 	-- fire OnAfterSave between the Save() call and listener registration.
 	local afterSaveConnection = profile.OnAfterSave:Connect(inspect)
-	inspect(profile.LastSavedData)
-	if confirmedSnapshot ~= nil then
-		afterSaveConnection:Disconnect()
-		return true, confirmedSnapshot
+	if validator ~= nil then
+		inspect(profile.LastSavedData)
+		if confirmedSnapshot ~= nil then
+			afterSaveConnection:Disconnect()
+			return true, confirmedSnapshot
+		end
 	end
 
 	local ok, err = pcall(function()
