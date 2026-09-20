@@ -28,7 +28,7 @@ local function round(instance: Instance, radius: number)
 	corner.Parent = instance
 end
 
-local function createGui(): (TextBox, TextButton, TextLabel)
+local function createGui(): (TextBox, TextButton, TextButton, TextLabel)
 	local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui") :: PlayerGui
 	local existing = playerGui:FindFirstChild("CreatorAdminGui")
 	if existing ~= nil then
@@ -71,7 +71,7 @@ local function createGui(): (TextBox, TextButton, TextLabel)
 	frame.Name = "Panel"
 	frame.AnchorPoint = Vector2.new(0.5, 0.5)
 	frame.Position = UDim2.fromScale(0.5, 0.53)
-	frame.Size = UDim2.fromOffset(390, 188)
+	frame.Size = UDim2.fromOffset(390, 252)
 	frame.BackgroundColor3 = Color3.fromRGB(20, 24, 30)
 	frame.BackgroundTransparency = 0.03
 	frame.BorderSizePixel = 0
@@ -85,7 +85,7 @@ local function createGui(): (TextBox, TextButton, TextLabel)
 	title.Size = UDim2.new(1, -58, 0, 22)
 	title.BackgroundTransparency = 1
 	title.Font = Enum.Font.GothamBold
-	title.Text = "CREATOR: NEW CONTENT"
+	title.Text = "CREATOR ADMIN"
 	title.TextColor3 = Color3.fromRGB(230, 235, 245)
 	title.TextSize = 14
 	title.TextXAlignment = Enum.TextXAlignment.Left
@@ -146,6 +146,31 @@ local function createGui(): (TextBox, TextButton, TextLabel)
 	status.TextXAlignment = Enum.TextXAlignment.Left
 	status.Parent = frame
 
+	local resetButton = Instance.new("TextButton")
+	resetButton.Name = "FreshProfileReset"
+	resetButton.Position = UDim2.fromOffset(12, 188)
+	resetButton.Size = UDim2.new(1, -24, 0, 36)
+	resetButton.BackgroundColor3 = Color3.fromRGB(148, 52, 52)
+	resetButton.BorderSizePixel = 0
+	resetButton.Font = Enum.Font.GothamBold
+	resetButton.Text = "Fresh Profile Reset"
+	resetButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+	resetButton.TextSize = 13
+	resetButton.Parent = frame
+	round(resetButton, 7)
+
+	local resetHint = Instance.new("TextLabel")
+	resetHint.Name = "FreshProfileResetHint"
+	resetHint.Position = UDim2.fromOffset(12, 226)
+	resetHint.Size = UDim2.new(1, -24, 0, 16)
+	resetHint.BackgroundTransparency = 1
+	resetHint.Font = Enum.Font.Gotham
+	resetHint.Text = "Creator-only. Two clicks required. Paid-value history blocks reset."
+	resetHint.TextColor3 = Color3.fromRGB(176, 184, 196)
+	resetHint.TextSize = 10
+	resetHint.TextXAlignment = Enum.TextXAlignment.Left
+	resetHint.Parent = frame
+
 	local function refreshLayout()
 		local camera = Workspace.CurrentCamera
 		if camera == nil then
@@ -155,7 +180,7 @@ local function createGui(): (TextBox, TextButton, TextLabel)
 		launcher.Position = UDim2.new(1, if phone then -12 else -16, 0, if phone then 74 else 82)
 		launcher.Size = if phone then UDim2.fromOffset(58, 66) else UDim2.fromOffset(64, 72)
 		launcherIcon.Size = if phone then UDim2.fromOffset(44, 44) else UDim2.fromOffset(50, 50)
-		frame.Size = if phone then UDim2.new(0.78, 0, 0, 188) else UDim2.fromOffset(390, 188)
+		frame.Size = if phone then UDim2.new(0.86, 0, 0, 252) else UDim2.fromOffset(390, 252)
 	end
 	refreshLayout()
 	local camera = Workspace.CurrentCamera
@@ -170,7 +195,7 @@ local function createGui(): (TextBox, TextButton, TextLabel)
 		frame.Visible = false
 	end)
 
-	return box, button, status
+	return box, button, resetButton, status
 end
 
 function CreatorAdminController.Init()
@@ -186,11 +211,16 @@ function CreatorAdminController.Init()
 
 	local remotes = ReplicatedStorage:WaitForChild("Remotes")
 	local request = remotes:WaitForChild(RemoteNames.RequestAdminBroadcast)
+	local resetRequest = remotes:WaitForChild(RemoteNames.RequestAdminFreshProfileReset)
 	local actionResult = remotes:WaitForChild(RemoteNames.ActionResult)
 	assert(request:IsA("RemoteEvent"), "RequestAdminBroadcast remote must be a RemoteEvent")
+	assert(
+		resetRequest:IsA("RemoteEvent"),
+		"RequestAdminFreshProfileReset remote must be a RemoteEvent"
+	)
 	assert(actionResult:IsA("RemoteEvent"), "ActionResult remote must be a RemoteEvent")
 
-	local box, button, status = createGui()
+	local box, button, resetButton, status = createGui()
 
 	local function setPending(pending: boolean)
 		button.Active = not pending
@@ -220,18 +250,82 @@ function CreatorAdminController.Init()
 		end)
 	end)
 
-	actionResult.OnClientEvent:Connect(function(result: any)
-		if typeof(result) ~= "table" or result.Action ~= "AdminBroadcast" then
+	local resetArmed = false
+	local resetGeneration = 0
+
+	local function disarmReset()
+		resetArmed = false
+		resetButton.Active = true
+		resetButton.AutoButtonColor = true
+		resetButton.Text = "Fresh Profile Reset"
+	end
+
+	resetButton.Activated:Connect(function()
+		if not resetArmed then
+			resetArmed = true
+			resetGeneration += 1
+			local generation = resetGeneration
+			resetButton.Text = "Click Again to Confirm Reset"
+			status.Text = "Fresh reset armed for 6 seconds."
+			task.delay(6, function()
+				if resetArmed and resetGeneration == generation then
+					disarmReset()
+					status.Text = "Fresh reset cancelled."
+				end
+			end)
 			return
 		end
 
-		requestGeneration += 1
-		setPending(false)
+		resetGeneration += 1
+		resetArmed = false
+		resetButton.Active = false
+		resetButton.AutoButtonColor = false
+		resetButton.Text = "Resetting..."
+		status.Text = "Resetting profile and confirming save..."
+		resetRequest:FireServer("RESET")
+
+		local generation = resetGeneration
+		task.delay(20, function()
+			if resetGeneration == generation and not resetButton.Active then
+				disarmReset()
+				status.Text = "No reset response received."
+			end
+		end)
+	end)
+
+	actionResult.OnClientEvent:Connect(function(result: any)
+		if typeof(result) ~= "table" then
+			return
+		end
+
+		if result.Action == "AdminBroadcast" then
+			requestGeneration += 1
+			setPending(false)
+			if result.Success == true then
+				box.Text = ""
+				status.Text = "Broadcast accepted: " .. tostring(result.Code)
+			else
+				status.Text = "Broadcast failed: " .. tostring(result.Code)
+			end
+			return
+		end
+
+		if result.Action ~= "AdminFreshProfileReset" then
+			return
+		end
+
+		resetGeneration += 1
 		if result.Success == true then
-			box.Text = ""
-			status.Text = "Broadcast accepted: " .. tostring(result.Code)
+			resetButton.Text = "Reset Complete"
+			status.Text = "Fresh profile saved. Rejoining is required."
+			return
+		end
+
+		disarmReset()
+		if result.Code == "PAID_HISTORY_PRESENT" then
+			status.Text = "Reset blocked: paid-value history exists on this profile."
 		else
-			status.Text = "Broadcast failed: " .. tostring(result.Code)
+			status.Text = "Fresh reset failed: " .. tostring(result.Code)
 		end
 	end)
 end

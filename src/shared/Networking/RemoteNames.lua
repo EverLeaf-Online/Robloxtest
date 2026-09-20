@@ -14,6 +14,7 @@ local REQUESTS = table.freeze({
 	"RequestUseInstantProcessToken",
 	"RequestEquipClubCosmetic",
 	"RequestAdminBroadcast",
+	"RequestAdminFreshProfileReset",
 })
 
 local OUTBOUND = table.freeze({
@@ -37,6 +38,7 @@ local RemoteNames = table.freeze({
 	RequestUseInstantProcessToken = "RequestUseInstantProcessToken",
 	RequestEquipClubCosmetic = "RequestEquipClubCosmetic",
 	RequestAdminBroadcast = "RequestAdminBroadcast",
+	RequestAdminFreshProfileReset = "RequestAdminFreshProfileReset",
 
 	StateSnapshot = "StateSnapshot",
 	StateDelta = "StateDelta",

@@ -7,6 +7,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 
 local TransactionRules = require(ReplicatedStorage.Shared.Domain.TransactionRules)
 
+local FreshProfileReset = require(script.Parent.Parent.Data.FreshProfileReset)
 local ProfileMigrations = require(script.Parent.Parent.Data.ProfileMigrations)
 local ProfileSanitizer = require(script.Parent.Parent.Data.ProfileSanitizer)
 local ProfileTemplate = require(script.Parent.Parent.Data.ProfileTemplate)
@@ -353,6 +354,102 @@ function DataService.Mutate(player: Player, mutator: (ProfileData) -> any?): (bo
 	return DataService.Transaction(player, function(data)
 		return true, mutator(data)
 	end)
+end
+
+function DataService.ResetToFreshProfile(player: Player): (boolean, string)
+	local profile = profiles[player]
+	if profile == nil or profile:IsActive() ~= true then
+		return false, "PROFILE_NOT_READY"
+	end
+	if transactionActive[player] == true then
+		return false, "TRANSACTION_BUSY"
+	end
+
+	local data = profile.Data :: ProfileData
+	if FreshProfileReset.HasPaidValueHistory(data) then
+		return false, "PAID_HISTORY_PRESENT"
+	end
+
+	transactionActive[player] = true
+	local function unlock()
+		if transactionActive[player] == true then
+			transactionActive[player] = nil
+		end
+	end
+
+	local snapshotOk, originalOrError = pcall(TransactionRules.Snapshot, data)
+	if not snapshotOk then
+		unlock()
+		warn(
+			("[DataService] Fresh-profile snapshot failed for %d: %s"):format(
+				player.UserId,
+				tostring(originalOrError)
+			)
+		)
+		return false, "SNAPSHOT_FAILED"
+	end
+	local original = originalOrError :: ProfileData
+
+	local resetOk, resetError = pcall(function()
+		FreshProfileReset.Apply(data)
+		ProfileSanitizer.Sanitize(data)
+	end)
+	if not resetOk then
+		unlock()
+		warn(
+			("[DataService] Fresh-profile reset failed for %d: %s"):format(
+				player.UserId,
+				tostring(resetError)
+			)
+		)
+		return false, "RESET_FAILED"
+	end
+
+	local resetRevision = data.Revision
+	local saved = DataService.SaveNow(player, function(savedData)
+		return FreshProfileReset.LooksFresh(savedData)
+			and not FreshProfileReset.HasPaidValueHistory(savedData)
+	end)
+	if saved then
+		-- Keep the transaction lock held until PlayerRemoving releases this profile.
+		-- The reset service kicks immediately after success, preventing any gameplay
+		-- mutation from dirtying the freshly persisted first-session state.
+		return true, "RESET_COMPLETE"
+	end
+
+	if profiles[player] ~= profile or profile:IsActive() ~= true then
+		unlock()
+		return false, "PROFILE_ENDED"
+	end
+
+	local rollbackOk, rollbackError = pcall(function()
+		TransactionRules.Restore(data, original)
+		data.Revision = resetRevision + 1
+		ProfileSanitizer.Sanitize(data)
+	end)
+	if not rollbackOk then
+		unlock()
+		warn(
+			("[DataService] Fresh-profile rollback failed for %d: %s"):format(
+				player.UserId,
+				tostring(rollbackError)
+			)
+		)
+		return false, "ROLLBACK_FAILED"
+	end
+
+	local rollbackSaved = DataService.SaveNow(player)
+	unlock()
+	if not rollbackSaved then
+		warn(
+			("[DataService] Fresh-profile rollback save was not durably confirmed for %d"):format(
+				player.UserId
+			)
+		)
+		return false, "ROLLBACK_SAVE_FAILED"
+	end
+
+	return false, "RESET_SAVE_FAILED"
 end
 
 function DataService.ReleasePlayer(player: Player)

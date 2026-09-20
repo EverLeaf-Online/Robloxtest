@@ -50,6 +50,14 @@ local REQUESTS: { [string]: RequestPolicyDefinition } = {
 			}),
 		},
 	}),
+	[RemoteNames.RequestAdminFreshProfileReset] = table.freeze({
+		Arguments = {
+			table.freeze({
+				Kind = "string",
+				MaxLength = 5,
+			}),
+		},
+	}),
 }
 
 local RequestPolicy = {}

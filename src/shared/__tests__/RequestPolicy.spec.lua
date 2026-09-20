@@ -30,6 +30,7 @@ describe("RequestPolicy", function()
 		expect(accepts(RemoteNames.RequestUseInstantProcessToken)).toBe(true)
 		expect(accepts(RemoteNames.RequestEquipClubCosmetic, "FactoryGlow")).toBe(true)
 		expect(accepts(RemoteNames.RequestAdminBroadcast, "Factory update")).toBe(true)
+		expect(accepts(RemoteNames.RequestAdminFreshProfileReset, "RESET")).toBe(true)
 	end)
 
 	it("rejects missing, extra, and unexpected argument types", function()
@@ -49,6 +50,8 @@ describe("RequestPolicy", function()
 
 		expect(accepts(RemoteNames.RequestAdminBroadcast, string.rep("x", 120))).toBe(true)
 		expect(accepts(RemoteNames.RequestAdminBroadcast, string.rep("x", 121))).toBe(false)
+		expect(accepts(RemoteNames.RequestAdminFreshProfileReset, "RESET")).toBe(true)
+		expect(accepts(RemoteNames.RequestAdminFreshProfileReset, "RESET!")).toBe(false)
 	end)
 
 	it("rejects unsafe zone numbers before progression code runs", function()

@@ -63,6 +63,7 @@ local GameConfig = {
 			RequestUseInstantProcessToken = { Capacity = 3, RefillPerSecond = 0.5 },
 			RequestEquipClubCosmetic = { Capacity = 4, RefillPerSecond = 1 },
 			RequestAdminBroadcast = { Capacity = 1, RefillPerSecond = 0.1 },
+			RequestAdminFreshProfileReset = { Capacity = 1, RefillPerSecond = 0.05 },
 		},
 	},
 }
