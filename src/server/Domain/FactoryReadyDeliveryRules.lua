@@ -43,12 +43,24 @@ end
 
 function FactoryReadyDeliveryRules.Normalize(value: any): DeliveryState
 	local state = if typeof(value) == "table" then value else {}
+	local generation = if isGeneration(state.Generation) then state.Generation else ""
+	local owner = if typeof(state.Owner) == "string" and #state.Owner <= 128 then state.Owner else ""
+	local claimUntil = if isFiniteNonNegative(state.ClaimUntil)
+		then state.ClaimUntil
+		elseif isFiniteNonNegative(state.ExpiresAt) then state.ExpiresAt
+		else 0
+	local status = normalizeStatus(state.Status)
+	if generation == "" and owner ~= "" and claimUntil > 0 then
+		-- v1 stored only { Owner, ExpiresAt }. Preserve that lease during a rolling
+		-- deployment so a v2 poller cannot steal an in-flight legacy send.
+		status = STATUS_SENDING
+	end
 	return {
-		Generation = if isGeneration(state.Generation) then state.Generation else "",
+		Generation = generation,
 		DueAt = if isFiniteNonNegative(state.DueAt) then state.DueAt else 0,
-		Status = normalizeStatus(state.Status),
-		Owner = if typeof(state.Owner) == "string" and #state.Owner <= 128 then state.Owner else "",
-		ClaimUntil = if isFiniteNonNegative(state.ClaimUntil) then state.ClaimUntil else 0,
+		Status = status,
+		Owner = owner,
+		ClaimUntil = claimUntil,
 		UpdatedAt = if isFiniteNonNegative(state.UpdatedAt) then state.UpdatedAt else 0,
 	}
 end
@@ -106,9 +118,17 @@ function FactoryReadyDeliveryRules.Claim(
 		return state, false, "INVALID"
 	end
 
-	-- Legacy queue entries predate persisted delivery state. Adopt the first due
-	-- generation we see so old queued notifications can drain safely.
+	-- Legacy queue entries predate persisted delivery state. Respect an old live
+	-- { Owner, ExpiresAt } lock first, then adopt the due generation after it expires.
 	if state.Generation == "" then
+		if
+			state.Status == STATUS_SENDING
+			and state.Owner ~= ""
+			and state.Owner ~= owner
+			and state.ClaimUntil > now
+		then
+			return state, false, "BUSY"
+		end
 		state.Generation = generation
 		state.DueAt = dueAt
 		state.Status = STATUS_SCHEDULED
