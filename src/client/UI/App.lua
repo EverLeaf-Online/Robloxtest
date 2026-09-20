@@ -2,6 +2,7 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 
 local React = require(ReplicatedStorage.Packages.React)
@@ -30,10 +31,25 @@ local function getRemote(name: string): RemoteEvent
 	return Remotes:WaitForChild(name) :: RemoteEvent
 end
 
-local function layoutModeForWidth(width: number): LayoutMode
-	if width <= 760 then
+local function isPhoneViewport(viewport: Vector2): boolean
+	if viewport.X <= 760 then
+		return true
+	end
+
+	if not UserInputService.TouchEnabled or UserInputService.KeyboardEnabled then
+		return false
+	end
+
+	local shortSide = math.min(viewport.X, viewport.Y)
+	local longSide = math.max(viewport.X, viewport.Y)
+	local aspectRatio = if shortSide > 0 then longSide / shortSide else 1
+	return shortSide <= 1000 or aspectRatio >= 1.75
+end
+
+local function layoutModeForViewport(viewport: Vector2): LayoutMode
+	if isPhoneViewport(viewport) then
 		return "Phone"
-	elseif width <= 1120 then
+	elseif viewport.X <= 1120 then
 		return "Tablet"
 	end
 	return "Desktop"
@@ -229,7 +245,7 @@ local function App()
 			end
 
 			local function refresh()
-				setLayoutMode(layoutModeForWidth(camera.ViewportSize.X))
+				setLayoutMode(layoutModeForViewport(camera.ViewportSize))
 			end
 			refresh()
 			viewportConnection = camera:GetPropertyChangedSignal("ViewportSize"):Connect(refresh)

@@ -3,6 +3,7 @@
 local Players = game:GetService("Players")
 local SocialService = game:GetService("SocialService")
 local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -17,6 +18,21 @@ local initialized = false
 
 local COLORS = Theme.Colors
 local player = Players.LocalPlayer
+
+local function isPhoneViewport(viewport: Vector2): boolean
+	if viewport.X <= 760 then
+		return true
+	end
+
+	if not UserInputService.TouchEnabled or UserInputService.KeyboardEnabled then
+		return false
+	end
+
+	local shortSide = math.min(viewport.X, viewport.Y)
+	local longSide = math.max(viewport.X, viewport.Y)
+	local aspectRatio = if shortSide > 0 then longSide / shortSide else 1
+	return shortSide <= 1000 or aspectRatio >= 1.75
+end
 
 type PanelName = "Shop" | "Social" | "Codes"
 
@@ -724,7 +740,7 @@ local function bindResponsiveLayout(gui: ScreenGui)
 		end
 
 		local function refresh()
-			local phone = camera.ViewportSize.X <= 760
+			local phone = isPhoneViewport(camera.ViewportSize)
 			phoneLayout = phone
 			local status = gui:FindFirstChild("HubStatus")
 			local leftLaunchers = gui:FindFirstChild("HubLeftLaunchers")
