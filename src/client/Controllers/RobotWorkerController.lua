@@ -1,6 +1,5 @@
 --!strict
 
-local PathfindingService = game:GetService("PathfindingService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
@@ -18,17 +17,6 @@ local boundPlots: { [Model]: boolean } = {}
 
 local MAX_ANIMATION_DISTANCE = 280
 local WORK_HEIGHT = 3
-
-local NAV_AGENT_RADIUS = 2.5
-local NAV_AGENT_HEIGHT = 6
-local NAV_WAYPOINT_SPACING = 5
-local NAV_REPATH_ATTEMPTS = 3
-local NAV_REPATH_DELAY = 0.12
-local NAV_MAX_CONCURRENT_COMPUTES = 4
-local NAV_CLEARANCE_SIZE = Vector3.new(4.2, 4.8, 4.2)
-
-local activePathComputes = 0
-local pathComputeErrorWarned = false
 
 local function getCharacterPosition(): Vector3?
 	local character = LocalPlayer.Character
@@ -93,167 +81,15 @@ local function routeOffset(model: Model): Vector3
 	return Vector3.new((column - 1) * 2.5, 0, (row - 0.5) * 2.5)
 end
 
-local function targetPosition(target: BasePart, offset: Vector3): Vector3
-	return target.Position + offset + Vector3.new(0, WORK_HEIGHT, 0)
-end
-
-local function cframeForPosition(rootPart: BasePart, position: Vector3): CFrame
-	local delta = position - rootPart.Position
+local function targetCFrame(rootPart: BasePart, target: BasePart, offset: Vector3): CFrame
+	local destination = target.Position + offset + Vector3.new(0, WORK_HEIGHT, 0)
+	local delta = destination - rootPart.Position
 	local horizontal = Vector3.new(delta.X, 0, delta.Z)
 	if horizontal.Magnitude < 0.05 then
-		return CFrame.new(position) * rootPart.CFrame.Rotation
-	end
-	return CFrame.lookAt(position, position + horizontal.Unit)
-end
-
-local function acquirePathCompute(model: Model): boolean
-	while activePathComputes >= NAV_MAX_CONCURRENT_COMPUTES do
-		if model.Parent == nil then
-			return false
-		end
-		task.wait(0.03)
+		return CFrame.new(destination) * rootPart.CFrame.Rotation
 	end
 
-	activePathComputes += 1
-	return true
-end
-
-local function computePath(model: Model, startPosition: Vector3, endPosition: Vector3): Path?
-	if not acquirePathCompute(model) then
-		return nil
-	end
-
-	local path: Path? = nil
-	local ok, err = pcall(function()
-		local createdPath = PathfindingService:CreatePath({
-			AgentRadius = NAV_AGENT_RADIUS,
-			AgentHeight = NAV_AGENT_HEIGHT,
-			AgentCanJump = false,
-			AgentCanClimb = false,
-			WaypointSpacing = NAV_WAYPOINT_SPACING,
-		})
-		path = createdPath
-		createdPath:ComputeAsync(startPosition, endPosition)
-	end)
-	activePathComputes -= 1
-
-	if not ok then
-		if not pathComputeErrorWarned then
-			pathComputeErrorWarned = true
-			warn(("[RobotWorkerController] Path compute failed: %s"):format(tostring(err)))
-		end
-		return nil
-	end
-	if path == nil or path.Status ~= Enum.PathStatus.Success then
-		return nil
-	end
-
-	return path
-end
-
-local function hasSegmentClearance(model: Model, rootPart: BasePart, destination: Vector3): boolean
-	local direction = destination - rootPart.Position
-	local distance = direction.Magnitude
-	if distance <= 0.6 then
-		return true
-	end
-
-	local params = RaycastParams.new()
-	params.FilterType = Enum.RaycastFilterType.Exclude
-	params.FilterDescendantsInstances = { model }
-	params.RespectCanCollide = true
-
-	local travel = direction.Unit * math.max(0, distance - 0.45)
-	local result = Workspace:Blockcast(rootPart.CFrame, NAV_CLEARANCE_SIZE, travel, params)
-	return result == nil
-end
-
-local function tweenSegment(
-	model: Model,
-	rootPart: BasePart,
-	destination: Vector3,
-	speed: number
-): (boolean, Tween?)
-	if model.Parent == nil then
-		return false, nil
-	end
-	if not hasSegmentClearance(model, rootPart, destination) then
-		return false, nil
-	end
-
-	local distance = (destination - rootPart.Position).Magnitude
-	if distance <= 0.15 then
-		return true, nil
-	end
-
-	local duration = math.clamp(distance / math.max(1, speed), 0.08, 3)
-	local tween = TweenService:Create(
-		rootPart,
-		TweenInfo.new(duration, Enum.EasingStyle.Linear),
-		{ CFrame = cframeForPosition(rootPart, destination) }
-	)
-	tween:Play()
-	local playbackState = tween.Completed:Wait()
-	return model.Parent ~= nil and playbackState == Enum.PlaybackState.Completed, tween
-end
-
-local function followPath(
-	model: Model,
-	rootPart: BasePart,
-	path: Path,
-	destination: Vector3,
-	speed: number
-): boolean
-	local waypoints = path:GetWaypoints()
-	if #waypoints < 2 then
-		return false
-	end
-
-	local currentWaypointIndex = 2
-	local pathBlocked = false
-	local activeTween: Tween? = nil
-	local blockedConnection = path.Blocked:Connect(function(blockedWaypointIndex)
-		if blockedWaypointIndex >= currentWaypointIndex then
-			pathBlocked = true
-			if activeTween ~= nil then
-				activeTween:Cancel()
-			end
-		end
-	end)
-
-	for waypointIndex = 2, #waypoints do
-		if model.Parent == nil or pathBlocked then
-			blockedConnection:Disconnect()
-			return false
-		end
-
-		currentWaypointIndex = waypointIndex
-		local waypoint = waypoints[waypointIndex]
-		if waypoint.Action == Enum.PathWaypointAction.Jump then
-			blockedConnection:Disconnect()
-			return false
-		end
-
-		local waypointPosition =
-			Vector3.new(waypoint.Position.X, destination.Y, waypoint.Position.Z)
-
-		local ok, tween = tweenSegment(model, rootPart, waypointPosition, speed)
-		activeTween = tween
-		if not ok then
-			blockedConnection:Disconnect()
-			return false
-		end
-		activeTween = nil
-	end
-
-	blockedConnection:Disconnect()
-
-	if (destination - rootPart.Position).Magnitude > 0.5 then
-		local ok = tweenSegment(model, rootPart, destination, speed)
-		return ok
-	end
-
-	return true
+	return CFrame.lookAt(destination, destination + horizontal.Unit)
 end
 
 local function moveTo(
@@ -263,41 +99,34 @@ local function moveTo(
 	speed: number,
 	offset: Vector3?
 ): boolean
-	if model.Parent == nil then
+	if model.Parent == nil or rootPart.Parent == nil or target.Parent == nil then
 		return false
 	end
 
-	local destination = targetPosition(target, offset or Vector3.zero)
+	local destination = targetCFrame(rootPart, target, offset or Vector3.zero)
+	local distance = (destination.Position - rootPart.Position).Magnitude
+	if distance <= 0.15 then
+		return true
+	end
+
+	local duration = math.clamp(distance / math.max(1, speed), 0.15, 12)
 	model:SetAttribute("PresentationState", "Travelling")
 
-	-- Most authored work-node routes are line-of-sight. Avoid an expensive
-	-- PathfindingService compute when a single server-authored presentation
-	-- segment is already clear; fall back to navmesh only for blocked routes.
-	if hasSegmentClearance(model, rootPart, destination) then
-		local direct = tweenSegment(model, rootPart, destination, speed)
-		if direct then
-			return true
-		end
-	end
+	-- Robot travel is presentation-only. Passive production and assignments are
+	-- server-authoritative, and these targets are authored factory work nodes.
+	-- Direct tweening avoids route-specific navmesh/clearance failures that can
+	-- strand one pad while another continues to animate.
+	local tween = TweenService:Create(
+		rootPart,
+		TweenInfo.new(duration, Enum.EasingStyle.Linear),
+		{ CFrame = destination }
+	)
+	tween:Play()
+	local playbackState = tween.Completed:Wait()
 
-	for attempt = 1, NAV_REPATH_ATTEMPTS do
-		if model.Parent == nil then
-			return false
-		end
-
-		local path = computePath(model, rootPart.Position, destination)
-		if path ~= nil and followPath(model, rootPart, path, destination, speed) then
-			return true
-		end
-
-		if attempt < NAV_REPATH_ATTEMPTS then
-			model:SetAttribute("PresentationState", "Repathing")
-			task.wait(NAV_REPATH_DELAY * attempt)
-		end
-	end
-
-	model:SetAttribute("PresentationState", "PathBlocked")
-	return false
+	return model.Parent ~= nil
+		and rootPart.Parent ~= nil
+		and playbackState == Enum.PlaybackState.Completed
 end
 
 local function workAnimation(model: Model, rootPart: BasePart, seconds: number)
