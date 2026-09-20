@@ -26,6 +26,34 @@ local function deepCopy(value: any): any
 	return result
 end
 
+local PROFILE_COUNT = 8
+local SNAPSHOT_ITERATIONS = 5
+local BUILD_ENCODE_AVERAGE_BUDGET_MS = 2
+local MAX_AVERAGE_PAYLOAD_BYTES = 20_000
+
+local function makeMaxProfile(seed: number): any
+	local data = deepCopy(ProfileTemplate)
+	data.Revision = seed
+	data.Currencies.Credits = 25_000_000 + seed
+	data.Materials.ScrapMetal = 250_000
+	data.Materials.Wiring = 125_000
+	data.Materials.PowerCoreFragments = 25_000
+	data.Stats.LifetimeCredits = 100_000_000
+	data.Stats.LifetimeRobotsBuilt = GameConfig.Economy.MaxOwnedRobots
+	data.Progression.Zone = 2
+
+	for index = 1, GameConfig.Economy.MaxOwnedRobots do
+		local uid = ("R%d"):format(index)
+		data.Robots.OwnedByUid[uid] = {
+			RobotId = if index % 2 == 0 then "TinScout" else "BoltBuddy",
+			AcquiredAt = 1_800_000_000 + index,
+		}
+	end
+	data.Robots.NextUid = GameConfig.Economy.MaxOwnedRobots + 1
+
+	return data
+end
+
 describe("StateService snapshot payload", function()
 	it("omits server-only robot acquisition timestamps at the max inventory cap", function()
 		local data = deepCopy(ProfileTemplate)
@@ -75,4 +103,49 @@ describe("StateService snapshot payload", function()
 
 		expect(savedBytes >= 10_000).toBe(true)
 	end)
+
+	it("profiles full snapshot build and JSON payload across eight max profiles", function()
+		local profiles = table.create(PROFILE_COUNT)
+		for index = 1, PROFILE_COUNT do
+			profiles[index] = makeMaxProfile(index)
+		end
+
+		-- Warm table/module paths before timing.
+		for _, profile in profiles do
+			StateService.BuildSnapshot(profile)
+		end
+
+		local totalBytes = 0
+		local start = os.clock()
+		for _ = 1, SNAPSHOT_ITERATIONS do
+			for _, profile in profiles do
+				local snapshot = StateService.BuildSnapshot(profile)
+				local encoded = HttpService:JSONEncode(snapshot)
+				totalBytes += #encoded
+			end
+		end
+		local elapsedSeconds = os.clock() - start
+		local sampleCount = PROFILE_COUNT * SNAPSHOT_ITERATIONS
+		local averageMs = elapsedSeconds * 1_000 / sampleCount
+		local averageBytes = totalBytes / sampleCount
+		local estimatedEightPlayerBurstMs = averageMs * PROFILE_COUNT
+
+		print(
+			("[StateSnapshot8PPerf] players=%d robots_per_player=%d samples=%d avg_build_encode_ms=%.3f avg_bytes=%.0f estimated_8p_burst_ms=%.3f"):format(
+				PROFILE_COUNT,
+				GameConfig.Economy.MaxOwnedRobots,
+				SNAPSHOT_ITERATIONS,
+				averageMs,
+				averageBytes,
+				estimatedEightPlayerBurstMs
+			)
+		)
+
+		-- First OCALE baseline on 2026-09-20 measured 0.200 ms/profile for
+		-- BuildSnapshot + JSONEncode and ~15,950 bytes/profile at 500 robots.
+		-- These ceilings leave substantial cloud-runtime/content headroom while
+		-- still catching a large CPU or payload regression before public launch.
+		expect(averageMs <= BUILD_ENCODE_AVERAGE_BUDGET_MS).toBe(true)
+		expect(averageBytes <= MAX_AVERAGE_PAYLOAD_BYTES).toBe(true)
+	end, 15_000)
 end)
