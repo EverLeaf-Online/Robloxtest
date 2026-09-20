@@ -6,8 +6,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local RobloxIds = require(ReplicatedStorage.Shared.Config.RobloxIds)
 
-local MonetizationService = require(script.Parent.MonetizationService)
-
 local NotificationService = {}
 local initialized = false
 local openCloudNotification: any? = nil
@@ -133,6 +131,10 @@ function NotificationService.Init()
 	initialized = true
 	resolveOpenCloudNotification()
 
+	-- Factory Club events only exist in the Factory runtime. Keep this dependency
+	-- lazy so Hub servers can send queued FactoryReady notifications without
+	-- loading the full monetization stack.
+	local MonetizationService = require(script.Parent.MonetizationService)
 	MonetizationService.FactoryClubRewardGranted:Connect(function(player: Player)
 		task.spawn(function()
 			local success, code = NotificationService.SendToUser(
