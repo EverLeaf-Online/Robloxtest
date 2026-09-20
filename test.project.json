@@ -72,6 +72,9 @@
           },
           "StateServiceUnderTest": {
             "$path": "src/server/Services/StateService.lua"
+          },
+          "ProductionServiceUnderTest": {
+            "$path": "src/server/Services/ProductionService.lua"
           }
         },
         "Tests": {
