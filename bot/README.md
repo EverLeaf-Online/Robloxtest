@@ -1,16 +1,45 @@
 # Scrap-to-Bot Factory Discord bot
 
-This is the first safe bot implementation for the Discord server. It uses slash commands and only needs the permissions configured in the Discord Developer Portal.
+Production Discord companion for Scrap-to-Bot Factory. It registers guild-scoped slash commands and can receive authenticated Roblox event webhooks.
 
-## Setup
+## Commands
 
-1. Copy `.env.example` to `.env`.
-2. Put the bot token in `DISCORD_TOKEN`. Never commit or post this value.
-3. Run `npm install` inside this folder.
-4. Run `npm start`.
+- `/help`
+- `/report` -> `#bug-reports`
+- `/feedback` -> `#feedback`
+- `/status`
+- `/updates`
 
-The bot registers guild commands when `DISCORD_GUILD_ID` is set, so changes appear quickly in the Scrap to Bot Factory server.
+Report and feedback posts disable Discord mention parsing, so submitted text cannot ping `@everyone`, roles, or users.
+
+## Configuration
+
+Copy `.env.example` to `.env` and set the real values. Never commit `.env` or the Discord/webhook secrets.
+
+`DISCORD_GUILD_ID` is required. Commands are intentionally registered only in the configured Scrap-to-Bot Factory guild; the bot does not fall back to global command registration.
+
+Channel IDs are optional for compatibility with the existing deployment. If an ID is absent, the bot resolves the named channel inside the configured guild only. Channel IDs are preferred for production because they are stable across channel renames.
+
+The Roblox experience link must use the root place ID. The current root place is `75490500628229`.
 
 ## Roblox webhook bridge
 
-Set `ROBLOX_WEBHOOK_SECRET` and expose `POST /roblox/events` through a secure HTTPS host. Configure the Roblox webhook to send the same value in the `x-roblox-webhook-secret` header. The receiver posts sanitized event titles/descriptions to `#announcements`; it never accepts or logs a Discord token.
+When `ROBLOX_WEBHOOK_SECRET` is set, the bot exposes:
+
+- `GET /health`
+- `POST /roblox/events`
+
+The POST endpoint requires the exact secret in the `x-roblox-webhook-secret` header and `Content-Type: application/json`. Request bodies are capped at 64 KiB, embed fields are bounded to Discord limits, and mention parsing is disabled.
+
+The existing VM deployment listens directly on `WEBHOOK_HOST` / `WEBHOOK_PORT`. For Internet-facing production traffic, terminate HTTPS in front of this listener or otherwise expose it only through a secured transport.
+
+## Development
+
+```bash
+npm ci
+npm run check
+npm test
+npm start
+```
+
+Node.js 20 or newer is required.
