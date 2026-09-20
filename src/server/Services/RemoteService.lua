@@ -11,28 +11,8 @@ local RateLimiter = require(script.Parent.RateLimiter)
 
 local REMOTE_FOLDER_NAME = "Remotes"
 
-local requestNames = {
-	RemoteNames.RequestState,
-	RemoteNames.RequestCollect,
-	RemoteNames.RequestProcess,
-	RemoteNames.RequestAssemble,
-	RemoteNames.RequestAssignRobot,
-	RemoteNames.RequestUnassignRobot,
-	RemoteNames.RequestSellRobot,
-	RemoteNames.RequestUpgrade,
-	RemoteNames.RequestUnlockZone,
-	RemoteNames.RequestPrestige,
-	RemoteNames.RequestUseInstantProcessToken,
-	RemoteNames.RequestEquipClubCosmetic,
-	RemoteNames.RequestAdminBroadcast,
-}
-
-local outboundNames = {
-	RemoteNames.StateSnapshot,
-	RemoteNames.StateDelta,
-	RemoteNames.ActionResult,
-	RemoteNames.Announcement,
-}
+local requestNames = RemoteNames.Requests
+local outboundNames = RemoteNames.Outbound
 
 local RemoteService = {}
 local remotes: { [string]: RemoteEvent } = {}
