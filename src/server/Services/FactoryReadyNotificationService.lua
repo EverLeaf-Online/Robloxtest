@@ -347,13 +347,11 @@ local function processDue()
 		renewing = false
 
 		if sent then
-			if completeDelivery(userId, generation) then
-				removeQueueEntry(entry.key)
-			else
-				-- A cancellation/reschedule won the state race while the external send was
-				-- in flight. Never mutate its queue key from this stale generation.
-				removeQueueEntry(entry.key)
-			end
+			-- Completion is conditional on this exact generation/owner. Regardless of
+			-- whether a cancellation/reschedule won during the external send, only this
+			-- stale generation's unique queue entry is removed.
+			completeDelivery(userId, generation)
+			removeQueueEntry(entry.key)
 		else
 			-- Keep failed deliveries queued so another active server can retry after
 			-- transient API failures or after the Open Cloud package becomes available.
