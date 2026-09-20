@@ -1,4 +1,4 @@
-# Robloxtest — Profit-First Roblox Simulation Project
+# Scrap-to-Bot Factory — Profit-First Roblox Simulation Project
 
 Status: **First playable live validation / monetization-engagement hardening**  
 Current validation status: **2026-09-17**
