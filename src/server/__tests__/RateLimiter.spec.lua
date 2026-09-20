@@ -7,6 +7,7 @@ local describe = JestGlobals.describe
 local expect = JestGlobals.expect
 local it = JestGlobals.it
 
+local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
 local RemoteNames = require(ReplicatedStorage.Shared.Networking.RemoteNames)
 
 local serverRoot = script.Parent.Parent
@@ -60,6 +61,26 @@ describe("RateLimiter", function()
 		expect(RateLimiter.Consume(player, RemoteNames.RequestState)).toBe(true)
 
 		RateLimiter.Forget(player)
+	end)
+
+	it("keeps the request catalog and rate-limit policy in exact lockstep", function()
+		local requestSet: { [string]: boolean } = {}
+
+		for _, requestName in RemoteNames.Requests do
+			requestSet[requestName] = true
+			local policy = GameConfig.Networking.RateLimits[requestName]
+			expect(policy ~= nil).toBe(true)
+			if policy ~= nil then
+				expect(policy.Capacity > 0).toBe(true)
+				expect(policy.RefillPerSecond > 0).toBe(true)
+				expect(policy.Capacity < math.huge).toBe(true)
+				expect(policy.RefillPerSecond < math.huge).toBe(true)
+			end
+		end
+
+		for actionName in GameConfig.Networking.RateLimits do
+			expect(requestSet[actionName] == true).toBe(true)
+		end
 	end)
 
 	it("clears a player's buckets on disconnect cleanup", function()
