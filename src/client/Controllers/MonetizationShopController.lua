@@ -9,6 +9,7 @@ local Workspace = game:GetService("Workspace")
 local RemoteNames = require(ReplicatedStorage.Shared.Networking.RemoteNames)
 local RobloxIds = require(ReplicatedStorage.Shared.Config.RobloxIds)
 local HUDIconFactory = require(script.Parent.Parent.UI.HUDIconFactory)
+local UIBus = require(script.Parent.Parent.UI.UIBus)
 
 local MonetizationShopController = {}
 local initialized = false
@@ -356,6 +357,11 @@ local function createUi()
 	end)
 	phoneClose.Activated:Connect(function()
 		setOpen(false)
+	end)
+	UIBus.BackRequested:Connect(function()
+		if panelOpen then
+			setOpen(false)
+		end
 	end)
 
 	local viewportConnection: RBXScriptConnection? = nil
