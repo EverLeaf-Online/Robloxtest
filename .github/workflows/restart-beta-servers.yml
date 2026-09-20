@@ -1,0 +1,39 @@
+name: Restart Beta Servers
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  restart:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      ROBLOX_API_KEY: ${{ secrets.ROBLOX_API_KEY }}
+      ROBLOX_UNIVERSE_ID: "10766713640"
+
+    steps:
+      - name: Restart universe servers
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${ROBLOX_API_KEY:-}" ]]; then
+            echo "::error::ROBLOX_API_KEY is not configured."
+            exit 1
+          fi
+
+          response_file="$RUNNER_TEMP/restart-response.json"
+          set +e
+          http_code="$(curl --silent --show-error --location             --connect-timeout 20             --max-time 60             --output "$response_file"             --write-out '%{http_code}'             --request POST "https://apis.roblox.com/cloud/v2/universes/${ROBLOX_UNIVERSE_ID}:restartServers"             --header "x-api-key: ${ROBLOX_API_KEY}"             --header "Content-Type: application/json"             --data '{}')"
+          curl_status=$?
+          set -e
+
+          if [[ $curl_status -ne 0 || ! "$http_code" =~ ^2[0-9][0-9]$ ]]; then
+            cat "$response_file" >&2 || true
+            echo "::error::Roblox server restart failed (curl=$curl_status, HTTP=${http_code:-none})."
+            exit 1
+          fi
+
+          echo "Restart request accepted for universe $ROBLOX_UNIVERSE_ID."
