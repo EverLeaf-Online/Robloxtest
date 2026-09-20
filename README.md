@@ -1,13 +1,13 @@
 # Scrap-to-Bot Factory — Profit-First Roblox Simulation Project
 
-Status: **First playable live validation / monetization-engagement hardening**  
-Current validation status: **2026-09-17**
+Status: **Closed / Limited Beta candidate ready; Public Beta validation in progress**  
+Current roadmap status: **2026-09-20**
 
-This repository contains the current Scrap-to-Bot Factory prototype and supporting production research for a Roblox simulation game whose primary business objective is sustainable Robux revenue and eventual DevEx profit.
+This repository contains Scrap-to-Bot Factory and its supporting production research for a Roblox simulation game whose primary business objective is sustainable Robux revenue and eventual DevEx profit.
 
 ## Current rule
 
-**Implementation follows `docs/MASTER_PRODUCTION_PLAN.md`, while the newest execution/test truth is tracked in `docs/LIVE_VALIDATION_STATUS_2026-09-17.md`. Research findings, playtest data, or platform changes may justify deliberate revisions, but gameplay should not drift ad hoc.**
+**`docs/ROADMAP.md` is the single current execution roadmap. `docs/MASTER_PRODUCTION_PLAN.md` remains the product/design/architecture specification, and `docs/PUBLIC_LAUNCH_STATUS_2026-09-20.md` contains the detailed evidence behind the current Public Beta gate. Dated status/audit documents are historical snapshots unless the roadmap explicitly promotes them to an active gate.**
 
 ## Git / Rojo runtime source of truth
 
@@ -46,27 +46,25 @@ The first playable is implemented and has moved beyond planning-only status. Cur
 - `FactoryReady` delivery left pending until the experience reaches Roblox's required visit threshold for meaningful delivery testing;
 - real charged-Robux receipts and a real Factory Club subscription remain intentionally unverified because the current test account has no Robux available for those production purchases.
 
-See `docs/LIVE_VALIDATION_STATUS_2026-09-17.md` for the exact verified/pending matrix.
+See `docs/ROADMAP.md` for current priorities and phase status, and `docs/PUBLIC_LAUNCH_STATUS_2026-09-20.md` for the detailed Public Beta validation matrix.
 
 ## Planning and research documents
 
+- `docs/ROADMAP.md` — **single current execution roadmap**: Closed/Limited Beta, Public Beta gate, 1.0, post-launch progression, LiveOps, and explicit non-blockers.
+- `docs/PUBLIC_LAUNCH_STATUS_2026-09-20.md` — **detailed current launch-gate evidence** and the real Roblox/live-device validation matrix.
+- `docs/MASTER_PRODUCTION_PLAN.md` — **product/design/architecture specification**: locked v1 scope, first-session progression, economy, profile model, services, networking, security, UI/art, analytics, monetization, and testing.
+- `docs/INSTANCED_FACTORY_ARCHITECTURE.md` — **active scale architecture**: shared Hub, reserved personal Factory servers, secure MemoryStore route capabilities, and owner/visitor authority.
+- `docs/LIVE_VALIDATION_STATUS_2026-09-17.md` — **historical live-validation snapshot** retained as evidence.
 - `docs/BRANCH_RUNTIME_RECONCILIATION_2026-09-17.md` — **Git/Rojo runtime source of truth** and branch-switch safety rules.
 - `docs/FULL_GIT_CONTENT_AUDIT_2026-09-17.md` — **full content-level reconciliation** of the legacy branch stack, selective ports, rejected duplicate implementations, and cleanup disposition.
-- `docs/LIVE_VALIDATION_STATUS_2026-09-17.md` — **current authoritative execution status** for published persistence, monetization, receipt, Factory Club, and notification validation.
-- `docs/MASTER_PRODUCTION_PLAN.md` — **implementation blueprint**: locked v1 scope, first-session/30-minute progression, economy rules, profile model, service architecture, networking contract, security gates, UI/art plan, analytics, monetization, testing, production phases, exit criteria, and implementation order.
-- `docs/INSTANCED_FACTORY_ARCHITECTURE.md` — **active scale architecture**: 16-player public hubs, reserved personal factory servers, secure MemoryStore route capabilities, owner/visitor authority, and Hub ↔ Factory teleport flow.
-- `docs/MESHY_FACTORY_ASSET_PIPELINE.md` — **factory visual-production specification**: original art direction, Meshy prompt batch, triangle/texture budgets, pivots, collision policy, upgrade-tier readability, and Roblox import acceptance gates.
-- `docs/FIRST_PLAYABLE_STATUS_2026-09-16.md` — historical first-playable implementation/static-validation snapshot; use the 2026-09-17 live status for newer runtime results.
-- `docs/ROBLOX_GAME_PRODUCTION_RESEARCH_MASTER_2026-09-16.md` — **master research gate** covering product design, architecture, networking, exploit resistance, persistence, economy, monetization, analytics, UI/input, performance, testing, assets, publishing/operations, safety, discovery, and remaining research questions.
-- `docs/ROBLOX_CREATOR_HUB_BASELINE.md` — **primary implementation authority**, converting current official Roblox Creator Hub guidance into project rules for design, analytics, monetization, security, persistence, mobile UX, and performance.
-- `docs/ROBLOX_OFFICIAL_GITHUB_RESEARCH_2026-09-16.md` — audit of the official `Roblox` GitHub organization, including current UI/testing/Open Cloud/data-operations/asset tooling and stale/archived projects to avoid as new foundations.
-- `docs/GITHUB_ECOSYSTEM_RESEARCH_2026-09-16.md` — curated current Roblox/Luau OSS ecosystem, toolchain modernization, library candidates, archived projects to avoid, and the proposed clean-project stack.
-- `docs/UNCOPYLOCKED_ARCHIVE_RESEARCH_2026-09-16.md` — provenance/licensing review of a large third-party uncopylocked-game archive plus high-level simulator/tycoon design lessons that may be studied without copying its code/assets.
-- `docs/MARKET_RESEARCH_2026-09-16.md` — current Roblox market, discovery, retention, and competitor findings.
-- `docs/PRODUCT_STRATEGY.md` — product requirements, concept shortlist, and current recommended direction.
+- `docs/MESHY_FACTORY_ASSET_PIPELINE.md` — **factory visual-production specification**: original art direction, asset budgets, pivots, collision policy, and Roblox import acceptance gates.
+- `docs/ROBLOX_GAME_PRODUCTION_RESEARCH_MASTER_2026-09-16.md` — **master research gate** covering product, architecture, networking, exploit resistance, persistence, economy, monetization, analytics, UI/input, performance, testing, assets, operations, safety, and discovery.
+- `docs/ROBLOX_CREATOR_HUB_BASELINE.md` — **primary implementation authority** translating current official Roblox guidance into project rules.
+- `docs/PRODUCT_STRATEGY.md` — product requirements, concept direction, and business/product rationale.
 - `docs/MONETIZATION_AND_SECURITY.md` — revenue architecture, compliance, persistence, receipts, and exploit threat model.
-- `docs/EXPLOIT_THREAT_RESEARCH.md` — defensive analysis of historical public exploit and reverse-engineering repositories, translated into server-authoritative simulator requirements.
-- `docs/VALIDATION_PLAN.md` — prototype and KPI validation gates before scaling development or advertising.
+- `docs/EXPLOIT_THREAT_RESEARCH.md` — defensive exploit analysis translated into server-authoritative requirements.
+- `docs/VALIDATION_PLAN.md` — prototype/KPI validation gates before scaling acquisition.
+- Dated `*_STATUS_YYYY-MM-DD.md`, audit, and research files not listed above are retained as historical/reference evidence and do not override `docs/ROADMAP.md`.
 
 ## Source hierarchy
 
