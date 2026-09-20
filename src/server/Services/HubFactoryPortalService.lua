@@ -6,6 +6,7 @@ local TeleportService = game:GetService("TeleportService")
 
 local FactoryRouteRegistry = require(script.Parent.FactoryRouteRegistry)
 local HubWorldService = require(script.Parent.HubWorldService)
+local ReferralProgressService = require(script.Parent.ReferralProgressService)
 
 local HubFactoryPortalService = {}
 local initialized = false
@@ -64,6 +65,10 @@ local function teleportOwner(player: Player)
 		busy[player] = nil
 		return
 	end
+
+	-- Flush referral attribution/playtime before crossing the Hub -> Factory
+	-- teleport boundary so the Factory can continue the same durable timer.
+	ReferralProgressService.FlushPlayer(player)
 
 	local ownerUserId = player.UserId
 	local accessCode = getOrReserveFactory(ownerUserId)
