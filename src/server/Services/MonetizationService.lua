@@ -400,6 +400,13 @@ local function recoverHistoricalReceiptForPlayer(
 	-- audit so a future bounded receipt-history eviction cannot turn this case into
 	-- a duplicate compensation.
 	if DeveloperProductRules.HasReceipt(existing, evidence.PurchaseId) then
+		local saved, persistedData = DataService.SaveNow(player, function(snapshot)
+			return DeveloperProductRules.HasReceipt(snapshot, evidence.PurchaseId)
+		end)
+		if not saved or persistedData == nil then
+			return false, "RECOVERY_SAVE_FAILED"
+		end
+
 		local recoveredAt = nowFn()
 		if
 			not recoveryAuditMarkFn(
