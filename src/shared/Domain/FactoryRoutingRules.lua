@@ -9,6 +9,11 @@ export type RouteRecord = {
 	IssuedAt: number,
 }
 
+export type RouteClaimTombstone = {
+	Consumed: boolean,
+	ClaimId: string,
+}
+
 local FactoryRoutingRules = {}
 
 function FactoryRoutingRules.ValidateRoute(
@@ -40,6 +45,31 @@ function FactoryRoutingRules.ValidateRoute(
 	end
 
 	return true, "ROUTE_VALID"
+end
+
+function FactoryRoutingRules.TryClaimRoute(
+	record: any,
+	playerUserId: number,
+	now: number,
+	maxAgeSeconds: number,
+	claimId: string
+): (RouteClaimTombstone?, RouteRecord?, string)
+	if typeof(record) == "table" and record.Consumed == true then
+		return nil, nil, "ROUTE_CONSUMED"
+	end
+	if claimId == "" or #claimId > 128 then
+		return nil, nil, "CLAIM_ID_INVALID"
+	end
+
+	local valid, code = FactoryRoutingRules.ValidateRoute(record, playerUserId, now, maxAgeSeconds)
+	if not valid then
+		return nil, nil, code
+	end
+
+	return {
+		Consumed = true,
+		ClaimId = claimId,
+	}, record :: RouteRecord, "ROUTE_CLAIMED"
 end
 
 return table.freeze(FactoryRoutingRules)
