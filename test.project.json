@@ -66,6 +66,9 @@
           },
           "UpgradeServiceUnderTest": {
             "$path": "src/server/Services/UpgradeService.lua"
+          },
+          "SalvageServiceUnderTest": {
+            "$path": "src/server/Services/SalvageService.lua"
           }
         },
         "Tests": {
