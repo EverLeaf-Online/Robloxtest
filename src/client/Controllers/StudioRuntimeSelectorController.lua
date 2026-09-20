@@ -164,7 +164,7 @@ local function isMode(value: any): boolean
 end
 
 function StudioRuntimeSelectorController.ResolveMode(): Mode
-	local current = game:GetAttribute("RuntimeMode")
+	local current = ReplicatedStorage:GetAttribute("RuntimeMode")
 	if isMode(current) then
 		return current :: Mode
 	end
@@ -172,7 +172,7 @@ function StudioRuntimeSelectorController.ResolveMode(): Mode
 	if not RunService:IsStudio() then
 		while not isMode(current) do
 			task.wait(0.05)
-			current = game:GetAttribute("RuntimeMode")
+			current = ReplicatedStorage:GetAttribute("RuntimeMode")
 		end
 		return current :: Mode
 	end
@@ -182,7 +182,7 @@ function StudioRuntimeSelectorController.ResolveMode(): Mode
 		warn("[StudioRuntimeSelector] Selector remote unavailable; waiting for server runtime")
 		while not isMode(current) do
 			task.wait(0.05)
-			current = game:GetAttribute("RuntimeMode")
+			current = ReplicatedStorage:GetAttribute("RuntimeMode")
 		end
 		return current :: Mode
 	end
@@ -232,7 +232,7 @@ function StudioRuntimeSelectorController.ResolveMode(): Mode
 	end)
 
 	while selectedMode == nil do
-		current = game:GetAttribute("RuntimeMode")
+		current = ReplicatedStorage:GetAttribute("RuntimeMode")
 		if isMode(current) then
 			selectedMode = current :: Mode
 			break

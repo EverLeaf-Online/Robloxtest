@@ -22,7 +22,7 @@ local function resolveServerMode(): string
 		return RuntimeMode.Resolve()
 	end
 
-	game:SetAttribute("RuntimeMode", "Selecting")
+	ReplicatedStorage:SetAttribute("RuntimeMode", "Selecting")
 
 	local existing = ReplicatedStorage:FindFirstChild(STUDIO_SELECTOR_REMOTE)
 	if existing ~= nil then
@@ -43,7 +43,7 @@ local function resolveServerMode(): string
 		end
 
 		selected = requestedMode
-		game:SetAttribute("RuntimeMode", requestedMode)
+		ReplicatedStorage:SetAttribute("RuntimeMode", requestedMode)
 		return requestedMode
 	end
 
@@ -55,7 +55,7 @@ local function resolveServerMode(): string
 	end
 	if selected == nil and #Players:GetPlayers() == 0 then
 		selected = "Factory"
-		game:SetAttribute("RuntimeMode", selected)
+		ReplicatedStorage:SetAttribute("RuntimeMode", selected)
 	else
 		while selected == nil do
 			task.wait(0.05)
@@ -68,7 +68,7 @@ local function resolveServerMode(): string
 end
 
 local mode = resolveServerMode()
-game:SetAttribute("RuntimeMode", mode)
+ReplicatedStorage:SetAttribute("RuntimeMode", mode)
 
 local function startHub()
 	local FactoryReadyNotificationService =
