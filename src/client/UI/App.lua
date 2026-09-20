@@ -185,11 +185,16 @@ local function App()
 	end, {})
 
 	React.useEffect(function()
-		local connection = UIBus.PanelRequested:Connect(function(panelName: string)
+		local panelConnection = UIBus.PanelRequested:Connect(function(panelName: string)
 			setOpenPanel(panelName)
 		end)
+		local backConnection = UIBus.BackRequested:Connect(function()
+			setRobotReveal(nil)
+			setOpenPanel(nil)
+		end)
 		return function()
-			connection:Disconnect()
+			panelConnection:Disconnect()
+			backConnection:Disconnect()
 		end
 	end, {})
 
