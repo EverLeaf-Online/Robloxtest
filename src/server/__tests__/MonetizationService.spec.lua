@@ -108,7 +108,7 @@ describe("MonetizationService integration", function()
 			ProductId = RobloxIds.DeveloperProducts.InstantProcessTokens,
 		}
 
-		local firstDecision = MonetizationService.ProcessReceiptForPlayerForStudio(player, receipt)
+		local firstDecision = MonetizationService.ProcessReceiptForPlayerForTests(player, receipt)
 		expect(firstDecision).toBe(Enum.ProductPurchaseDecision.NotProcessedYet)
 		expect(data.Consumables.InstantProcessTokens).toBe(5)
 		expect(table.find(data.Receipts.RecentPurchaseIds, purchaseId)).never.toBe(nil)
@@ -125,7 +125,7 @@ describe("MonetizationService integration", function()
 		expect(table.find(reloaded.Receipts.RecentPurchaseIds, purchaseId)).toBe(nil)
 
 		DataService.SetSaveResult(player, true)
-		local retryDecision = MonetizationService.ProcessReceiptForPlayerForStudio(player, receipt)
+		local retryDecision = MonetizationService.ProcessReceiptForPlayerForTests(player, receipt)
 		expect(retryDecision).toBe(Enum.ProductPurchaseDecision.PurchaseGranted)
 
 		local persisted = DataService.GetPersistedData(player)
