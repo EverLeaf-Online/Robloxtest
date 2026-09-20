@@ -1,7 +1,7 @@
 # Scrap-to-Bot Factory — Public Launch Status
 
 Status date: **2026-09-20 UTC**  
-Repository: **EverLeaf-Online/Robloxtest**  
+Repository: **EverLeaf-Online/scrap-to-bot-factory**  
 Baseline branch: **main**  
 Baseline commit: **a5067bc** (`Fix paid-value durability, overclock recovery, and notification races (#86)`)
 
