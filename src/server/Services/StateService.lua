@@ -25,9 +25,11 @@ end
 local function cloneRobots(ownedByUid: { [string]: ProfileTypes.OwnedRobot }): any
 	local result = {}
 	for uid, robot in ownedByUid do
+		-- AcquiredAt is server persistence metadata and is not consumed by the
+		-- current client UI. Omitting it removes one scalar from every owned
+		-- robot in full snapshots, which matters at the 500-robot profile cap.
 		result[uid] = {
 			RobotId = robot.RobotId,
-			AcquiredAt = robot.AcquiredAt,
 		}
 	end
 	return result
