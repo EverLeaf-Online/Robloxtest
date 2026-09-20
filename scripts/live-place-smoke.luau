@@ -52,3 +52,32 @@ if server ~= nil then
 	local bootstrap = server:FindFirstChild("Bootstrap")
 	print("SERVER_BOOTSTRAP", bootstrap ~= nil, bootstrap and bootstrap.ClassName or "nil")
 end
+
+
+local HttpService = game:GetService("HttpService")
+print("HTTP_ENABLED", HttpService.HttpEnabled)
+
+local secretOk, secretOrError = pcall(HttpService.GetSecret, HttpService, "SCRAPBOT_DISCORD_WEBHOOK_SECRET")
+print("DISCORD_SECRET_AVAILABLE", secretOk)
+if not secretOk then
+	print("DISCORD_SECRET_ERROR", tostring(secretOrError))
+else
+	local requestOk, responseOrError = pcall(HttpService.RequestAsync, HttpService, {
+		Url = "https://everleafms.online/roblox/events",
+		Method = "POST",
+		Headers = {
+			["Content-Type"] = "application/json",
+			["x-roblox-webhook-secret"] = secretOrError,
+		},
+		Body = HttpService:JSONEncode({
+			title = "Scrap-to-Bot Factory live HTTP diagnostic",
+			description = "Non-publishing live-place smoke probe.",
+		}),
+	})
+	print("DISCORD_HTTP_REQUEST_OK", requestOk)
+	if requestOk then
+		print("DISCORD_HTTP_STATUS", responseOrError.StatusCode, responseOrError.Success)
+	else
+		print("DISCORD_HTTP_ERROR", tostring(responseOrError))
+	end
+end
