@@ -10,6 +10,7 @@ local it = JestGlobals.it
 
 local FactoryRules = require(ReplicatedStorage.Shared.Domain.FactoryRules)
 local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
+local Upgrades = require(ReplicatedStorage.Shared.Config.Upgrades)
 
 local serverRoot = script.Parent.Parent
 local ProfileTemplate = require(serverRoot.Data.ProfileTemplate)
@@ -154,6 +155,41 @@ describe("MachineService integration", function()
 		expect(StateService.GetLastResult(player).Code).toBe("ASSEMBLY_STARTED")
 
 		player:Destroy()
+	end)
+
+	it("applies the exact 15% Factory VIP duration reduction at every assembler level", function()
+		for level = 1, #Upgrades.AssemblerSpeed.Levels do
+			resetFakes()
+			local player = makeFakePlayer()
+			local data = deepCopy(ProfileTemplate)
+			data.Machines.AssemblerLevel = level
+			data.Materials.ScrapMetal = 4
+			data.Materials.Wiring = 1
+			configurePlayer(player, data)
+			MonetizationService.SetAssemblerTimeMultiplier(
+				player,
+				GameConfig.Factory.FactoryVIPAssemblerTimeMultiplier
+			)
+
+			MachineService.StartAssembler(player)
+
+			local job = data.Machines.AssemblerJob
+			local baseDuration = FactoryRules.GetAssemblerSeconds(level)
+			local expectedDuration = baseDuration
+				* GameConfig.Factory.FactoryVIPAssemblerTimeMultiplier
+			local actualDuration = job.CompletesAt - job.StartedAt
+
+			expect(job.Active).toBe(true)
+			expect(math.abs(actualDuration - expectedDuration) < 0.0001).toBe(true)
+			expect(
+				math.abs(
+					actualDuration / baseDuration
+						- GameConfig.Factory.FactoryVIPAssemblerTimeMultiplier
+				) < 0.0001
+			).toBe(true)
+
+			player:Destroy()
+		end
 	end)
 
 	it("blocks assembly when the robot inventory is at the configured hard cap", function()
