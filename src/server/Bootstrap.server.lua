@@ -71,6 +71,8 @@ local mode = resolveServerMode()
 game:SetAttribute("RuntimeMode", mode)
 
 local function startHub()
+	local FactoryReadyNotificationService =
+		require(script.Parent.Services.FactoryReadyNotificationService)
 	local HubFactoryPortalService = require(script.Parent.Services.HubFactoryPortalService)
 	local HubSessionService = require(script.Parent.Services.HubSessionService)
 	local HubWorldService = require(script.Parent.Services.HubWorldService)
@@ -78,6 +80,12 @@ local function startHub()
 	HubWorldService.Init()
 	HubSessionService.Init()
 	HubFactoryPortalService.Init()
+
+	-- FactoryReady entries are scheduled by Factory servers when owners leave.
+	-- Poll from Hub servers too so delivery does not depend on another reserved
+	-- Factory server still being alive 30 minutes later. Global per-user locks
+	-- inside the service keep concurrent Hub/Factory pollers single-delivery.
+	FactoryReadyNotificationService.InitPoller()
 
 	print("[ScrapToBotFactory] Hub runtime initialized")
 end
@@ -129,7 +137,7 @@ local function startFactory()
 	ServerOverclockCoordinator.Init()
 	NotificationService.Init()
 	AdminBroadcastService.Init()
-	FactoryReadyNotificationService.Init()
+	FactoryReadyNotificationService.InitFactoryScheduling()
 	EntitlementPresentationService.Init()
 	BadgeService.Init()
 	ReferralService.Init()
