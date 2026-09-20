@@ -63,26 +63,52 @@ function FactoryRouteRegistry.CreateRoute(
 end
 
 function FactoryRouteRegistry.ConsumeRoute(token: string, playerUserId: number): RouteRecord?
-	local ok, record = retry("GetRoute", function()
-		return routeMap:GetAsync(routeKey(token))
+	local claimId = HttpService:GenerateGUID(false)
+	local claimedRecord: RouteRecord? = nil
+	local rejectionCode = "ROUTE_MISSING"
+
+	local ok, updatedValue = retry("ConsumeRoute", function()
+		return routeMap:UpdateAsync(routeKey(token), function(current)
+			local replacement, record, code = FactoryRoutingRules.TryClaimRoute(
+				current,
+				playerUserId,
+				os.time(),
+				ROUTE_TTL_SECONDS,
+				claimId
+			)
+			rejectionCode = code
+			if replacement == nil or record == nil then
+				claimedRecord = nil
+				return nil
+			end
+
+			claimedRecord = record
+			return replacement
+		end, ROUTE_TTL_SECONDS)
 	end)
 	if not ok then
 		return nil
 	end
-
-	local valid, code =
-		FactoryRoutingRules.ValidateRoute(record, playerUserId, os.time(), ROUTE_TTL_SECONDS)
-	if not valid then
-		warn(("[FactoryRouteRegistry] Rejected route %s for %d"):format(code, playerUserId))
+	if
+		typeof(updatedValue) ~= "table"
+		or updatedValue.Consumed ~= true
+		or updatedValue.ClaimId ~= claimId
+		or claimedRecord == nil
+	then
+		warn(
+			("[FactoryRouteRegistry] Rejected route %s for %d"):format(rejectionCode, playerUserId)
+		)
 		return nil
 	end
 
-	retry("RemoveRoute", function()
+	-- The atomic tombstone above is the replay barrier. Physical removal is cleanup
+	-- only; if RemoveAsync fails, later consumers still see ROUTE_CONSUMED until TTL.
+	retry("RemoveConsumedRoute", function()
 		routeMap:RemoveAsync(routeKey(token))
 		return true
 	end)
 
-	return record :: RouteRecord
+	return claimedRecord
 end
 
 function FactoryRouteRegistry.DeleteRoute(token: string)
