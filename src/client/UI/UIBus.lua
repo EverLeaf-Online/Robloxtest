@@ -1,9 +1,11 @@
 --!strict
 
 local panelRequested = Instance.new("BindableEvent")
+local backRequested = Instance.new("BindableEvent")
 
 local UIBus = {}
 UIBus.PanelRequested = panelRequested.Event
+UIBus.BackRequested = backRequested.Event
 
 function UIBus.OpenPanel(panelName: string)
 	if
@@ -16,6 +18,10 @@ function UIBus.OpenPanel(panelName: string)
 		return
 	end
 	panelRequested:Fire(panelName)
+end
+
+function UIBus.RequestBack()
+	backRequested:Fire()
 end
 
 return table.freeze(UIBus)
