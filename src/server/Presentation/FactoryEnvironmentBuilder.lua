@@ -24,6 +24,8 @@ local PRELOAD_ASSET_KEYS = table.freeze({
 	"ElectricalCabinet",
 	"MaterialBin",
 	"StructuralColumn",
+	"CatwalkModule",
+	"FactoryStairs",
 })
 
 local COLORS = table.freeze({
@@ -1275,6 +1277,64 @@ local function buildUtilities(root: Model, plotId: number, center: Vector3)
 		if rack ~= nil then
 			rack.Name = ("UtilityPipeRack%d"):format(index)
 		end
+	end
+
+	-- Walkable maintenance platform behind the cooling equipment. Imported
+	-- meshes stay presentation-only; compact invisible parts own collision.
+	local catwalkZ = 14
+	for index, x in { -21, -7, 7, 21 } do
+		local catwalk = FactoryAssetLibrary.TryPlace(
+			"CatwalkModule",
+			utilities,
+			CFrame.new(utilityCenter + Vector3.new(x, 0.84, catwalkZ)),
+			plotId,
+			14
+		)
+		if catwalk ~= nil then
+			catwalk.Name = ("UtilityCatwalk%d"):format(index)
+			local deckCollision = part(
+				utilities,
+				plotId,
+				("UtilityCatwalkDeckCollision%d"):format(index),
+				Vector3.new(13.8, 0.55, 5.1),
+				CFrame.new(utilityCenter + Vector3.new(x, 6.62, catwalkZ)),
+				COLORS.SteelBlack,
+				Enum.Material.SmoothPlastic,
+				true,
+				nil
+			)
+			deckCollision.Transparency = 1
+			deckCollision.CastShadow = false
+		end
+	end
+
+	local maintenanceStairs = FactoryAssetLibrary.TryPlace(
+		"FactoryStairs",
+		utilities,
+		CFrame.new(utilityCenter + Vector3.new(-28, 0.84, catwalkZ)),
+		plotId,
+		9
+	)
+	if maintenanceStairs ~= nil then
+		maintenanceStairs.Name = "UtilityMaintenanceStairs"
+		local stairRun = 8.25
+		local stairRise = 5.9
+		local stairAngle = math.atan2(stairRise, stairRun)
+		local rampLength = math.sqrt(stairRun * stairRun + stairRise * stairRise)
+		local rampCollision = part(
+			utilities,
+			plotId,
+			"UtilityMaintenanceStairCollision",
+			Vector3.new(rampLength, 0.6, 4.15),
+			CFrame.new(utilityCenter + Vector3.new(-28, 3.8, catwalkZ))
+				* CFrame.Angles(0, 0, stairAngle),
+			COLORS.SteelBlack,
+			Enum.Material.SmoothPlastic,
+			true,
+			nil
+		)
+		rampCollision.Transparency = 1
+		rampCollision.CastShadow = false
 	end
 
 	local sign = part(
