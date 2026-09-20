@@ -78,6 +78,7 @@ jobs:
           rojo build default.project.json --output build/ScrapToBotFactory.rbxlx
           rojo build default.project.json --output build/ScrapToBotFactory.rbxl
           grep -q '<token name="ChatVersion">1</token>' build/ScrapToBotFactory.rbxlx
+          grep -q '<bool name="HttpEnabled">true</bool>' build/ScrapToBotFactory.rbxlx
           grep -q 'Bootstrap' build/ScrapToBotFactory.rbxlx
           grep -q 'UIController' build/ScrapToBotFactory.rbxlx
           grep -q 'HubUIController' build/ScrapToBotFactory.rbxlx
