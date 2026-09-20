@@ -146,6 +146,8 @@ describe("FactoryEnvironmentBuilder", function()
 			local barrier = environment:FindFirstChild("ServiceBayBarrier1", true)
 			local cabinet = environment:FindFirstChild("RecoveryCabinetVisual", true)
 			local structuralColumn = environment:FindFirstChild("HallColumnVisual", true)
+			local catwalk = environment:FindFirstChild("UtilityCatwalk1", true)
+			local stairs = environment:FindFirstChild("UtilityMaintenanceStairs", true)
 
 			for _, imported in
 				{
@@ -155,6 +157,8 @@ describe("FactoryEnvironmentBuilder", function()
 					barrier,
 					cabinet,
 					structuralColumn,
+					catwalk,
+					stairs,
 				}
 			do
 				expect(imported ~= nil and imported:GetAttribute("FactoryImportedAsset") == true).toBe(
@@ -175,6 +179,12 @@ describe("FactoryEnvironmentBuilder", function()
 			expect(cabinetCollision ~= nil and (cabinetCollision :: BasePart).CanCollide).toBe(true)
 			local columnCollision = environment:FindFirstChild("HallColumnCollision", true)
 			expect(columnCollision ~= nil and (columnCollision :: BasePart).CanCollide).toBe(true)
+			local catwalkCollision =
+				environment:FindFirstChild("UtilityCatwalkDeckCollision1", true)
+			expect(catwalkCollision ~= nil and (catwalkCollision :: BasePart).CanCollide).toBe(true)
+			local stairCollision =
+				environment:FindFirstChild("UtilityMaintenanceStairCollision", true)
+			expect(stairCollision ~= nil and (stairCollision :: BasePart).CanCollide).toBe(true)
 
 			plot:Destroy()
 		end
