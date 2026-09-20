@@ -5,6 +5,8 @@ Repository: **EverLeaf-Online/scrap-to-bot-factory**
 Baseline branch: **main**  
 Baseline commit: **a5067bc** (`Fix paid-value durability, overclock recovery, and notification races (#86)`)
 
+> **Roadmap note:** this file is the detailed launch-evidence snapshot. Current phase status and execution order live in `docs/ROADMAP.md`. Later commits may advance implementation without rewriting this evidence baseline.
+
 ## Release decision
 
 **Do not switch the production experience to Public yet.**
