@@ -126,11 +126,7 @@ function FactoryReadyDeliveryRules.Claim(
 	if dueAt > now then
 		return state, false, "NOT_DUE"
 	end
-	if
-		state.Status == STATUS_SENDING
-		and state.Owner ~= owner
-		and state.ClaimUntil > now
-	then
+	if state.Status == STATUS_SENDING and state.Owner ~= owner and state.ClaimUntil > now then
 		return state, false, "BUSY"
 	end
 
@@ -157,11 +153,7 @@ function FactoryReadyDeliveryRules.Renew(
 	then
 		return state, false
 	end
-	if
-		state.Generation ~= generation
-		or state.Status ~= STATUS_SENDING
-		or state.Owner ~= owner
-	then
+	if state.Generation ~= generation or state.Status ~= STATUS_SENDING or state.Owner ~= owner then
 		return state, false
 	end
 	state.ClaimUntil = now + claimSeconds
@@ -179,11 +171,7 @@ function FactoryReadyDeliveryRules.Complete(
 	if not isGeneration(generation) or not isOwner(owner) or not isFiniteNonNegative(now) then
 		return state, false
 	end
-	if
-		state.Generation ~= generation
-		or state.Status ~= STATUS_SENDING
-		or state.Owner ~= owner
-	then
+	if state.Generation ~= generation or state.Status ~= STATUS_SENDING or state.Owner ~= owner then
 		return state, false
 	end
 	state.Status = STATUS_SENT
@@ -209,11 +197,7 @@ function FactoryReadyDeliveryRules.Retry(
 	then
 		return state, false
 	end
-	if
-		state.Generation ~= generation
-		or state.Status ~= STATUS_SENDING
-		or state.Owner ~= owner
-	then
+	if state.Generation ~= generation or state.Status ~= STATUS_SENDING or state.Owner ~= owner then
 		return state, false
 	end
 	state.Status = STATUS_SCHEDULED
