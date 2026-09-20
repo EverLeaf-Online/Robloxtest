@@ -95,6 +95,68 @@ export function stableWebhookNotificationKey(notificationId) {
   return crypto.createHash('sha256').update(notificationId, 'utf8').digest('hex');
 }
 
+export function parseAnalyticsAlertMessage(eventPayload) {
+  if (eventPayload === null || typeof eventPayload !== 'object' || Array.isArray(eventPayload)) {
+    return null;
+  }
+
+  const rawAlertMessage = eventPayload.AlertMessage;
+  if (typeof rawAlertMessage !== 'string' || rawAlertMessage.length === 0 || rawAlertMessage.length > 32_768) {
+    return null;
+  }
+
+  let message;
+  try {
+    message = JSON.parse(rawAlertMessage);
+  } catch {
+    return null;
+  }
+
+  if (message === null || typeof message !== 'object' || Array.isArray(message)) {
+    return null;
+  }
+
+  const summary = boundedText(message.summary, 'Roblox analytics alert', 1000);
+  const metric = boundedText(message.metric, 'Unknown', 256);
+  const evaluationTimeUtc = boundedText(message.evaluation_time_utc, 'Unknown', 128);
+  const universeId = boundedText(message.universe_id, 'Unknown', 64);
+
+  const summaryLower = summary.toLowerCase();
+  let status = 'Unknown';
+  if (summaryLower.includes('recovered')) {
+    status = 'Recovered';
+  } else if (summaryLower.includes('fired')) {
+    status = 'Fired';
+  }
+
+  let severity = null;
+  if (typeof message.severity === 'string' && message.severity.trim().length > 0) {
+    severity = boundedText(message.severity, 'Unknown', 64);
+  }
+
+  let alertHistoryUrl = null;
+  if (typeof message.alert_history === 'string') {
+    try {
+      const parsed = new URL(message.alert_history);
+      if (parsed.protocol === 'https:' && parsed.hostname === 'create.roblox.com') {
+        alertHistoryUrl = parsed.toString();
+      }
+    } catch {
+      // Ignore malformed or non-Roblox dashboard URLs.
+    }
+  }
+
+  return {
+    summary,
+    metric,
+    evaluationTimeUtc,
+    universeId,
+    status,
+    severity,
+    alertHistoryUrl,
+  };
+}
+
 export function readBody(request, maxBytes = 64 * 1024) {
   return new Promise((resolve, reject) => {
     let settled = false;

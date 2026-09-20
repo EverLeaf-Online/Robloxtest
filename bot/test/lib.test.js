@@ -6,6 +6,7 @@ import test from 'node:test';
 import {
   PayloadTooLargeError,
   boundedText,
+  parseAnalyticsAlertMessage,
   parsePort,
   parseRobloxSignatureHeader,
   readBody,
@@ -110,6 +111,53 @@ test('stableWebhookNotificationKey is deterministic and filesystem-safe', () => 
   const key = stableWebhookNotificationKey('abc/../notification');
   assert.match(key, /^[a-f0-9]{64}$/);
   assert.equal(key, stableWebhookNotificationKey('abc/../notification'));
+});
+
+test('parseAnalyticsAlertMessage parses a Roblox analytics alert payload', () => {
+  const parsed = parseAnalyticsAlertMessage({
+    AlertMessage: JSON.stringify({
+      summary: '[critical] Game has fired',
+      metric: 'ClientCrashRate',
+      universe_id: '10766713640',
+      evaluation_time_utc: '2026-06-15T22:04:47Z',
+      alert_history:
+        'https://create.roblox.com/dashboard/creations/experiences/10766713640/alerts?tab=AlertConfiguration-Analytics',
+      severity: 'critical',
+    }),
+  });
+
+  assert.deepEqual(parsed, {
+    summary: '[critical] Game has fired',
+    metric: 'ClientCrashRate',
+    evaluationTimeUtc: '2026-06-15T22:04:47Z',
+    universeId: '10766713640',
+    status: 'Fired',
+    severity: 'critical',
+    alertHistoryUrl:
+      'https://create.roblox.com/dashboard/creations/experiences/10766713640/alerts?tab=AlertConfiguration-Analytics',
+  });
+});
+
+test('parseAnalyticsAlertMessage recognizes recovered alerts and rejects unsafe dashboard URLs', () => {
+  const parsed = parseAnalyticsAlertMessage({
+    AlertMessage: JSON.stringify({
+      summary: 'Game has recovered',
+      metric: 'ServerMemoryUsage',
+      universe_id: 10766713640,
+      evaluation_time_utc: '2026-06-15T22:04:47Z',
+      alert_history: 'https://example.com/not-roblox',
+    }),
+  });
+
+  assert.equal(parsed.status, 'Recovered');
+  assert.equal(parsed.universeId, '10766713640');
+  assert.equal(parsed.alertHistoryUrl, null);
+});
+
+test('parseAnalyticsAlertMessage safely ignores malformed AlertMessage values', () => {
+  assert.equal(parseAnalyticsAlertMessage({}), null);
+  assert.equal(parseAnalyticsAlertMessage({ AlertMessage: '{not-json' }), null);
+  assert.equal(parseAnalyticsAlertMessage({ AlertMessage: JSON.stringify([]) }), null);
 });
 
 test('readBody returns a bounded UTF-8 body', async () => {

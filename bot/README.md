@@ -38,7 +38,7 @@ The listener should bind to loopback and sit behind an HTTPS reverse proxy.
   - Validates the standard `NotificationId`, `EventType`, `EventTime`, and `EventPayload` envelope.
   - Persists accepted notifications by hashed `NotificationId` using exclusive file creation, making duplicate delivery idempotent across process restarts.
   - Keeps a bounded spool of at most 2,000 notification files.
-  - Optionally posts a payload-free event summary to the private `DISCORD_OPS_CHANNEL_ID`.
+  - Posts platform event summaries to the private `DISCORD_OPS_CHANNEL_ID` when configured. `AnalyticsAlert` events safely parse Roblox's nested `EventPayload.AlertMessage` JSON and surface the alert summary, metric, fired/recovered status, evaluation time, universe ID, optional severity, and a validated `create.roblox.com` alert-history link.
 
 Both POST endpoints require `Content-Type: application/json` and cap bodies at 64 KiB.
 

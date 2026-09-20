@@ -15,6 +15,7 @@ import {
 import {
   PayloadTooLargeError,
   boundedText,
+  parseAnalyticsAlertMessage,
   parsePort,
   readBody,
   safeSecretEqual,
@@ -233,7 +234,10 @@ function validatePlatformWebhookPayload(payload) {
     throw new Error('Invalid EventPayload');
   }
 
-  return { notificationId, eventType, eventTime };
+  const analyticsAlert =
+    eventType === 'AnalyticsAlert' ? parseAnalyticsAlertMessage(eventPayload) : null;
+
+  return { notificationId, eventType, eventTime, analyticsAlert };
 }
 
 async function persistPlatformNotification(payload, notificationId) {
@@ -290,19 +294,64 @@ async function sendPlatformWebhookOpsSummary(summary) {
     return;
   }
 
+  const embed = new EmbedBuilder();
+
+  if (summary.analyticsAlert) {
+    const alert = summary.analyticsAlert;
+    embed
+      .setTitle(
+        alert.status === 'Recovered'
+          ? 'Roblox analytics alert recovered'
+          : alert.status === 'Fired'
+            ? 'Roblox analytics alert fired'
+            : 'Roblox analytics alert',
+      )
+      .setDescription(boundedText(alert.summary, 'Roblox analytics alert', 4000))
+      .addFields(
+        { name: 'Metric', value: boundedText(alert.metric, 'Unknown', 1024), inline: true },
+        { name: 'Status', value: boundedText(alert.status, 'Unknown', 1024), inline: true },
+        {
+          name: 'Evaluation time',
+          value: boundedText(alert.evaluationTimeUtc, 'Unknown', 1024),
+          inline: true,
+        },
+        {
+          name: 'Universe',
+          value: `\`${boundedText(alert.universeId, 'Unknown', 128)}\``,
+          inline: true,
+        },
+        {
+          name: 'Notification',
+          value: `\`${boundedText(summary.notificationId, 'Unknown', 128)}\``,
+        },
+      );
+
+    if (alert.severity) {
+      embed.addFields({
+        name: 'Severity',
+        value: boundedText(alert.severity, 'Unknown', 1024),
+        inline: true,
+      });
+    }
+
+    if (alert.alertHistoryUrl) {
+      embed.setURL(alert.alertHistoryUrl);
+    }
+  } else {
+    embed
+      .setTitle('Roblox platform webhook')
+      .addFields(
+        { name: 'Event', value: boundedText(summary.eventType, 'Unknown', 128), inline: true },
+        {
+          name: 'Notification',
+          value: `\`${boundedText(summary.notificationId, 'Unknown', 128)}\``,
+        },
+        { name: 'Event time', value: boundedText(summary.eventTime, 'Unknown', 128) },
+      );
+  }
+
   await channel.send({
-    embeds: [
-      new EmbedBuilder()
-        .setTitle('Roblox platform webhook')
-        .addFields(
-          { name: 'Event', value: boundedText(summary.eventType, 'Unknown', 128), inline: true },
-          {
-            name: 'Notification',
-            value: `\`${boundedText(summary.notificationId, 'Unknown', 128)}\``,
-          },
-          { name: 'Event time', value: boundedText(summary.eventTime, 'Unknown', 128) },
-        ),
-    ],
+    embeds: [embed],
     allowedMentions: { parse: [] },
   });
 }
