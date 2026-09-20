@@ -108,7 +108,7 @@ Most archive files are complete `.rbxl`/`.rbxlx` binaries from older eras. Even 
 
 Therefore these files should not influence our technical stack more strongly than current Creator Hub and maintained Roblox OSS.
 
-## Explicit prohibitions for Robloxtest
+## Explicit prohibitions for Scrap-to-Bot Factory
 
 Do not:
 
