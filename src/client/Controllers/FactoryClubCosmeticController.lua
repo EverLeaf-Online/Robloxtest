@@ -101,7 +101,7 @@ local function createUi()
 	frame.BackgroundTransparency = 0.08
 	frame.BorderSizePixel = 0
 	frame.Position = UDim2.new(1, -14, 1, -112)
-	frame.Size = UDim2.fromOffset(220, 72)
+	frame.Size = UDim2.fromOffset(220, 88)
 	frame.Parent = screenGui
 
 	local corner = Instance.new("UICorner")
@@ -125,7 +125,7 @@ local function createUi()
 	nextButton.BorderSizePixel = 0
 	nextButton.Font = Enum.Font.GothamBold
 	nextButton.Position = UDim2.fromOffset(8, 36)
-	nextButton.Size = UDim2.new(1, -16, 0, 28)
+	nextButton.Size = UDim2.new(1, -16, 0, 44)
 	nextButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 	nextButton.TextSize = 12
 	nextButton.Parent = frame
