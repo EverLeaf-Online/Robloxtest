@@ -4,10 +4,12 @@ local WorldService = {}
 
 local gatesByPlot: { [number]: { [number]: BasePart } } = {}
 local arrivalsByPlot: { [number]: { [number]: BasePart } } = {}
+local salvageNodes: { [string]: BasePart } = {}
 
 function WorldService.Reset()
 	table.clear(gatesByPlot)
 	table.clear(arrivalsByPlot)
+	table.clear(salvageNodes)
 end
 
 function WorldService.SetPlotZoneGate(plotId: number, zoneId: number, gate: BasePart)
@@ -18,6 +20,18 @@ end
 function WorldService.SetPlotZoneArrival(plotId: number, zoneId: number, arrival: BasePart)
 	arrivalsByPlot[plotId] = arrivalsByPlot[plotId] or {}
 	arrivalsByPlot[plotId][zoneId] = arrival
+end
+
+function WorldService.SetSalvageNode(nodeId: string, node: BasePart)
+	salvageNodes[nodeId] = node
+end
+
+function WorldService.GetSalvageNode(nodeId: string): BasePart?
+	return salvageNodes[nodeId]
+end
+
+function WorldService.GetSalvageNodes(): any
+	return pairs(salvageNodes)
 end
 
 function WorldService.GetPlotZoneGate(plotId: number, zoneId: number): BasePart?
