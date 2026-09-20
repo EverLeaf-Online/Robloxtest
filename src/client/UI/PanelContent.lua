@@ -26,7 +26,7 @@ local function getRemote(name: string): RemoteEvent
 	return Remotes:WaitForChild(name) :: RemoteEvent
 end
 
-local function buildRobotRows(snapshot: any, extraWorkSlots: number): any
+local function buildRobotRows(snapshot: any, extraWorkSlots: number, compact: boolean): any
 	local rows: { [string]: any } = {
 		Layout = React.createElement("UIListLayout", {
 			Padding = UDim.new(0, 8),
@@ -69,14 +69,14 @@ local function buildRobotRows(snapshot: any, extraWorkSlots: number): any
 				BackgroundColor3 = COLORS.PanelSoft,
 				BorderSizePixel = 0,
 				LayoutOrder = index,
-				Size = UDim2.new(1, 0, 0, 58),
+				Size = UDim2.new(1, 0, 0, if compact then 112 else 58),
 			}, {
 				Corner = Components.Corner(8),
 				Name = React.createElement("TextLabel", {
 					BackgroundTransparency = 1,
 					Font = Enum.Font.GothamBold,
 					Position = UDim2.fromOffset(10, 7),
-					Size = UDim2.new(1, -210, 0, 20),
+					Size = UDim2.new(1, if compact then -20 else -210, 0, 20),
 					Text = definition.DisplayName,
 					TextColor3 = COLORS.Text,
 					TextSize = 14,
@@ -86,7 +86,10 @@ local function buildRobotRows(snapshot: any, extraWorkSlots: number): any
 					BackgroundTransparency = 1,
 					Font = Enum.Font.Gotham,
 					Position = UDim2.fromOffset(10, 30),
-					Size = UDim2.new(1, -210, 0, 18),
+					Size = UDim2.new(1, if compact then -20 else -210, 0, 18),
+					TextTruncate = if compact
+						then Enum.TextTruncate.AtEnd
+						else Enum.TextTruncate.None,
 					Text = ("%s • %.1f credits/s • %s"):format(
 						definition.Rarity,
 						definition.ProductionPerSecond,
@@ -98,19 +101,24 @@ local function buildRobotRows(snapshot: any, extraWorkSlots: number): any
 				}),
 				Assign = React.createElement("Frame", {
 					BackgroundTransparency = 1,
-					Position = UDim2.new(1, -198, 0.5, -16),
-					Size = UDim2.fromOffset(92, 32),
+					Position = if compact
+						then UDim2.fromOffset(10, 58)
+						else UDim2.new(1, -198, 0.5, -16),
+					Size = if compact then UDim2.new(0.5, -15, 0, 44) else UDim2.fromOffset(92, 32),
 				}, {
 					Button = Components.Button(
 						assignmentText,
 						assignmentCallback ~= nil,
-						assignmentCallback
+						assignmentCallback,
+						if compact then UDim2.fromScale(1, 1) else nil
 					),
 				}),
 				Recycle = React.createElement("Frame", {
 					BackgroundTransparency = 1,
-					Position = UDim2.new(1, -100, 0.5, -16),
-					Size = UDim2.fromOffset(92, 32),
+					Position = if compact
+						then UDim2.new(0.5, 5, 0, 58)
+						else UDim2.new(1, -100, 0.5, -16),
+					Size = if compact then UDim2.new(0.5, -15, 0, 44) else UDim2.fromOffset(92, 32),
 				}, {
 					Button = Components.Button(
 						("Recycle +%s"):format(StateHelpers.FormatNumber(definition.RecycleCredits)),
@@ -119,7 +127,8 @@ local function buildRobotRows(snapshot: any, extraWorkSlots: number): any
 							then function()
 								getRemote(RemoteNames.RequestSellRobot):FireServer(uid)
 							end
-							else nil
+							else nil,
+						if compact then UDim2.fromScale(1, 1) else nil
 					),
 				}),
 			})
@@ -140,7 +149,7 @@ local function effectiveStorageCapacity(snapshot: any): number
 	return math.floor(baseCapacity * multiplier)
 end
 
-local function buildStorageRows(snapshot: any): any
+local function buildStorageRows(snapshot: any, compact: boolean): any
 	local rows: { [string]: any } = {
 		Layout = React.createElement("UIListLayout", {
 			Padding = UDim.new(0, 8),
@@ -190,14 +199,14 @@ local function buildStorageRows(snapshot: any): any
 		BackgroundColor3 = COLORS.PanelSoft,
 		BorderSizePixel = 0,
 		LayoutOrder = 2,
-		Size = UDim2.new(1, 0, 0, 62),
+		Size = UDim2.new(1, 0, 0, if compact then 110 else 62),
 	}, {
 		Corner = Components.Corner(8),
 		Title = React.createElement("TextLabel", {
 			BackgroundTransparency = 1,
 			Font = Enum.Font.GothamBold,
 			Position = UDim2.fromOffset(10, 8),
-			Size = UDim2.new(1, -116, 0, 20),
+			Size = UDim2.new(1, if compact then -20 else -116, 0, 20),
 			Text = ("Material Storage • Lv.%d"):format(snapshot.Machines.StorageLevel),
 			TextColor3 = COLORS.Text,
 			TextSize = 14,
@@ -207,7 +216,7 @@ local function buildStorageRows(snapshot: any): any
 			BackgroundTransparency = 1,
 			Font = Enum.Font.Gotham,
 			Position = UDim2.fromOffset(10, 31),
-			Size = UDim2.new(1, -116, 0, 18),
+			Size = UDim2.new(1, if compact then -20 else -116, 0, 18),
 			Text = if nextLevel
 				then ("Next: %s capacity • %s credits"):format(
 					StateHelpers.FormatNumber(nextLevel.Value),
@@ -220,8 +229,8 @@ local function buildStorageRows(snapshot: any): any
 		}),
 		Buy = React.createElement("Frame", {
 			BackgroundTransparency = 1,
-			Position = UDim2.new(1, -102, 0.5, -16),
-			Size = UDim2.fromOffset(92, 32),
+			Position = if compact then UDim2.fromOffset(10, 58) else UDim2.new(1, -102, 0.5, -16),
+			Size = if compact then UDim2.new(1, -20, 0, 44) else UDim2.fromOffset(92, 32),
 		}, {
 			Button = Components.Button(
 				nextLevel and "Upgrade" or "Max",
@@ -230,7 +239,8 @@ local function buildStorageRows(snapshot: any): any
 					then function()
 						getRemote(RemoteNames.RequestUpgrade):FireServer("Storage")
 					end
-					else nil
+					else nil,
+				if compact then UDim2.fromScale(1, 1) else nil
 			),
 		}),
 	})
@@ -238,7 +248,7 @@ local function buildStorageRows(snapshot: any): any
 	return rows
 end
 
-local function buildRecycleRows(snapshot: any): any
+local function buildRecycleRows(snapshot: any, compact: boolean): any
 	local rows: { [string]: any } = {
 		Layout = React.createElement("UIListLayout", {
 			Padding = UDim.new(0, 8),
@@ -267,14 +277,14 @@ local function buildRecycleRows(snapshot: any): any
 				BackgroundColor3 = COLORS.PanelSoft,
 				BorderSizePixel = 0,
 				LayoutOrder = index,
-				Size = UDim2.new(1, 0, 0, 58),
+				Size = UDim2.new(1, 0, 0, if compact then 104 else 58),
 			}, {
 				Corner = Components.Corner(8),
 				Name = React.createElement("TextLabel", {
 					BackgroundTransparency = 1,
 					Font = Enum.Font.GothamBold,
 					Position = UDim2.fromOffset(10, 7),
-					Size = UDim2.new(1, -116, 0, 20),
+					Size = UDim2.new(1, if compact then -20 else -116, 0, 20),
 					Text = definition.DisplayName,
 					TextColor3 = COLORS.Text,
 					TextSize = 14,
@@ -284,7 +294,7 @@ local function buildRecycleRows(snapshot: any): any
 					BackgroundTransparency = 1,
 					Font = Enum.Font.Gotham,
 					Position = UDim2.fromOffset(10, 30),
-					Size = UDim2.new(1, -116, 0, 18),
+					Size = UDim2.new(1, if compact then -20 else -116, 0, 18),
 					Text = if assignedPad
 						then ("Assigned to %s • unassign before recycling"):format(assignedPad)
 						else ("%s • +%s credits"):format(
@@ -297,8 +307,10 @@ local function buildRecycleRows(snapshot: any): any
 				}),
 				Recycle = React.createElement("Frame", {
 					BackgroundTransparency = 1,
-					Position = UDim2.new(1, -102, 0.5, -16),
-					Size = UDim2.fromOffset(92, 32),
+					Position = if compact
+						then UDim2.fromOffset(10, 52)
+						else UDim2.new(1, -102, 0.5, -16),
+					Size = if compact then UDim2.new(1, -20, 0, 44) else UDim2.fromOffset(92, 32),
 				}, {
 					Button = Components.Button(
 						"Recycle",
@@ -307,7 +319,8 @@ local function buildRecycleRows(snapshot: any): any
 							then function()
 								getRemote(RemoteNames.RequestSellRobot):FireServer(uid)
 							end
-							else nil
+							else nil,
+						if compact then UDim2.fromScale(1, 1) else nil
 					),
 				}),
 			})
@@ -317,7 +330,7 @@ local function buildRecycleRows(snapshot: any): any
 	return rows
 end
 
-local function buildUpgradeRows(snapshot: any): any
+local function buildUpgradeRows(snapshot: any, compact: boolean): any
 	local rows: { [string]: any } = {
 		Layout = React.createElement("UIListLayout", {
 			Padding = UDim.new(0, 8),
@@ -341,14 +354,14 @@ local function buildUpgradeRows(snapshot: any): any
 			BackgroundColor3 = COLORS.PanelSoft,
 			BorderSizePixel = 0,
 			LayoutOrder = index,
-			Size = UDim2.new(1, 0, 0, 62),
+			Size = UDim2.new(1, 0, 0, if compact then 110 else 62),
 		}, {
 			Corner = Components.Corner(8),
 			Name = React.createElement("TextLabel", {
 				BackgroundTransparency = 1,
 				Font = Enum.Font.GothamBold,
 				Position = UDim2.fromOffset(10, 8),
-				Size = UDim2.new(1, -116, 0, 20),
+				Size = UDim2.new(1, if compact then -20 else -116, 0, 20),
 				Text = ("%s • Lv.%d"):format(definition.DisplayName, currentLevel),
 				TextColor3 = COLORS.Text,
 				TextSize = 14,
@@ -358,7 +371,7 @@ local function buildUpgradeRows(snapshot: any): any
 				BackgroundTransparency = 1,
 				Font = Enum.Font.Gotham,
 				Position = UDim2.fromOffset(10, 31),
-				Size = UDim2.new(1, -116, 0, 18),
+				Size = UDim2.new(1, if compact then -20 else -116, 0, 18),
 				Text = valueText,
 				TextColor3 = COLORS.Muted,
 				TextSize = 11,
@@ -366,8 +379,10 @@ local function buildUpgradeRows(snapshot: any): any
 			}),
 			Buy = React.createElement("Frame", {
 				BackgroundTransparency = 1,
-				Position = UDim2.new(1, -102, 0.5, -16),
-				Size = UDim2.fromOffset(92, 32),
+				Position = if compact
+					then UDim2.fromOffset(10, 58)
+					else UDim2.new(1, -102, 0.5, -16),
+				Size = if compact then UDim2.new(1, -20, 0, 44) else UDim2.fromOffset(92, 32),
 			}, {
 				Button = Components.Button(
 					nextLevel and "Upgrade" or "Max",
@@ -376,7 +391,8 @@ local function buildUpgradeRows(snapshot: any): any
 						then function()
 							getRemote(RemoteNames.RequestUpgrade):FireServer(upgradeId)
 						end
-						else nil
+						else nil,
+					if compact then UDim2.fromScale(1, 1) else nil
 				),
 			}),
 		})
@@ -486,15 +502,21 @@ function PanelContent.Hint(panelName: string): string
 	return "Discover robot outcomes by assembling them. Undiscovered names remain hidden."
 end
 
-function PanelContent.Content(panelName: string, snapshot: any, extraWorkSlots: number): any
+function PanelContent.Content(
+	panelName: string,
+	snapshot: any,
+	extraWorkSlots: number,
+	compact: boolean?
+): any
+	local compactLayout = compact == true
 	if panelName == "Bots" then
-		return buildRobotRows(snapshot, extraWorkSlots)
+		return buildRobotRows(snapshot, extraWorkSlots, compactLayout)
 	elseif panelName == "Upgrades" then
-		return buildUpgradeRows(snapshot)
+		return buildUpgradeRows(snapshot, compactLayout)
 	elseif panelName == "Storage" then
-		return buildStorageRows(snapshot)
+		return buildStorageRows(snapshot, compactLayout)
 	elseif panelName == "Recycle" then
-		return buildRecycleRows(snapshot)
+		return buildRecycleRows(snapshot, compactLayout)
 	end
 	return buildIndexRows(snapshot)
 end
