@@ -39,6 +39,62 @@ export function validateHttpsUrl(value) {
   return parsed.toString();
 }
 
+export function parseRobloxSignatureHeader(value) {
+  if (typeof value !== 'string') return null;
+
+  let timestamp = null;
+  let signature = null;
+
+  for (const part of value.split(',')) {
+    const trimmed = part.trim();
+    if (trimmed.startsWith('t=')) {
+      if (timestamp !== null) return null;
+      timestamp = trimmed.slice(2);
+    } else if (trimmed.startsWith('v1=')) {
+      if (signature !== null) return null;
+      signature = trimmed.slice(3);
+    }
+  }
+
+  if (!timestamp || !signature || !/^\d+$/.test(timestamp)) return null;
+  if (signature.length > 256) return null;
+
+  return { timestamp, signature };
+}
+
+export function verifyRobloxWebhookSignature(
+  signatureHeader,
+  secret,
+  payload,
+  { nowMs = Date.now(), maxSkewSeconds = 300 } = {},
+) {
+  if (typeof secret !== 'string' || secret.length < 16) return false;
+  if (payload === null || typeof payload !== 'object' || Array.isArray(payload)) return false;
+  if (!Number.isFinite(nowMs) || !Number.isFinite(maxSkewSeconds) || maxSkewSeconds <= 0) {
+    return false;
+  }
+
+  const parsed = parseRobloxSignatureHeader(signatureHeader);
+  if (!parsed) return false;
+
+  const timestampSeconds = Number(parsed.timestamp);
+  if (!Number.isSafeInteger(timestampSeconds)) return false;
+
+  const nowSeconds = Math.floor(nowMs / 1000);
+  if (Math.abs(nowSeconds - timestampSeconds) > maxSkewSeconds) return false;
+
+  const message = `${parsed.timestamp}.${JSON.stringify(payload)}`;
+  const expected = crypto.createHmac('sha256', secret).update(message).digest('base64');
+  return safeSecretEqual(parsed.signature, expected);
+}
+
+export function stableWebhookNotificationKey(notificationId) {
+  if (typeof notificationId !== 'string' || notificationId.length === 0) {
+    throw new Error('NotificationId must be a non-empty string');
+  }
+  return crypto.createHash('sha256').update(notificationId, 'utf8').digest('hex');
+}
+
 export function readBody(request, maxBytes = 64 * 1024) {
   return new Promise((resolve, reject) => {
     let settled = false;
