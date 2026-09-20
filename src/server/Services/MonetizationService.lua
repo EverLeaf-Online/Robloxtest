@@ -303,11 +303,12 @@ function MonetizationService.ProcessReceiptForStudio(
 	return MonetizationService.ProcessReceipt(receiptInfo)
 end
 
-function MonetizationService.ProcessReceiptForPlayerForStudio(
+-- Test-model entry point for exercising ProcessReceipt with a fake Player. This is
+-- server-only module API and is never bound to a RemoteEvent or Marketplace callback.
+function MonetizationService.ProcessReceiptForPlayerForTests(
 	player: Player,
 	receiptInfo: { [string]: any }
 ): Enum.ProductPurchaseDecision
-	assert(RunService:IsStudio(), "ProcessReceiptForPlayerForStudio may only be used in Studio")
 	return processReceiptForPlayer(player, receiptInfo)
 end
 
