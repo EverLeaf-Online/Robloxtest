@@ -3,13 +3,13 @@
 Status date: **2026-09-20 UTC**  
 Repository: **EverLeaf-Online/Robloxtest**  
 Baseline branch: **main**  
-Baseline commit: **6188e09** (`Profile eight-player max snapshot cost`)
+Baseline commit: **a5067bc** (`Fix paid-value durability, overclock recovery, and notification races (#86)`)
 
 ## Release decision
 
 **Do not switch the production experience to Public yet.**
 
-The code-side launch hardening is substantially complete. The remaining blockers are now concentrated in Roblox-platform/live-payment validation and real-device QA rather than missing core server authority.
+The code-side launch hardening is substantially complete. PR #86 closed the three previously identified reliability findings: paid receipt acknowledgement now waits for durable ProfileStore confirmation, Server Overclock recovery retries after lease conflicts/transient failures, and FactoryReady delivery uses generation-aware claims to prevent stale duplicate sends. The remaining blockers are now concentrated in Roblox-platform/live-payment validation and real-device QA rather than missing core server authority.
 
 ## Automated launch gates completed
 
