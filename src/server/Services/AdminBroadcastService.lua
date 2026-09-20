@@ -9,6 +9,7 @@ local TextService = game:GetService("TextService")
 
 local RemoteNames = require(ReplicatedStorage.Shared.Networking.RemoteNames)
 
+local DiscordWebhookService = require(script.Parent.DiscordWebhookService)
 local NotificationService = require(script.Parent.NotificationService)
 local RemoteService = require(script.Parent.RemoteService)
 local StateService = require(script.Parent.StateService)
@@ -200,6 +201,10 @@ function AdminBroadcastService.Init()
 			StateService.ActionResult(player, "AdminBroadcast", false, "PUBLISH_FAILED")
 			return
 		end
+
+		task.spawn(function()
+			DiscordWebhookService.SendAnnouncement("Scrap-to-Bot Factory update", filtered)
+		end)
 
 		StateService.ActionResult(player, "AdminBroadcast", true, "PUBLISHED")
 	end)
