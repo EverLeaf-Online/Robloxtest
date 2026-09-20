@@ -230,10 +230,7 @@ local function savedSnapshotMatches(
 	return ok and result == true
 end
 
-function DataService.SaveNow(
-	player: Player,
-	validator: SaveValidator?
-): (boolean, ProfileData?)
+function DataService.SaveNow(player: Player, validator: SaveValidator?): (boolean, ProfileData?)
 	local profile = profiles[player]
 	if profile == nil or profile:IsActive() ~= true then
 		return false, nil
@@ -245,7 +242,9 @@ function DataService.SaveNow(
 	local confirmedSnapshot: ProfileData? = nil
 
 	local function inspect(snapshot: any)
-		if confirmedSnapshot == nil and savedSnapshotMatches(snapshot, minimumRevision, validator) then
+		if
+			confirmedSnapshot == nil and savedSnapshotMatches(snapshot, minimumRevision, validator)
+		then
 			confirmedSnapshot = snapshot :: ProfileData
 		end
 	end
