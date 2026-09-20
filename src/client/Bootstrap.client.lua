@@ -7,13 +7,13 @@ local GamepadNavigationController = require(script.Parent.Controllers.GamepadNav
 local StudioRuntimeSelectorController =
 	require(script.Parent.Controllers.StudioRuntimeSelectorController)
 
+GamepadNavigationController.Init()
 local mode = StudioRuntimeSelectorController.ResolveMode()
 
 local function startHubClient()
 	local HubUIController = require(script.Parent.Controllers.HubUIController)
 
 	HubUIController.Init()
-	GamepadNavigationController.Init()
 	print("[ScrapToBotFactory] Hub client initialized")
 end
 
@@ -59,7 +59,6 @@ local function startFactoryClient()
 	MachineEffectsController.Init()
 	RobotWorkerController.Init()
 	WorldLabelController.Init()
-	GamepadNavigationController.Init()
 
 	local role = waitForFactoryRole()
 	if role ~= "Owner" then

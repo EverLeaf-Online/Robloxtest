@@ -9,6 +9,7 @@ local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
 
 local HUDIconFactory = require(script.Parent.Parent.UI.HUDIconFactory)
 local Theme = require(script.Parent.Parent.UI.Theme)
+local UIBus = require(script.Parent.Parent.UI.UIBus)
 
 local HubUIController = {}
 local initialized = false
@@ -684,6 +685,12 @@ function HubUIController.Init()
 	initialized = true
 
 	createUi()
+
+	UIBus.BackRequested:Connect(function()
+		if activePanel ~= nil then
+			HubUIController.OpenPanel(nil)
+		end
+	end)
 
 	Players.PlayerAdded:Connect(refreshPopulation)
 	Players.PlayerRemoving:Connect(function()
