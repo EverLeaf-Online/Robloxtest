@@ -104,11 +104,7 @@ local function cancel(userId: number)
 	removeQueueEntry(legacyQueueKey(userId))
 end
 
-local function claimDelivery(
-	userId: number,
-	generation: string,
-	dueAt: number
-): (boolean, string)
+local function claimDelivery(userId: number, generation: string, dueAt: number): (boolean, string)
 	local now = os.time()
 	local claimed = false
 	local claimCode = "ERROR"
@@ -183,24 +179,15 @@ local function stillOwnsDelivery(userId: number, generation: string): boolean
 		)
 		return false
 	end
-	return FactoryReadyDeliveryRules.IsOwnedClaim(
-		stateOrError,
-		generation,
-		DELIVERY_OWNER_ID,
-		now
-	)
+	return FactoryReadyDeliveryRules.IsOwnedClaim(stateOrError, generation, DELIVERY_OWNER_ID, now)
 end
 
 local function completeDelivery(userId: number, generation: string): boolean
 	local completed = false
 	local ok, stateOrError = pcall(function()
 		return deliveryStateStore:UpdateAsync(stateKey(userId), function(old)
-			local nextState, accepted = FactoryReadyDeliveryRules.Complete(
-				old,
-				generation,
-				DELIVERY_OWNER_ID,
-				os.time()
-			)
+			local nextState, accepted =
+				FactoryReadyDeliveryRules.Complete(old, generation, DELIVERY_OWNER_ID, os.time())
 			completed = accepted
 			return nextState
 		end)
@@ -253,8 +240,7 @@ local function deferRetry(userId: number, generation: string, entryKey: string)
 		return
 	end
 
-	local queueOk, queueError =
-		pcall(queueStore.SetAsync, queueStore, entryKey, retryAt)
+	local queueOk, queueError = pcall(queueStore.SetAsync, queueStore, entryKey, retryAt)
 	if not queueOk then
 		warn(
 			("[FactoryReadyNotificationService] Failed requeueing %d/%s: %s"):format(
