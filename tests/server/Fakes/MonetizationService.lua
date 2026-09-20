@@ -5,6 +5,8 @@ local MonetizationService = {}
 local extraWorkSlotsByPlayer: { [Player]: number } = {}
 local storageMultiplierByPlayer: { [Player]: number } = {}
 local assemblerMultiplierByPlayer: { [Player]: number } = {}
+local permanentProductionMultiplierByPlayer: { [Player]: number } = {}
+local productionMultiplierByPlayer: { [Player]: number } = {}
 local refreshCountByPlayer: { [Player]: number } = {}
 local autoCollectByPlayer: { [Player]: boolean } = {}
 
@@ -12,6 +14,8 @@ function MonetizationService.Reset()
 	table.clear(extraWorkSlotsByPlayer)
 	table.clear(storageMultiplierByPlayer)
 	table.clear(assemblerMultiplierByPlayer)
+	table.clear(permanentProductionMultiplierByPlayer)
+	table.clear(productionMultiplierByPlayer)
 	table.clear(refreshCountByPlayer)
 	table.clear(autoCollectByPlayer)
 end
@@ -28,6 +32,14 @@ function MonetizationService.SetAssemblerTimeMultiplier(player: Player, value: n
 	assemblerMultiplierByPlayer[player] = value
 end
 
+function MonetizationService.SetPermanentProductionMultiplier(player: Player, value: number)
+	permanentProductionMultiplierByPlayer[player] = value
+end
+
+function MonetizationService.SetProductionMultiplier(player: Player, value: number)
+	productionMultiplierByPlayer[player] = value
+end
+
 function MonetizationService.GetExtraWorkSlots(player: Player): number
 	return extraWorkSlotsByPlayer[player] or 0
 end
@@ -38,6 +50,16 @@ end
 
 function MonetizationService.GetAssemblerTimeMultiplier(player: Player): number
 	return assemblerMultiplierByPlayer[player] or 1
+end
+
+function MonetizationService.GetPermanentProductionMultiplier(player: Player): number
+	return permanentProductionMultiplierByPlayer[player] or 1
+end
+
+function MonetizationService.GetProductionMultiplier(player: Player): number
+	return productionMultiplierByPlayer[player]
+		or permanentProductionMultiplierByPlayer[player]
+		or 1
 end
 
 function MonetizationService.SetAutoCollect(player: Player, enabled: boolean)
