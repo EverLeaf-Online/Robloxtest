@@ -316,16 +316,11 @@ function MonetizationService.ProcessReceiptForPlayerForTests(
 	player: Player,
 	receiptInfo: { [string]: any }
 ): Enum.ProductPurchaseDecision
-	return processReceiptForPlayer(
-		player,
-		receiptInfo,
-		function()
-			return false
-		end,
-		function()
-			return true
-		end
-	)
+	return processReceiptForPlayer(player, receiptInfo, function()
+		return false
+	end, function()
+		return true
+	end)
 end
 
 local function refreshPass(player: Player, passName: string, passId: number): boolean?
