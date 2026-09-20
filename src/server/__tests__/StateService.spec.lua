@@ -28,6 +28,8 @@ end
 
 local PROFILE_COUNT = 8
 local SNAPSHOT_ITERATIONS = 5
+local BUILD_ENCODE_AVERAGE_BUDGET_MS = 2
+local MAX_AVERAGE_PAYLOAD_BYTES = 20_000
 
 local function makeMaxProfile(seed: number): any
 	local data = deepCopy(ProfileTemplate)
@@ -139,7 +141,11 @@ describe("StateService snapshot payload", function()
 			)
 		)
 
-		expect(averageMs > 0).toBe(true)
-		expect(averageBytes > 0).toBe(true)
+		-- First OCALE baseline on 2026-09-20 measured 0.200 ms/profile for
+		-- BuildSnapshot + JSONEncode and ~15,950 bytes/profile at 500 robots.
+		-- These ceilings leave substantial cloud-runtime/content headroom while
+		-- still catching a large CPU or payload regression before public launch.
+		expect(averageMs <= BUILD_ENCODE_AVERAGE_BUDGET_MS).toBe(true)
+		expect(averageBytes <= MAX_AVERAGE_PAYLOAD_BYTES).toBe(true)
 	end, 15_000)
 end)
