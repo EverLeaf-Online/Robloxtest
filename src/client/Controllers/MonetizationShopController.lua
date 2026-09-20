@@ -4,6 +4,7 @@ local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 
 local RemoteNames = require(ReplicatedStorage.Shared.Networking.RemoteNames)
@@ -15,6 +16,21 @@ local MonetizationShopController = {}
 local initialized = false
 
 local player = Players.LocalPlayer
+
+local function isPhoneViewport(viewport: Vector2): boolean
+	if viewport.X <= 760 then
+		return true
+	end
+
+	if not UserInputService.TouchEnabled or UserInputService.KeyboardEnabled then
+		return false
+	end
+
+	local shortSide = math.min(viewport.X, viewport.Y)
+	local longSide = math.max(viewport.X, viewport.Y)
+	local aspectRatio = if shortSide > 0 then longSide / shortSide else 1
+	return shortSide <= 1000 or aspectRatio >= 1.75
+end
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
 local stateRemote = remotes:WaitForChild(RemoteNames.StateSnapshot) :: RemoteEvent
 
@@ -319,7 +335,7 @@ local function createUi()
 
 	local function openPanelWidth(): number
 		local camera = Workspace.CurrentCamera
-		if camera ~= nil and camera.ViewportSize.X <= 760 then
+		if camera ~= nil and isPhoneViewport(camera.ViewportSize) then
 			return math.clamp(camera.ViewportSize.X - 20, 280, 340)
 		end
 		return 310
@@ -376,7 +392,7 @@ local function createUi()
 		end
 
 		local function refreshLayout()
-			local phone = camera.ViewportSize.X <= 760
+			local phone = isPhoneViewport(camera.ViewportSize)
 			phoneLayout = phone
 			toggle.Position = if phone then UDim2.new(0, 10, 0.42, 0) else UDim2.new(0, 18, 0.72, 0)
 			toggle.Size = if phone then UDim2.fromOffset(132, 48) else UDim2.fromOffset(158, 54)
