@@ -7,15 +7,28 @@ local TransactionRules = require(ReplicatedStorage.Shared.Domain.TransactionRule
 local DataService = {}
 
 local dataByPlayer: { [Player]: any } = {}
+local persistedDataByPlayer: { [Player]: any } = {}
 local busyByPlayer: { [Player]: boolean } = {}
 local saveResultByPlayer: { [Player]: boolean } = {}
 local saveCountByPlayer: { [Player]: number } = {}
+
+local function deepCopy(value: any): any
+	if typeof(value) ~= "table" then
+		return value
+	end
+	local copy = {}
+	for key, child in value do
+		copy[deepCopy(key)] = deepCopy(child)
+	end
+	return copy
+end
 
 local profileLoadedEvent = Instance.new("BindableEvent")
 DataService.ProfileLoaded = profileLoadedEvent.Event
 
 function DataService.Reset()
 	table.clear(dataByPlayer)
+	table.clear(persistedDataByPlayer)
 	table.clear(busyByPlayer)
 	table.clear(saveResultByPlayer)
 	table.clear(saveCountByPlayer)
@@ -23,6 +36,26 @@ end
 
 function DataService.SetData(player: Player, data: any)
 	dataByPlayer[player] = data
+end
+
+function DataService.SetPersistedData(player: Player, data: any)
+	persistedDataByPlayer[player] = deepCopy(data)
+end
+
+function DataService.GetPersistedData(player: Player): any?
+	local data = persistedDataByPlayer[player]
+	return if data ~= nil then deepCopy(data) else nil
+end
+
+function DataService.SimulateCrashReload(player: Player): boolean
+	local persisted = persistedDataByPlayer[player]
+	if persisted == nil then
+		dataByPlayer[player] = nil
+		return false
+	end
+	dataByPlayer[player] = deepCopy(persisted)
+	busyByPlayer[player] = nil
+	return true
 end
 
 function DataService.SetBusy(player: Player, busy: boolean)
@@ -45,9 +78,25 @@ function DataService.IsReady(player: Player): boolean
 	return dataByPlayer[player] ~= nil
 end
 
-function DataService.SaveNow(player: Player): boolean
+function DataService.SaveNow(
+	player: Player,
+	validator: ((any) -> boolean)?
+): (boolean, any?)
 	saveCountByPlayer[player] = (saveCountByPlayer[player] or 0) + 1
-	return saveResultByPlayer[player] ~= false and dataByPlayer[player] ~= nil
+	local data = dataByPlayer[player]
+	if saveResultByPlayer[player] == false or data == nil then
+		return false, nil
+	end
+
+	local snapshot = deepCopy(data)
+	if validator ~= nil then
+		local ok, accepted = pcall(validator, snapshot)
+		if not ok or accepted ~= true then
+			return false, nil
+		end
+	end
+	persistedDataByPlayer[player] = deepCopy(snapshot)
+	return true, snapshot
 end
 
 function DataService.Transaction(
