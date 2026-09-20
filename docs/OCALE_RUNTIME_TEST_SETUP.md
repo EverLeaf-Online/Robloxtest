@@ -25,7 +25,7 @@ Do not commit, paste, or reuse the API key.
 
 ## GitHub configuration
 
-In `EverLeaf-Online/Robloxtest`, configure one repository Actions secret:
+In `EverLeaf-Online/scrap-to-bot-factory`, configure one repository Actions secret:
 
 - `ROBLOX_API_KEY` = the dedicated OCALE test API key
 
