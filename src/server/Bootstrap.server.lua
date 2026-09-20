@@ -106,8 +106,6 @@ local function startFactory()
 	local SalvageService = require(script.Parent.Services.SalvageService)
 	local ServerOverclockCoordinator = require(script.Parent.Services.ServerOverclockCoordinator)
 	local StateService = require(script.Parent.Services.StateService)
-	local StudioSecurityTestService = require(script.Parent.Services.StudioSecurityTestService)
-	local StudioTestService = require(script.Parent.Services.StudioTestService)
 	local UpgradeService = require(script.Parent.Services.UpgradeService)
 	local WorldService = require(script.Parent.Services.WorldService)
 	local ZoneService = require(script.Parent.Services.ZoneService)
@@ -135,8 +133,14 @@ local function startFactory()
 	EntitlementPresentationService.Init()
 	BadgeService.Init()
 	ReferralService.Init()
-	StudioTestService.Init()
-	StudioSecurityTestService.Init()
+	if RunService:IsStudio() then
+		-- Test-only remotes/services should never even load in production servers.
+		-- The services keep their own Studio guards as defense-in-depth.
+		local StudioTestService = require(script.Parent.Services.StudioTestService)
+		local StudioSecurityTestService = require(script.Parent.Services.StudioSecurityTestService)
+		StudioTestService.Init()
+		StudioSecurityTestService.Init()
+	end
 	DataService.Init()
 
 	print("[ScrapToBotFactory] Instanced factory runtime initialized")
