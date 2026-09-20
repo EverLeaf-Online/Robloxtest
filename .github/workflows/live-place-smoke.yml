@@ -1,0 +1,95 @@
+name: Live Place Smoke
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      ROBLOX_API_KEY: ${{ secrets.ROBLOX_API_KEY }}
+      ROBLOX_UNIVERSE_ID: "10766713640"
+      ROBLOX_PLACE_ID: "75490500628229"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Check configuration
+        id: config
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${ROBLOX_API_KEY:-}" ]]; then
+            echo "::error::ROBLOX_API_KEY is not configured."
+            exit 1
+          fi
+
+      - name: Install pinned OCALE build prerequisites
+        shell: bash
+        run: |
+          cat > foreman.toml <<'EOF'
+          [tools]
+          lute = { source = "luau-lang/lute", version = "=0.1.0-nightly.20260303" }
+          rojo = { source = "rojo-rbx/rojo", version = "7.3.0" }
+          EOF
+
+      - name: Install OCALE build tools
+        uses: Roblox/setup-foreman@v3
+        with:
+          version: "^1.0.0"
+          token: ${{ github.token }}
+          allow-external-github-orgs: true
+
+      - name: Build pinned OCALE CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROCALE_TAG="v0.1.3"
+          ROCALE_COMMIT="d154b3cc9a834adf7408d5cf78f079a4ea33efe6"
+          SOURCE_DIR="$RUNNER_TEMP/rocale-cli-src"
+
+          git clone --quiet --depth 1 --branch "$ROCALE_TAG" https://github.com/Roblox/rocale-cli.git "$SOURCE_DIR"
+          pushd "$SOURCE_DIR" >/dev/null
+
+          actual="$(git rev-parse HEAD)"
+          if [[ "$actual" != "$ROCALE_COMMIT" ]]; then
+            echo "::error::Unexpected rocale-cli source commit: $actual"
+            exit 1
+          fi
+
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path("src/core/ocaleSdk.luau")
+          text = path.read_text()
+          old = "\tlocal body = json.deserialize(response.body) :: any\n\tlocal logs = body.luauExecutionSessionTaskLogs[1].messages\n\tlog.fatalif(not logs, \"Error downloading task logs\")\n\n\treturn logs\n"
+          new = "\tlocal body = json.deserialize(response.body) :: any\n\tlocal taskLogs = body.luauExecutionSessionTaskLogs\n\tif not taskLogs or #taskLogs == 0 then\n\t\treturn {}\n\tend\n\n\tlocal logs = taskLogs[1].messages\n\treturn logs or {}\n"
+          if text.count(old) != 1:
+              raise SystemExit("Unexpected v0.1.3 getTaskLogs source shape")
+          path.write_text(text.replace(old, new, 1))
+          PY
+
+          lute setup
+          lute scripts/build "$ROCALE_TAG" "$ROCALE_COMMIT"
+          popd >/dev/null
+
+          echo "ROCALE_WORKDIR=$SOURCE_DIR" >> "$GITHUB_ENV"
+          echo "ROCALE_CLI=./build/rocale-cli" >> "$GITHUB_ENV"
+
+      - name: Probe latest published beta place without publishing
+        shell: bash
+        run: |
+          set -euo pipefail
+          pushd "$ROCALE_WORKDIR" >/dev/null
+          "$ROCALE_CLI" run \
+            --universeId "$ROBLOX_UNIVERSE_ID" \
+            --placeId "$ROBLOX_PLACE_ID" \
+            --load.version 0 \
+            --script "$GITHUB_WORKSPACE/scripts/live-place-smoke.luau" \
+            --timeout 60 \
+            --verbose
+          popd >/dev/null
