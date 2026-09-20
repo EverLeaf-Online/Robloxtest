@@ -378,7 +378,7 @@ local function createUi()
 		local function refreshLayout()
 			local phone = camera.ViewportSize.X <= 760
 			phoneLayout = phone
-			toggle.Position = if phone then UDim2.new(0, 10, 0.66, 0) else UDim2.new(0, 18, 0.72, 0)
+			toggle.Position = if phone then UDim2.new(0, 10, 0.42, 0) else UDim2.new(0, 18, 0.72, 0)
 			toggle.Size = if phone then UDim2.fromOffset(132, 48) else UDim2.fromOffset(158, 54)
 			icon.Size = if phone then UDim2.fromOffset(42, 42) else UDim2.fromOffset(50, 50)
 			toggleLabel.Position = if phone

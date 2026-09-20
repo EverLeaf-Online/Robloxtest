@@ -1,6 +1,7 @@
 --!strict
 
 local Players = game:GetService("Players")
+local SocialService = game:GetService("SocialService")
 local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
 
@@ -23,7 +24,10 @@ local populationLabel: TextLabel? = nil
 local activePanel: PanelName? = nil
 local panelFrame: Frame? = nil
 local panelTween: Tween? = nil
-local launcherFrame: Frame? = nil
+local leftLauncherFrame: Frame? = nil
+local rightLauncherFrame: Frame? = nil
+local socialLauncher: TextButton? = nil
+local inviteLauncher: TextButton? = nil
 local phoneLayout = false
 local launcherHints: { [PanelName]: TextLabel } = {}
 
@@ -173,6 +177,113 @@ local function createLauncher(
 	end)
 
 	return button
+end
+
+local function createActionLauncher(
+	parent: Instance,
+	name: string,
+	title: string,
+	order: number,
+	accent: Color3,
+	monogram: string,
+	hintText: string,
+	activated: () -> ()
+): TextButton
+	local button = Instance.new("TextButton")
+	button.Name = name
+	button.LayoutOrder = order
+	button.BackgroundTransparency = 1
+	button.BorderSizePixel = 0
+	button.Size = UDim2.fromOffset(158, 54)
+	button.Text = ""
+	button.Active = true
+	button.AutoButtonColor = false
+	button.Selectable = true
+	button.Parent = parent
+
+	makeMonogramIcon(button, monogram, accent, 48)
+
+	label(
+		button,
+		"Title",
+		title,
+		Enum.Font.GothamBold,
+		11,
+		COLORS.Text,
+		UDim2.fromOffset(56, 8),
+		UDim2.new(1, -78, 0, 18)
+	)
+	label(
+		button,
+		"Hint",
+		hintText,
+		Enum.Font.GothamBold,
+		10,
+		accent,
+		UDim2.fromOffset(56, 27),
+		UDim2.new(1, -78, 0, 16)
+	)
+
+	local arrow = label(
+		button,
+		"Arrow",
+		"›",
+		Enum.Font.GothamBold,
+		27,
+		COLORS.Text,
+		UDim2.new(1, -22, 0, 8),
+		UDim2.fromOffset(22, 36)
+	)
+	arrow.TextXAlignment = Enum.TextXAlignment.Center
+
+	button.Activated:Connect(activated)
+	return button
+end
+
+local function promptInvite()
+	task.spawn(function()
+		local canPromptOk, canPromptOrError = pcall(function()
+			return SocialService:CanSendGameInviteAsync(player)
+		end)
+		if not canPromptOk then
+			warn(
+				("[HubUIController] CanSendGameInviteAsync failed: %s"):format(
+					tostring(canPromptOrError)
+				)
+			)
+			return
+		end
+		if canPromptOrError ~= true then
+			return
+		end
+
+		local promptOk, promptError = pcall(function()
+			SocialService:PromptGameInvite(player)
+		end)
+		if not promptOk then
+			warn(("[HubUIController] PromptGameInvite failed: %s"):format(tostring(promptError)))
+		end
+	end)
+end
+
+local function refreshLauncherVisibility()
+	local left = leftLauncherFrame
+	local right = rightLauncherFrame
+	local social = socialLauncher
+	local invite = inviteLauncher
+
+	if social ~= nil then
+		social.Parent = if phoneLayout and right ~= nil then right else left
+	end
+	if invite ~= nil then
+		invite.Visible = phoneLayout
+	end
+	if left ~= nil then
+		left.Visible = if phoneLayout then activePanel == nil else true
+	end
+	if right ~= nil then
+		right.Visible = phoneLayout and activePanel == nil
+	end
 end
 
 local function clearPanelContent()
@@ -369,9 +480,7 @@ function HubUIController.OpenPanel(panelName: PanelName?)
 		)
 		panelTween.Completed:Once(function()
 			panel.Visible = false
-			if launcherFrame ~= nil then
-				launcherFrame.Visible = true
-			end
+			refreshLauncherVisibility()
 			panelTween = nil
 		end)
 		panelTween:Play()
@@ -388,9 +497,7 @@ function HubUIController.OpenPanel(panelName: PanelName?)
 	panel.Position = if phoneLayout then UDim2.fromScale(0.5, 0.54) else UDim2.new(0, 188, 0.58, 0)
 	panel.AnchorPoint = if phoneLayout then Vector2.new(0.5, 0.5) else Vector2.new(0, 0.5)
 
-	if launcherFrame ~= nil then
-		launcherFrame.Visible = not phoneLayout
-	end
+	refreshLauncherVisibility()
 
 	panelTween = TweenService:Create(
 		panel,
@@ -420,7 +527,6 @@ local function createTopStatus(gui: ScreenGui)
 	district.Size = UDim2.fromOffset(230, 52)
 	district.Parent = cluster
 
-	makeMonogramIcon(district, "H", Color3.fromRGB(74, 211, 229), 44)
 	label(
 		district,
 		"Title",
@@ -428,8 +534,8 @@ local function createTopStatus(gui: ScreenGui)
 		Enum.Font.GothamBold,
 		11,
 		COLORS.Text,
-		UDim2.fromOffset(50, 7),
-		UDim2.new(1, -50, 0, 17)
+		UDim2.fromOffset(0, 7),
+		UDim2.new(1, 0, 0, 17)
 	)
 	label(
 		district,
@@ -438,8 +544,8 @@ local function createTopStatus(gui: ScreenGui)
 		Enum.Font.GothamBold,
 		10,
 		Color3.fromRGB(74, 211, 229),
-		UDim2.fromOffset(50, 25),
-		UDim2.new(1, -50, 0, 17)
+		UDim2.fromOffset(0, 25),
+		UDim2.new(1, 0, 0, 17)
 	)
 
 	local population = Instance.new("Frame")
@@ -475,24 +581,60 @@ local function createTopStatus(gui: ScreenGui)
 end
 
 local function createLaunchers(gui: ScreenGui)
-	local launchers = Instance.new("Frame")
-	launchers.Name = "HubLaunchers"
-	launchers.AnchorPoint = Vector2.new(0, 0.5)
-	launchers.BackgroundTransparency = 1
-	launchers.BorderSizePixel = 0
-	launchers.Position = UDim2.new(0, 18, 0.58, 0)
-	launchers.Size = UDim2.fromOffset(158, 178)
-	launchers.Parent = gui
-	launcherFrame = launchers
+	local leftLaunchers = Instance.new("Frame")
+	leftLaunchers.Name = "HubLeftLaunchers"
+	leftLaunchers.AnchorPoint = Vector2.new(0, 0.5)
+	leftLaunchers.BackgroundTransparency = 1
+	leftLaunchers.BorderSizePixel = 0
+	leftLaunchers.Position = UDim2.new(0, 18, 0.58, 0)
+	leftLaunchers.Size = UDim2.fromOffset(158, 116)
+	leftLaunchers.Parent = gui
+	leftLauncherFrame = leftLaunchers
 
-	local list = Instance.new("UIListLayout")
-	list.FillDirection = Enum.FillDirection.Vertical
-	list.Padding = UDim.new(0, 8)
-	list.SortOrder = Enum.SortOrder.LayoutOrder
-	list.Parent = launchers
+	local leftList = Instance.new("UIListLayout")
+	leftList.FillDirection = Enum.FillDirection.Vertical
+	leftList.Padding = UDim.new(0, 8)
+	leftList.SortOrder = Enum.SortOrder.LayoutOrder
+	leftList.Parent = leftLaunchers
 
-	createLauncher(launchers, "Shop", "SHOP", 1, Color3.fromRGB(104, 223, 151), "Shop", nil)
-	createLauncher(launchers, "Social", "SOCIAL", 2, Color3.fromRGB(105, 183, 239), "Monogram", "2")
+	local rightLaunchers = Instance.new("Frame")
+	rightLaunchers.Name = "HubRightLaunchers"
+	rightLaunchers.AnchorPoint = Vector2.new(1, 0.5)
+	rightLaunchers.BackgroundTransparency = 1
+	rightLaunchers.BorderSizePixel = 0
+	rightLaunchers.Position = UDim2.new(1, -10, 0.54, 0)
+	rightLaunchers.Size = UDim2.fromOffset(132, 104)
+	rightLaunchers.Visible = false
+	rightLaunchers.Parent = gui
+	rightLauncherFrame = rightLaunchers
+
+	local rightList = Instance.new("UIListLayout")
+	rightList.FillDirection = Enum.FillDirection.Vertical
+	rightList.Padding = UDim.new(0, 8)
+	rightList.SortOrder = Enum.SortOrder.LayoutOrder
+	rightList.Parent = rightLaunchers
+
+	createLauncher(leftLaunchers, "Shop", "SHOP", 1, Color3.fromRGB(104, 223, 151), "Shop", nil)
+	socialLauncher = createLauncher(
+		leftLaunchers,
+		"Social",
+		"SOCIAL",
+		2,
+		Color3.fromRGB(105, 183, 239),
+		"Monogram",
+		"2"
+	)
+	inviteLauncher = createActionLauncher(
+		rightLaunchers,
+		"InviteLauncher",
+		"INVITE",
+		3,
+		Color3.fromRGB(105, 183, 239),
+		"+",
+		"FRIENDS",
+		promptInvite
+	)
+	inviteLauncher.Visible = false
 
 	local panel = Instance.new("Frame")
 	panel.Name = "HubPanel"
@@ -585,40 +727,56 @@ local function bindResponsiveLayout(gui: ScreenGui)
 			local phone = camera.ViewportSize.X <= 760
 			phoneLayout = phone
 			local status = gui:FindFirstChild("HubStatus")
-			local launchers = gui:FindFirstChild("HubLaunchers")
+			local leftLaunchers = gui:FindFirstChild("HubLeftLaunchers")
+			local rightLaunchers = gui:FindFirstChild("HubRightLaunchers")
 			local panel = gui:FindFirstChild("HubPanel")
 			local objective = gui:FindFirstChild("HubObjective")
 
 			if status ~= nil and status:IsA("Frame") then
 				local statusWidth = if phone
-					then math.clamp(camera.ViewportSize.X - 20, 280, 390)
+					then math.clamp(camera.ViewportSize.X - 20, 280, 520)
 					else 390
 				status.Position = UDim2.new(0.5, 0, 0, if phone then 8 else 10)
 				status.Size = UDim2.fromOffset(statusWidth, if phone then 46 else 52)
 
 				local district = status:FindFirstChild("District")
 				if district ~= nil and district:IsA("Frame") then
+					district.AnchorPoint = if phone then Vector2.new(0.5, 0) else Vector2.zero
+					district.Position = if phone
+						then UDim2.fromScale(0.5, 0)
+						else UDim2.fromScale(0, 0)
 					district.Size = if phone
-						then UDim2.fromScale(0.62, 1)
+						then UDim2.fromOffset(150, 46)
 						else UDim2.fromOffset(230, 52)
+
+					for _, name in { "Title", "Status" } do
+						local districtLabel = district:FindFirstChild(name)
+						if districtLabel ~= nil and districtLabel:IsA("TextLabel") then
+							districtLabel.TextXAlignment = if phone
+								then Enum.TextXAlignment.Center
+								else Enum.TextXAlignment.Left
+						end
+					end
 				end
+
 				local population = status:FindFirstChild("Population")
 				if population ~= nil and population:IsA("Frame") then
+					population.AnchorPoint = Vector2.new(1, 0)
+					population.Position = UDim2.fromScale(1, 0)
 					population.Size = if phone
-						then UDim2.fromScale(0.36, 1)
+						then UDim2.fromOffset(112, 46)
 						else UDim2.fromOffset(145, 52)
 				end
 			end
 
-			if launchers ~= nil and launchers:IsA("Frame") then
-				launchers.Position = if phone
-					then UDim2.new(0, 10, 0.54, 0)
+			if leftLaunchers ~= nil and leftLaunchers:IsA("Frame") then
+				leftLaunchers.Position = if phone
+					then UDim2.new(0, 10, 0.56, 0)
 					else UDim2.new(0, 18, 0.58, 0)
-				launchers.Size = if phone
-					then UDim2.fromOffset(132, 160)
-					else UDim2.fromOffset(158, 178)
-				launchers.Visible = not (phone and activePanel ~= nil)
-				for _, child in launchers:GetChildren() do
+				leftLaunchers.Size = if phone
+					then UDim2.fromOffset(132, 48)
+					else UDim2.fromOffset(158, 116)
+				for _, child in leftLaunchers:GetChildren() do
 					if child:IsA("TextButton") then
 						child.Size = if phone
 							then UDim2.fromOffset(132, 48)
@@ -626,6 +784,19 @@ local function bindResponsiveLayout(gui: ScreenGui)
 					end
 				end
 			end
+
+			if rightLaunchers ~= nil and rightLaunchers:IsA("Frame") then
+				rightLaunchers.Position = UDim2.new(1, -10, 0.56, 0)
+				rightLaunchers.Size = UDim2.fromOffset(132, 104)
+				for _, child in rightLaunchers:GetChildren() do
+					if child:IsA("TextButton") then
+						child.Size = if phone
+							then UDim2.fromOffset(132, 48)
+							else UDim2.fromOffset(158, 54)
+					end
+				end
+			end
+			refreshLauncherVisibility()
 
 			if panel ~= nil and panel:IsA("Frame") then
 				panel.AnchorPoint = if phone then Vector2.new(0.5, 0.5) else Vector2.new(0, 0.5)
