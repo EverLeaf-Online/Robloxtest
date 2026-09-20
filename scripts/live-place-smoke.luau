@@ -7,8 +7,10 @@ local StarterPlayer = game:GetService("StarterPlayer")
 local packages = ReplicatedStorage:FindFirstChild("Packages")
 print("PACKAGES", packages ~= nil, packages and packages.ClassName or "nil")
 if packages ~= nil then
-	print("REACT", packages:FindFirstChild("React") ~= nil)
-	print("REACT_ROBLOX", packages:FindFirstChild("ReactRoblox") ~= nil)
+	local react = packages:FindFirstChild("React")
+	local reactRoblox = packages:FindFirstChild("ReactRoblox")
+	print("REACT", react ~= nil, react and react.ClassName or "nil")
+	print("REACT_ROBLOX", reactRoblox ~= nil, reactRoblox and reactRoblox.ClassName or "nil")
 end
 
 local starterScripts = StarterPlayer:FindFirstChild("StarterPlayerScripts")
@@ -22,6 +24,18 @@ if client ~= nil then
 	local ui = client:FindFirstChild("UI")
 
 	print("CLIENT_BOOTSTRAP", bootstrap ~= nil, bootstrap and bootstrap.ClassName or "nil")
+	if bootstrap ~= nil and bootstrap:IsA("LocalScript") then
+		print("CLIENT_BOOTSTRAP_ENABLED", bootstrap.Enabled)
+		local ok, source = pcall(function()
+			return bootstrap.Source
+		end)
+		print("CLIENT_BOOTSTRAP_SOURCE_READABLE", ok)
+		if ok then
+			print("CLIENT_BOOTSTRAP_SOURCE_LENGTH", #source)
+			print("CLIENT_BOOTSTRAP_HAS_UI_INIT", string.find(source, "UIController.Init()", 1, true) ~= nil)
+			print("CLIENT_BOOTSTRAP_HAS_HUB_INIT", string.find(source, "HubUIController.Init()", 1, true) ~= nil)
+		end
+	end
 	print("CONTROLLERS", controllers ~= nil)
 	print("UI_FOLDER", ui ~= nil)
 	if controllers ~= nil then
