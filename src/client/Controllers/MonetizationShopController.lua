@@ -105,7 +105,7 @@ local function makeButton(parent: Instance, name: string, label: string, order: 
 	local button = Instance.new("TextButton")
 	button.Name = name
 	button.LayoutOrder = order
-	button.Size = UDim2.new(1, 0, 0, 38)
+	button.Size = UDim2.new(1, 0, 0, 44)
 	button.BackgroundColor3 = Color3.fromRGB(46, 54, 70)
 	button.BackgroundTransparency = 0.08
 	button.BorderSizePixel = 0
@@ -242,6 +242,24 @@ local function createUi()
 	panelCorner.CornerRadius = UDim.new(0, 10)
 	panelCorner.Parent = shopPanel
 
+	local phoneClose = Instance.new("TextButton")
+	phoneClose.Name = "PhoneClose"
+	phoneClose.AnchorPoint = Vector2.new(1, 0)
+	phoneClose.Position = UDim2.new(1, -10, 0, 10)
+	phoneClose.Size = UDim2.fromOffset(44, 44)
+	phoneClose.BackgroundColor3 = Color3.fromRGB(46, 54, 70)
+	phoneClose.BorderSizePixel = 0
+	phoneClose.Font = Enum.Font.GothamBold
+	phoneClose.Text = "×"
+	phoneClose.TextColor3 = Color3.fromRGB(245, 247, 250)
+	phoneClose.TextSize = 22
+	phoneClose.Visible = false
+	phoneClose.ZIndex = 20
+	phoneClose.Parent = gui
+	local phoneCloseCorner = Instance.new("UICorner")
+	phoneCloseCorner.CornerRadius = UDim.new(0, 8)
+	phoneCloseCorner.Parent = phoneClose
+
 	local padding = Instance.new("UIPadding")
 	padding.PaddingTop = UDim.new(0, 10)
 	padding.PaddingBottom = UDim.new(0, 10)
@@ -295,7 +313,17 @@ local function createUi()
 	clubButton.Activated:Connect(promptFactoryClub)
 
 	local panelOpen = false
+	local phoneLayout = false
 	local currentTween: Tween? = nil
+
+	local function openPanelWidth(): number
+		local camera = Workspace.CurrentCamera
+		if camera ~= nil and camera.ViewportSize.X <= 760 then
+			return math.clamp(camera.ViewportSize.X - 20, 280, 340)
+		end
+		return 310
+	end
+
 	local function setOpen(open: boolean)
 		panelOpen = open
 		if currentTween ~= nil then
@@ -305,9 +333,10 @@ local function createUi()
 		if open then
 			shopPanel.Visible = true
 		end
+		phoneClose.Visible = open and phoneLayout
 		arrow.Text = if open then "‹" else "›"
 		toggleHint.Text = if open then "CLOSE" else "OPEN"
-		local targetWidth = if open then 310 else 0
+		local targetWidth = if open then openPanelWidth() else 0
 		currentTween = TweenService:Create(
 			shopPanel,
 			TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
@@ -325,6 +354,9 @@ local function createUi()
 	toggle.Activated:Connect(function()
 		setOpen(not panelOpen)
 	end)
+	phoneClose.Activated:Connect(function()
+		setOpen(false)
+	end)
 
 	local viewportConnection: RBXScriptConnection? = nil
 	local function bindCamera()
@@ -339,6 +371,7 @@ local function createUi()
 
 		local function refreshLayout()
 			local phone = camera.ViewportSize.X <= 760
+			phoneLayout = phone
 			toggle.Position = if phone then UDim2.new(0, 10, 0.66, 0) else UDim2.new(0, 18, 0.72, 0)
 			toggle.Size = if phone then UDim2.fromOffset(132, 48) else UDim2.fromOffset(158, 54)
 			icon.Size = if phone then UDim2.fromOffset(42, 42) else UDim2.fromOffset(50, 50)
@@ -348,15 +381,21 @@ local function createUi()
 			toggleHint.Position = if phone
 				then UDim2.fromOffset(48, 23)
 				else UDim2.fromOffset(56, 27)
-			shopPanel.Position = if phone
-				then UDim2.new(0, 154, 0.58, 0)
-				else UDim2.new(0, 188, 0.63, 0)
-			shopPanel.Size = if phone
-				then UDim2.fromOffset(
-					if panelOpen then 286 else 0,
-					math.max(300, camera.ViewportSize.Y - 150)
+
+			if phone then
+				shopPanel.AnchorPoint = Vector2.new(0.5, 0.5)
+				shopPanel.Position = UDim2.fromScale(0.5, 0.5)
+				shopPanel.Size = UDim2.fromOffset(
+					if panelOpen then openPanelWidth() else 0,
+					math.clamp(camera.ViewportSize.Y - 120, 280, 520)
 				)
-				else UDim2.fromOffset(if panelOpen then 310 else 0, 356)
+				phoneClose.Position = UDim2.new(1, -10, 0, 10)
+			else
+				shopPanel.AnchorPoint = Vector2.new(0, 0.5)
+				shopPanel.Position = UDim2.new(0, 188, 0.63, 0)
+				shopPanel.Size = UDim2.fromOffset(if panelOpen then 310 else 0, 356)
+			end
+			phoneClose.Visible = panelOpen and phone
 		end
 
 		refreshLayout()
