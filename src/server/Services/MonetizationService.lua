@@ -12,6 +12,7 @@ local RemoteNames = require(ReplicatedStorage.Shared.Networking.RemoteNames)
 
 local DataService = require(script.Parent.DataService)
 local DeveloperProductRules = require(script.Parent.Parent.Domain.DeveloperProductRules)
+local ReceiptRecoveryRules = require(script.Parent.Parent.Domain.ReceiptRecoveryRules)
 local EconomyService = require(script.Parent.EconomyService)
 local PlotService = require(script.Parent.PlotService)
 local RemoteService = require(script.Parent.RemoteService)
@@ -19,8 +20,12 @@ local StateService = require(script.Parent.StateService)
 local ProfileTypes = require(script.Parent.Parent.Data.ProfileTypes)
 
 type ProfileData = ProfileTypes.ProfileData
+type RecoveryEvidence = ReceiptRecoveryRules.RecoveryEvidence
 type ReceiptLedgerContains = (number, string) -> boolean?
 type ReceiptLedgerMark = (number, string) -> boolean
+type RecoveryAuditContains = (number, string) -> boolean?
+type RecoveryAuditMark = (number, string, number, string, number) -> boolean
+type RecoveryNow = () -> number
 
 local MonetizationService = {}
 local initialized = false
@@ -29,6 +34,7 @@ local PRODUCT = RobloxIds.DeveloperProducts
 local PASSES = RobloxIds.Passes
 local FACTORY_CLUB = RobloxIds.Subscription.FactoryClub
 local ReceiptLedgerStore = DataStoreService:GetDataStore("ScrapToBot_ReceiptLedger_v1")
+local ReceiptRecoveryAuditStore = DataStoreService:GetDataStore("ScrapToBot_ReceiptRecoveryAudit_v1")
 local PASS_NAMES = table.freeze({
 	"Production2x",
 	"ExpandedStorage",
@@ -85,6 +91,58 @@ local function markReceiptInLedger(userId: number, purchaseId: string): boolean
 	if not ok then
 		warn(
 			("[MonetizationService] Receipt ledger write failed for %d/%s: %s"):format(
+				userId,
+				purchaseId,
+				tostring(err)
+			)
+		)
+		return false
+	end
+	return true
+end
+
+local function receiptRecoveryAuditContains(userId: number, purchaseId: string): boolean?
+	if RunService:IsStudio() then
+		return false
+	end
+	local ok, auditOrError =
+		pcall(ReceiptRecoveryAuditStore.GetAsync, ReceiptRecoveryAuditStore, receiptLedgerKey(userId))
+	if not ok then
+		warn(
+			("[MonetizationService] Receipt recovery audit read failed for %d: %s"):format(
+				userId,
+				tostring(auditOrError)
+			)
+		)
+		return nil
+	end
+	return typeof(auditOrError) == "table" and (auditOrError :: any)[purchaseId] ~= nil
+end
+
+local function markReceiptRecoveryAudit(
+	userId: number,
+	purchaseId: string,
+	productId: number,
+	evidenceReference: string,
+	recoveredAt: number
+): boolean
+	if RunService:IsStudio() then
+		return true
+	end
+	local ok, err = pcall(function()
+		ReceiptRecoveryAuditStore:UpdateAsync(receiptLedgerKey(userId), function(current)
+			local audit = if typeof(current) == "table" then current else {}
+			audit[purchaseId] = {
+				ProductId = productId,
+				EvidenceReference = evidenceReference,
+				RecoveredAt = recoveredAt,
+			}
+			return audit
+		end)
+	end)
+	if not ok then
+		warn(
+			("[MonetizationService] Receipt recovery audit write failed for %d/%s: %s"):format(
 				userId,
 				purchaseId,
 				tostring(err)
@@ -295,6 +353,167 @@ local function processReceipt(receiptInfo: { [string]: any }): Enum.ProductPurch
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 	return processReceiptForPlayer(player, receiptInfo, nil, nil)
+end
+
+local function recoverHistoricalReceiptForPlayer(
+	player: Player,
+	evidence: RecoveryEvidence,
+	ledgerContainsFn: ReceiptLedgerContains,
+	recoveryAuditContainsFn: RecoveryAuditContains,
+	recoveryAuditMarkFn: RecoveryAuditMark,
+	nowFn: RecoveryNow
+): (boolean, string)
+	if not DataService.IsReady(player) then
+		return false, "PROFILE_NOT_READY"
+	end
+	if evidence.UserId ~= player.UserId then
+		return false, "USER_ID_MISMATCH"
+	end
+
+	local validEvidence, evidenceCode = ReceiptRecoveryRules.ValidateEvidence(evidence)
+	if not validEvidence then
+		return false, evidenceCode
+	end
+
+	local ledgerContains = ledgerContainsFn(player.UserId, evidence.PurchaseId)
+	if ledgerContains == nil then
+		return false, "RECEIPT_LEDGER_READ_FAILED"
+	end
+	if ledgerContains ~= true then
+		return false, "LEDGER_ENTRY_NOT_FOUND"
+	end
+
+	local recoveryRecorded = recoveryAuditContainsFn(player.UserId, evidence.PurchaseId)
+	if recoveryRecorded == nil then
+		return false, "RECOVERY_AUDIT_READ_FAILED"
+	end
+	if recoveryRecorded then
+		return true, "ALREADY_RECOVERED"
+	end
+
+	local existing = DataService.GetData(player)
+	if existing == nil then
+		return false, "PROFILE_NOT_READY"
+	end
+
+	-- If the profile already has the receipt, never re-grant. Record the recovery
+	-- audit so a future bounded receipt-history eviction cannot turn this case into
+	-- a duplicate compensation.
+	if DeveloperProductRules.HasReceipt(existing, evidence.PurchaseId) then
+		local recoveredAt = nowFn()
+		if
+			not recoveryAuditMarkFn(
+				player.UserId,
+				evidence.PurchaseId,
+				evidence.ProductId,
+				evidence.EvidenceReference,
+				recoveredAt
+			)
+		then
+			return false, "RECOVERY_AUDIT_WRITE_FAILED"
+		end
+		return true, "PROFILE_ALREADY_RECORDED"
+	end
+
+	local matches, matchCode = ReceiptRecoveryRules.MatchesProfile(existing, evidence)
+	if not matches then
+		return false, matchCode
+	end
+
+	local recoveredProductName = ""
+	local recoveredAt = nowFn()
+	local executed, result = DataService.Transaction(player, function(data)
+		if DeveloperProductRules.HasReceipt(data, evidence.PurchaseId) then
+			return true, "AlreadyGranted"
+		end
+
+		local stillMatches, currentMatchCode = ReceiptRecoveryRules.MatchesProfile(data, evidence)
+		if not stillMatches then
+			return false, currentMatchCode
+		end
+
+		local granted, productName = DeveloperProductRules.ApplyReceipt(
+			data,
+			evidence.PurchaseId,
+			evidence.ProductId,
+			recoveredAt
+		)
+		if not granted then
+			return false, productName
+		end
+		if productName ~= "AlreadyGranted" then
+			recoveredProductName = productName
+		end
+		return true, productName
+	end)
+	if not executed then
+		return false, tostring(result)
+	end
+
+	local saved, persistedData = DataService.SaveNow(player, function(snapshot)
+		return DeveloperProductRules.HasReceipt(snapshot, evidence.PurchaseId)
+	end)
+	if not saved or persistedData == nil then
+		return false, "RECOVERY_SAVE_FAILED"
+	end
+
+	if
+		not recoveryAuditMarkFn(
+			player.UserId,
+			evidence.PurchaseId,
+			evidence.ProductId,
+			evidence.EvidenceReference,
+			recoveredAt
+		)
+	then
+		return false, "RECOVERY_AUDIT_WRITE_FAILED"
+	end
+
+	if recoveredProductName == "ServerOverclock" then
+		adoptServerOverclock(persistedData.Entitlements.ServerOverclockUntil)
+	end
+	if recoveredProductName ~= "" then
+		setPresentationAttributes(player)
+		StateService.PushSnapshot(player)
+		productGrantedEvent:Fire(player, recoveredProductName, evidence.ProductId)
+		return true, "RECOVERED_" .. recoveredProductName
+	end
+
+	return true, "PROFILE_ALREADY_RECORDED"
+end
+
+function MonetizationService.RecoverHistoricalReceipt(
+	player: Player,
+	evidence: RecoveryEvidence
+): (boolean, string)
+	return recoverHistoricalReceiptForPlayer(
+		player,
+		evidence,
+		receiptLedgerContains,
+		receiptRecoveryAuditContains,
+		markReceiptRecoveryAudit,
+		os.time
+	)
+end
+
+-- Test-model entry point. Production callers use RecoverHistoricalReceipt above;
+-- this variant injects ledgers so OCALE never touches live DataStores.
+function MonetizationService.RecoverHistoricalReceiptForTests(
+	player: Player,
+	evidence: RecoveryEvidence,
+	ledgerContainsFn: ReceiptLedgerContains,
+	recoveryAuditContainsFn: RecoveryAuditContains,
+	recoveryAuditMarkFn: RecoveryAuditMark,
+	nowFn: RecoveryNow
+): (boolean, string)
+	return recoverHistoricalReceiptForPlayer(
+		player,
+		evidence,
+		ledgerContainsFn,
+		recoveryAuditContainsFn,
+		recoveryAuditMarkFn,
+		nowFn
+	)
 end
 
 function MonetizationService.ProcessReceipt(
