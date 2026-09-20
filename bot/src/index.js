@@ -90,6 +90,10 @@ async function resolveTextChannel(guild, config) {
   }
 
   if (!channel) {
+    channel = guild.channels.cache.find((candidate) => candidate.name === config.name) ?? null;
+  }
+
+  if (!channel) {
     await guild.channels.fetch().catch(() => null);
     channel = guild.channels.cache.find((candidate) => candidate.name === config.name) ?? null;
   }
@@ -231,7 +235,7 @@ function startWebhookServer() {
         throw new Error('Webhook payload must be a JSON object');
       }
 
-      const guild = await client.guilds.fetch(guildId);
+      const guild = client.guilds.cache.get(guildId) ?? (await client.guilds.fetch(guildId));
       const channel = await resolveTextChannel(guild, channelConfig.announcements);
       if (!channel) {
         response.writeHead(503);
@@ -254,6 +258,8 @@ function startWebhookServer() {
       response.writeHead(204);
       response.end();
     } catch (error) {
+      if (response.writableEnded) return;
+
       if (error instanceof PayloadTooLargeError) {
         request.resume();
         response.writeHead(413);
