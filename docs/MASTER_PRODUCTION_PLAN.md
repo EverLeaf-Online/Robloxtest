@@ -1,8 +1,10 @@
 # Scrap-to-Bot Factory — Master Production Plan
 
-Status: **Production planning lock**  
+Status: **Product/design/architecture specification**  
 Baseline: **2026-09-16**
 
+> **Roadmap authority — 2026-09-20:** current phase status, priorities, launch gates, and post-launch ordering are maintained in `docs/ROADMAP.md`. This document remains the implementation blueprint and should not be used as a competing current-status roadmap.
+>
 > **Architecture override — 2026-09-18:** production now uses a shared public Hub plus reserved personal Factory instances. Any older section in this document that assumes multiple persistent player plots inside one production server is superseded by `docs/INSTANCED_FACTORY_ARCHITECTURE.md`.
 >
 > **Current launch gate — 2026-09-20:** use `docs/PUBLIC_LAUNCH_STATUS_2026-09-20.md` for the current automated-pass evidence and the remaining live/manual blockers. The older live-validation snapshot remains historical evidence.
