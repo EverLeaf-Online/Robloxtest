@@ -749,9 +749,7 @@ local function bindResponsiveLayout(gui: ScreenGui)
 			local objective = gui:FindFirstChild("HubObjective")
 
 			if status ~= nil and status:IsA("Frame") then
-				local statusWidth = if phone
-					then math.clamp(camera.ViewportSize.X - 20, 280, 520)
-					else 390
+				local statusWidth = if phone then math.max(280, camera.ViewportSize.X - 20) else 390
 				status.Position = UDim2.new(0.5, 0, 0, if phone then 8 else 10)
 				status.Size = UDim2.fromOffset(statusWidth, if phone then 46 else 52)
 
@@ -786,8 +784,9 @@ local function bindResponsiveLayout(gui: ScreenGui)
 			end
 
 			if leftLaunchers ~= nil and leftLaunchers:IsA("Frame") then
+				leftLaunchers.AnchorPoint = if phone then Vector2.new(0, 0) else Vector2.new(0, 0.5)
 				leftLaunchers.Position = if phone
-					then UDim2.new(0, 10, 0.56, 0)
+					then UDim2.fromOffset(10, 8)
 					else UDim2.new(0, 18, 0.58, 0)
 				leftLaunchers.Size = if phone
 					then UDim2.fromOffset(132, 48)
@@ -802,7 +801,12 @@ local function bindResponsiveLayout(gui: ScreenGui)
 			end
 
 			if rightLaunchers ~= nil and rightLaunchers:IsA("Frame") then
-				rightLaunchers.Position = UDim2.new(1, -10, 0.56, 0)
+				rightLaunchers.AnchorPoint = if phone
+					then Vector2.new(1, 0)
+					else Vector2.new(1, 0.5)
+				rightLaunchers.Position = if phone
+					then UDim2.new(1, -10, 0, 60)
+					else UDim2.new(1, -10, 0.56, 0)
 				rightLaunchers.Size = UDim2.fromOffset(132, 104)
 				for _, child in rightLaunchers:GetChildren() do
 					if child:IsA("TextButton") then
