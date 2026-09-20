@@ -2,7 +2,8 @@
 
 export type ObjectiveStep =
 	"CollectScrap"
-	| "ProcessMaterials"
+	| "MakeWiring"
+	| "RecoverCore"
 	| "BuildFirstBot"
 	| "AssignFirstBot"
 	| "EarnFirstCredits"
@@ -25,8 +26,10 @@ function ObjectiveGuidanceRules.GetStep(snapshot: any): ObjectiveStep
 
 	if milestones.FirstScrap ~= true then
 		return "CollectScrap"
-	elseif milestones.FirstProcess ~= true then
-		return "ProcessMaterials"
+	elseif milestones.FirstBotReveal ~= true and milestones.FirstWiring ~= true then
+		return "MakeWiring"
+	elseif milestones.FirstBotReveal ~= true and milestones.FirstCore ~= true then
+		return "RecoverCore"
 	elseif milestones.FirstBotReveal ~= true then
 		return "BuildFirstBot"
 	elseif milestones.FirstBotAssigned ~= true then

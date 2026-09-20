@@ -25,7 +25,7 @@ local Processor: { [string]: ProcessorRecipe } = {
 		DisplayName = "Recover Power Core",
 		Input = {
 			ScrapMetal = 6,
-			Wiring = 2,
+			Wiring = 1,
 		},
 		Output = {
 			PowerCoreFragments = 1,
@@ -37,6 +37,7 @@ local Assembler = table.freeze({
 	FirstBuildInput = table.freeze({
 		ScrapMetal = 4,
 		Wiring = 1,
+		PowerCoreFragments = 1,
 	}),
 	StandardInput = table.freeze({
 		ScrapMetal = 5,

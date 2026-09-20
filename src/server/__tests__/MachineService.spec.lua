@@ -128,12 +128,32 @@ describe("MachineService integration", function()
 		player:Destroy()
 	end)
 
+	it("requires a power core for the first robot assembly", function()
+		resetFakes()
+		local player = makeFakePlayer()
+		local data = deepCopy(ProfileTemplate)
+		data.Materials.ScrapMetal = 4
+		data.Materials.Wiring = 1
+		configurePlayer(player, data)
+
+		MachineService.StartAssembler(player)
+
+		expect(data.Machines.AssemblerJob.Active).toBe(false)
+		expect(data.Materials.ScrapMetal).toBe(4)
+		expect(data.Materials.Wiring).toBe(1)
+		expect(data.Materials.PowerCoreFragments).toBe(0)
+		expect(StateService.GetLastResult(player).Code).toBe("MISSING_MATERIALS")
+
+		player:Destroy()
+	end)
+
 	it("applies the exact Factory VIP assembler duration multiplier server-side", function()
 		resetFakes()
 		local player = makeFakePlayer()
 		local data = deepCopy(ProfileTemplate)
 		data.Materials.ScrapMetal = 4
 		data.Materials.Wiring = 1
+		data.Materials.PowerCoreFragments = 1
 		configurePlayer(player, data)
 		MonetizationService.SetAssemblerTimeMultiplier(
 			player,
@@ -151,6 +171,7 @@ describe("MachineService integration", function()
 		expect(math.abs((job.CompletesAt - job.StartedAt) - expectedDuration) < 0.0001).toBe(true)
 		expect(data.Materials.ScrapMetal).toBe(0)
 		expect(data.Materials.Wiring).toBe(0)
+		expect(data.Materials.PowerCoreFragments).toBe(0)
 		expect(data.Revision).toBe(1)
 		expect(StateService.GetLastResult(player).Code).toBe("ASSEMBLY_STARTED")
 
@@ -165,6 +186,7 @@ describe("MachineService integration", function()
 			data.Machines.AssemblerLevel = level
 			data.Materials.ScrapMetal = 4
 			data.Materials.Wiring = 1
+			data.Materials.PowerCoreFragments = 1
 			configurePlayer(player, data)
 			MonetizationService.SetAssemblerTimeMultiplier(
 				player,
@@ -235,6 +257,7 @@ describe("MachineService integration", function()
 		expect(data.Machines.ProcessorJob.RecipeId).toBe("")
 		expect(data.Materials.Wiring).toBe(1)
 		expect(data.Tutorial.Milestones.FirstProcess).toBe(true)
+		expect(data.Tutorial.Milestones.FirstWiring).toBe(true)
 		expect(data.Revision).toBe(2)
 		expect(StateService.GetLastResult(player).Code).toBe("PROCESS_COMPLETE")
 		expect(StateService.GetSnapshotPushCount(player)).toBe(2)
@@ -371,6 +394,7 @@ describe("MachineService integration", function()
 		local data = deepCopy(ProfileTemplate)
 		data.Materials.ScrapMetal = 4
 		data.Materials.Wiring = 1
+		data.Materials.PowerCoreFragments = 1
 		configurePlayer(player, data)
 		DataService.SetBusy(player, true)
 

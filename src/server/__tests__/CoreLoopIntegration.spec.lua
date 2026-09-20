@@ -101,7 +101,7 @@ describe("First-session core loop integration", function()
 
 			local player = fakePlayer()
 			local data = deepCopy(ProfileTemplate)
-			data.Consumables.InstantProcessTokens = 2
+			data.Consumables.InstantProcessTokens = 3
 			DataService.SetData(player, data)
 			PlayerCharacter.SetNear(player, true)
 			PlayerCharacter.SetPosition(player, Vector3.zero)
@@ -131,6 +131,9 @@ describe("First-session core loop integration", function()
 				salvageNode("core-loop-salvage-1", 2),
 				salvageNode("core-loop-salvage-2", 4),
 				salvageNode("core-loop-salvage-3", 6),
+				salvageNode("core-loop-salvage-4", 8),
+				salvageNode("core-loop-salvage-5", 10),
+				salvageNode("core-loop-salvage-6", 12),
 			}
 
 			for _, node in nodes do
@@ -138,11 +141,11 @@ describe("First-session core loop integration", function()
 				expect(StateService.GetLastResult(player).Code).toBe("SALVAGE_COLLECTED")
 			end
 
-			-- Three Starter Yard nodes guarantee at least 8 scrap total because the
+			-- Six Starter Yard nodes guarantee at least 14 scrap total because the
 			-- first collection includes the 2-scrap tutorial bonus. The first collect
-			-- also guarantees one wiring, so this sequence is deterministic despite
-			-- the ordinary salvage RNG.
-			expect(data.Materials.ScrapMetal >= 8).toBe(true)
+			-- also guarantees one wiring, so the wiring -> core -> first robot sequence
+			-- remains deterministic despite the ordinary salvage RNG.
+			expect(data.Materials.ScrapMetal >= 14).toBe(true)
 			expect(data.Materials.Wiring >= 1).toBe(true)
 			expect(data.Tutorial.Milestones.FirstScrap).toBe(true)
 
@@ -153,10 +156,23 @@ describe("First-session core loop integration", function()
 			MachineService.UseInstantProcessToken(player)
 			expect(StateService.GetLastResult(player).Code).toBe("PROCESS_COMPLETE")
 			expect(data.Machines.ProcessorJob.Active).toBe(false)
-			expect(data.Materials.ScrapMetal >= 4).toBe(true)
+			expect(data.Materials.ScrapMetal >= 10).toBe(true)
 			expect(data.Materials.Wiring >= 2).toBe(true)
-			expect(data.Consumables.InstantProcessTokens).toBe(1)
+			expect(data.Consumables.InstantProcessTokens).toBe(2)
 			expect(data.Tutorial.Milestones.FirstProcess).toBe(true)
+			expect(data.Tutorial.Milestones.FirstWiring).toBe(true)
+
+			MachineService.StartProcessor(player, "RecoverCore")
+			expect(StateService.GetLastResult(player).Code).toBe("PROCESS_STARTED")
+			expect(data.Machines.ProcessorJob.Active).toBe(true)
+
+			MachineService.UseInstantProcessToken(player)
+			expect(StateService.GetLastResult(player).Code).toBe("PROCESS_COMPLETE")
+			expect(data.Machines.ProcessorJob.Active).toBe(false)
+			expect(data.Materials.PowerCoreFragments >= 1).toBe(true)
+			expect(data.Materials.Wiring >= 1).toBe(true)
+			expect(data.Consumables.InstantProcessTokens).toBe(1)
+			expect(data.Tutorial.Milestones.FirstCore).toBe(true)
 
 			MachineService.StartAssembler(player)
 			expect(StateService.GetLastResult(player).Code).toBe("ASSEMBLY_STARTED")

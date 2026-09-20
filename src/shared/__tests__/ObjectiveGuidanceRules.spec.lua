@@ -15,6 +15,8 @@ local function snapshot(): any
 			Milestones = {
 				FirstScrap = false,
 				FirstProcess = false,
+				FirstWiring = false,
+				FirstCore = false,
 				FirstBotReveal = false,
 				FirstBotAssigned = false,
 				FirstIncomeEarned = false,
@@ -28,16 +30,23 @@ local function snapshot(): any
 end
 
 describe("ObjectiveGuidanceRules", function()
-	it("advances through the first-session factory loop in order", function()
+	it("advances through wiring and core before the first robot", function()
 		local state = snapshot()
 		local milestones = state.Tutorial.Milestones
 
 		expect(ObjectiveGuidanceRules.GetStep(state)).toBe("CollectScrap")
 
 		milestones.FirstScrap = true
-		expect(ObjectiveGuidanceRules.GetStep(state)).toBe("ProcessMaterials")
+		expect(ObjectiveGuidanceRules.GetStep(state)).toBe("MakeWiring")
 
+		-- The legacy generic process milestone must not skip the core tutorial.
 		milestones.FirstProcess = true
+		expect(ObjectiveGuidanceRules.GetStep(state)).toBe("MakeWiring")
+
+		milestones.FirstWiring = true
+		expect(ObjectiveGuidanceRules.GetStep(state)).toBe("RecoverCore")
+
+		milestones.FirstCore = true
 		expect(ObjectiveGuidanceRules.GetStep(state)).toBe("BuildFirstBot")
 
 		milestones.FirstBotReveal = true
@@ -54,6 +63,15 @@ describe("ObjectiveGuidanceRules", function()
 
 		state.Progression.Zone = 2
 		expect(ObjectiveGuidanceRules.GetStep(state)).toBe("ExploreCircuitYard")
+	end)
+
+	it("does not regress established players that already revealed a robot", function()
+		local state = snapshot()
+		local milestones = state.Tutorial.Milestones
+		milestones.FirstScrap = true
+		milestones.FirstBotReveal = true
+
+		expect(ObjectiveGuidanceRules.GetStep(state)).toBe("AssignFirstBot")
 	end)
 
 	it("fails closed to the first objective when snapshot state is incomplete", function()

@@ -130,6 +130,17 @@ describe("ProfileSanitizer", function()
 		expect(data.Receipts.RecentPurchaseIds[2]).toBe("purchase-b")
 	end)
 
+	it("preserves the explicit wiring and core onboarding milestones", function()
+		local data = deepCopy(ProfileTemplate)
+		data.Tutorial.Milestones.FirstWiring = true
+		data.Tutorial.Milestones.FirstCore = true
+
+		ProfileSanitizer.Sanitize(data)
+
+		expect(data.Tutorial.Milestones.FirstWiring).toBe(true)
+		expect(data.Tutorial.Milestones.FirstCore).toBe(true)
+	end)
+
 	it("preserves valid reconnect-critical production and entitlement state", function()
 		local data = deepCopy(ProfileTemplate)
 		data.Revision = 42

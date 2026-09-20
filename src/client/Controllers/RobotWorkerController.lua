@@ -28,6 +28,7 @@ local NAV_MAX_CONCURRENT_COMPUTES = 4
 local NAV_CLEARANCE_SIZE = Vector3.new(4.2, 4.8, 4.2)
 
 local activePathComputes = 0
+local pathComputeErrorWarned = false
 
 local function getCharacterPosition(): Vector3?
 	local character = LocalPlayer.Character
@@ -123,18 +124,27 @@ local function computePath(model: Model, startPosition: Vector3, endPosition: Ve
 	end
 
 	local path: Path? = nil
-	local ok = pcall(function()
-		path = PathfindingService:CreatePath({
+	local ok, err = pcall(function()
+		local createdPath = PathfindingService:CreatePath({
 			AgentRadius = NAV_AGENT_RADIUS,
 			AgentHeight = NAV_AGENT_HEIGHT,
 			AgentCanJump = false,
 			AgentCanClimb = false,
 			WaypointSpacing = NAV_WAYPOINT_SPACING,
-		})(path :: Path):ComputeAsync(startPosition, endPosition)
+		})
+		path = createdPath
+		createdPath:ComputeAsync(startPosition, endPosition)
 	end)
 	activePathComputes -= 1
 
-	if not ok or path == nil or path.Status ~= Enum.PathStatus.Success then
+	if not ok then
+		if not pathComputeErrorWarned then
+			pathComputeErrorWarned = true
+			warn(("[RobotWorkerController] Path compute failed: %s"):format(tostring(err)))
+		end
+		return nil
+	end
+	if path == nil or path.Status ~= Enum.PathStatus.Success then
 		return nil
 	end
 

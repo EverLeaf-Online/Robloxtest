@@ -33,7 +33,8 @@ local GUIDANCE_UPDATE_INTERVAL = 0.1
 
 local STEP_LABELS: { [ObjectiveGuidanceRules.ObjectiveStep]: string } = {
 	CollectScrap = "COLLECT SCRAP",
-	ProcessMaterials = "PROCESS MATERIALS",
+	MakeWiring = "MAKE WIRING",
+	RecoverCore = "RECOVER A POWER CORE",
 	BuildFirstBot = "BUILD YOUR FIRST BOT",
 	AssignFirstBot = "ASSIGN YOUR BOT",
 	EarnFirstCredits = "BOT AT WORK",
@@ -118,9 +119,9 @@ local function findNamedPart(plot: Model, name: string): BasePart?
 	return if instance ~= nil and instance:IsA("BasePart") then instance else nil
 end
 
-local function findProcessorControl(plot: Model): BasePart?
+local function findProcessorControl(plot: Model, recipeId: string): BasePart?
 	return nearestMatchingPart(plot, function(part)
-		return typeof(part:GetAttribute("ProcessorRecipeId")) == "string"
+		return part:GetAttribute("ProcessorRecipeId") == recipeId
 	end)
 end
 
@@ -155,8 +156,10 @@ local function resolveTarget(currentSnapshot: any): (BasePart?, string)
 
 	if step == "CollectScrap" then
 		return findSalvage(plot, 1), label
-	elseif step == "ProcessMaterials" then
-		return findProcessorControl(plot), label
+	elseif step == "MakeWiring" then
+		return findProcessorControl(plot, "MakeWiring"), label
+	elseif step == "RecoverCore" then
+		return findProcessorControl(plot, "RecoverCore"), label
 	elseif step == "BuildFirstBot" then
 		return findNamedPart(plot, "Assembler"), label
 	elseif step == "AssignFirstBot" then

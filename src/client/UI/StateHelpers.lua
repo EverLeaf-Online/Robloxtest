@@ -5,6 +5,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local FactoryRules = require(ReplicatedStorage.Shared.Domain.FactoryRules)
 local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
 local ObjectiveGuidanceRules = require(ReplicatedStorage.Shared.Domain.ObjectiveGuidanceRules)
+local RecipeDisplay = require(ReplicatedStorage.Shared.Domain.RecipeDisplay)
+local Recipes = require(ReplicatedStorage.Shared.Config.Recipes)
 local Robots = require(ReplicatedStorage.Shared.Config.Robots)
 local Zones = require(ReplicatedStorage.Shared.Config.Zones)
 
@@ -85,12 +87,29 @@ function StateHelpers.GetObjective(snapshot: any): (string, string)
 
 	if step == "CollectScrap" then
 		return "Collect scrap", "Follow the NEXT marker to a scrap pile and collect it."
-	elseif step == "ProcessMaterials" then
-		return "Process materials",
-			("Follow NEXT to your processor%s and make wiring or recover a core."):format(plotText)
+	elseif step == "MakeWiring" then
+		local recipe = Recipes.Processor.MakeWiring
+		return "Make wiring",
+			("Need %s → %s. Follow NEXT to your processor%s."):format(
+				RecipeDisplay.FormatMaterials(recipe.Input),
+				RecipeDisplay.FormatMaterials(recipe.Output),
+				plotText
+			)
+	elseif step == "RecoverCore" then
+		local recipe = Recipes.Processor.RecoverCore
+		return "Recover a power core",
+			("Need %s → %s. Follow NEXT to your processor%s."):format(
+				RecipeDisplay.FormatMaterials(recipe.Input),
+				RecipeDisplay.FormatMaterials(recipe.Output),
+				plotText
+			)
 	elseif step == "BuildFirstBot" then
+		local cost = FactoryRules.GetAssemblerCost(0)
 		return "Build your first bot",
-			("Follow NEXT to your assembler%s once you have enough materials."):format(plotText)
+			("Need %s. Follow NEXT to your assembler%s."):format(
+				RecipeDisplay.FormatMaterials(cost),
+				plotText
+			)
 	elseif step == "AssignFirstBot" then
 		return "Put your bot to work",
 			"Follow NEXT to BOT CONTROL and assign the bot to a work pad."

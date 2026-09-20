@@ -4,6 +4,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
 local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
+local RecipeDisplay = require(ReplicatedStorage.Shared.Domain.RecipeDisplay)
+local Recipes = require(ReplicatedStorage.Shared.Config.Recipes)
 local WorldLayout = require(ReplicatedStorage.Shared.Config.WorldLayout)
 local Zones = require(ReplicatedStorage.Shared.Config.Zones)
 local CircuitUnlockButtonBuilder =
@@ -89,6 +91,33 @@ local function addBillboard(part: BasePart, text: string, labelName: string?): T
 	label.TextWrapped = true
 	label.Parent = billboard
 	return label
+end
+
+local function addRequirementLabel(part: BasePart, text: string)
+	local billboard = Instance.new("BillboardGui")
+	billboard.Name = "RecipeRequirementLabel"
+	billboard.AlwaysOnTop = true
+	billboard.Size = UDim2.fromOffset(210, 38)
+	billboard.StudsOffset = Vector3.new(0, 3.2, 0)
+	billboard.MaxDistance = 34
+	billboard.Parent = part
+
+	local label = Instance.new("TextLabel")
+	label.Name = "Label"
+	label.BackgroundColor3 = Color3.fromRGB(21, 25, 31)
+	label.BackgroundTransparency = 0.08
+	label.BorderSizePixel = 0
+	label.Font = Enum.Font.GothamBold
+	label.Size = UDim2.fromScale(1, 1)
+	label.Text = text
+	label.TextColor3 = Color3.fromRGB(245, 247, 250)
+	label.TextScaled = true
+	label.TextWrapped = true
+	label.Parent = billboard
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 7)
+	corner.Parent = label
 end
 
 local function tagPlotPart(part: BasePart, plotId: number)
@@ -446,7 +475,14 @@ local function buildFactoryPlot(parent: Folder, plotId: number, center: Vector3)
 		factoryCenter + production.WiringControlOffset
 	)
 	registerProcessorControl(plotId, wiringControl, "MakeWiring")
-	addPrompt(wiringControl, "Process", "Make Wiring")
+	local wiringRecipe = Recipes.Processor.MakeWiring
+	local wiringRequirement = ("%s • %s → %s"):format(
+		wiringRecipe.DisplayName,
+		RecipeDisplay.FormatMaterials(wiringRecipe.Input),
+		RecipeDisplay.FormatMaterials(wiringRecipe.Output)
+	)
+	addPrompt(wiringControl, "Process", wiringRequirement)
+	addRequirementLabel(wiringControl, wiringRequirement)
 
 	local coreControl = makePart(
 		plot,
@@ -455,7 +491,14 @@ local function buildFactoryPlot(parent: Folder, plotId: number, center: Vector3)
 		factoryCenter + production.CoreControlOffset
 	)
 	registerProcessorControl(plotId, coreControl, "RecoverCore")
-	addPrompt(coreControl, "Process", "Recover Core")
+	local coreRecipe = Recipes.Processor.RecoverCore
+	local coreRequirement = ("%s • %s → %s"):format(
+		coreRecipe.DisplayName,
+		RecipeDisplay.FormatMaterials(coreRecipe.Input),
+		RecipeDisplay.FormatMaterials(coreRecipe.Output)
+	)
+	addPrompt(coreControl, "Process", coreRequirement)
+	addRequirementLabel(coreControl, coreRequirement)
 
 	local assembler = makePart(
 		plot,
@@ -467,7 +510,10 @@ local function buildFactoryPlot(parent: Folder, plotId: number, center: Vector3)
 	assembler.Color = Color3.fromRGB(129, 89, 52)
 	tagPlotPart(assembler, plotId)
 	addBillboard(assembler, "ASSEMBLER")
-	addPrompt(assembler, "Assemble", "Build Robot")
+	local firstAssemblerCost = RecipeDisplay.FormatMaterials(Recipes.Assembler.FirstBuildInput)
+	local assemblerRequirement = ("Build Robot • %s"):format(firstAssemblerCost)
+	addPrompt(assembler, "Assemble", assemblerRequirement)
+	addRequirementLabel(assembler, assemblerRequirement)
 	plotAssemblers[plotId] = assembler
 	if plotId == 1 then
 		assemblerPart = assembler

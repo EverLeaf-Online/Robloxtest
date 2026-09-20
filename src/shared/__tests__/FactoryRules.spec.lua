@@ -17,7 +17,7 @@ describe("FactoryRules", function()
 
 		expect(firstCost.ScrapMetal).toBe(4)
 		expect(firstCost.Wiring).toBe(1)
-		expect(firstCost.PowerCoreFragments).toBe(nil)
+		expect(firstCost.PowerCoreFragments).toBe(1)
 		expect(repeatCost.PowerCoreFragments).toBe(1)
 	end)
 

@@ -8,6 +8,7 @@ local FactoryRules = require(ReplicatedStorage.Shared.Domain.FactoryRules)
 local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
 local MachineJobRules = require(ReplicatedStorage.Shared.Domain.MachineJobRules)
 local Recipes = require(ReplicatedStorage.Shared.Config.Recipes)
+local RecipeDisplay = require(ReplicatedStorage.Shared.Domain.RecipeDisplay)
 local RemoteNames = require(ReplicatedStorage.Shared.Networking.RemoteNames)
 local RobotInventoryRules = require(ReplicatedStorage.Shared.Domain.RobotInventoryRules)
 local Robots = require(ReplicatedStorage.Shared.Config.Robots)
@@ -108,6 +109,29 @@ local function syncMachinePresentation(player: Player)
 		data.Machines.AssemblerJob.Active,
 		data.Machines.AssemblerJob.CompletesAt
 	)
+
+	local assembler = plot:FindFirstChild("Assembler")
+	if assembler ~= nil and assembler:IsA("BasePart") then
+		local cost = FactoryRules.GetAssemblerCost(data.Stats.LifetimeRobotsBuilt)
+		local objectText = ("Build Robot • %s"):format(RecipeDisplay.FormatMaterials(cost))
+
+		local prompt = assembler:FindFirstChildOfClass("ProximityPrompt")
+		if prompt ~= nil and prompt.ObjectText ~= objectText then
+			prompt.ObjectText = objectText
+		end
+
+		local requirementGui = assembler:FindFirstChild("RecipeRequirementLabel")
+		local requirementLabel = if requirementGui ~= nil
+			then requirementGui:FindFirstChild("Label")
+			else nil
+		if
+			requirementLabel ~= nil
+			and requirementLabel:IsA("TextLabel")
+			and requirementLabel.Text ~= objectText
+		then
+			requirementLabel.Text = objectText
+		end
+	end
 end
 
 local function sendTransactionResult(
@@ -280,6 +304,11 @@ local function completeProcessor(player: Player, now: number): boolean
 		local recipeId = job.RecipeId
 		resetProcessorJob(job)
 		data.Tutorial.Milestones.FirstProcess = true
+		if recipeId == "MakeWiring" then
+			data.Tutorial.Milestones.FirstWiring = true
+		elseif recipeId == "RecoverCore" then
+			data.Tutorial.Milestones.FirstCore = true
+		end
 		return true,
 			result(true, "PROCESS_COMPLETE", { RecipeId = recipeId, Output = recipe.Output })
 	end)
