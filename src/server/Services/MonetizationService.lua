@@ -19,6 +19,8 @@ local StateService = require(script.Parent.StateService)
 local ProfileTypes = require(script.Parent.Parent.Data.ProfileTypes)
 
 type ProfileData = ProfileTypes.ProfileData
+type ReceiptLedgerContains = (number, string) -> boolean?
+type ReceiptLedgerMark = (number, string) -> boolean
 
 local MonetizationService = {}
 local initialized = false
@@ -187,7 +189,8 @@ end
 local function acknowledgeRecordedReceipt(
 	player: Player,
 	purchaseId: string,
-	productId: number
+	productId: number,
+	ledgerMark: ReceiptLedgerMark
 ): Enum.ProductPurchaseDecision
 	local saved, persistedData = DataService.SaveNow(player, function(snapshot)
 		return DeveloperProductRules.HasReceipt(snapshot, purchaseId)
@@ -201,7 +204,7 @@ local function acknowledgeRecordedReceipt(
 	-- The lifetime ledger is written only after ProfileStore has emitted OnAfterSave
 	-- for a snapshot that contains this PurchaseId. A ledger entry therefore never
 	-- acknowledges paid value that only exists in volatile server memory.
-	if not markReceiptInLedger(player.UserId, purchaseId) then
+	if not ledgerMark(player.UserId, purchaseId) then
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 	return Enum.ProductPurchaseDecision.PurchaseGranted
@@ -209,8 +212,12 @@ end
 
 local function processReceiptForPlayer(
 	player: Player,
-	receiptInfo: { [string]: any }
+	receiptInfo: { [string]: any },
+	ledgerContainsOverride: ReceiptLedgerContains?,
+	ledgerMarkOverride: ReceiptLedgerMark?
 ): Enum.ProductPurchaseDecision
+	local ledgerContainsFn = ledgerContainsOverride or receiptLedgerContains
+	local ledgerMarkFn = ledgerMarkOverride or markReceiptInLedger
 	if not DataService.IsReady(player) then
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
@@ -221,10 +228,10 @@ local function processReceiptForPlayer(
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 	if DeveloperProductRules.HasReceipt(existing, purchaseId) then
-		return acknowledgeRecordedReceipt(player, purchaseId, receiptInfo.ProductId)
+		return acknowledgeRecordedReceipt(player, purchaseId, receiptInfo.ProductId, ledgerMarkFn)
 	end
 
-	local ledgerContains = receiptLedgerContains(player.UserId, purchaseId)
+	local ledgerContains = ledgerContainsFn(player.UserId, purchaseId)
 	if ledgerContains == nil then
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
@@ -249,7 +256,7 @@ local function processReceiptForPlayer(
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 	if result == "AlreadyGranted" then
-		return acknowledgeRecordedReceipt(player, purchaseId, receiptInfo.ProductId)
+		return acknowledgeRecordedReceipt(player, purchaseId, receiptInfo.ProductId, ledgerMarkFn)
 	end
 	if productName == "" then
 		if result == "UnknownProduct" then
@@ -272,7 +279,7 @@ local function processReceiptForPlayer(
 	if productName == "ServerOverclock" then
 		adoptServerOverclock(persistedData.Entitlements.ServerOverclockUntil)
 	end
-	if not markReceiptInLedger(player.UserId, purchaseId) then
+	if not ledgerMarkFn(player.UserId, purchaseId) then
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 
@@ -287,7 +294,7 @@ local function processReceipt(receiptInfo: { [string]: any }): Enum.ProductPurch
 	if player == nil then
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
-	return processReceiptForPlayer(player, receiptInfo)
+	return processReceiptForPlayer(player, receiptInfo, nil, nil)
 end
 
 function MonetizationService.ProcessReceipt(
@@ -309,7 +316,16 @@ function MonetizationService.ProcessReceiptForPlayerForTests(
 	player: Player,
 	receiptInfo: { [string]: any }
 ): Enum.ProductPurchaseDecision
-	return processReceiptForPlayer(player, receiptInfo)
+	return processReceiptForPlayer(
+		player,
+		receiptInfo,
+		function()
+			return false
+		end,
+		function()
+			return true
+		end
+	)
 end
 
 local function refreshPass(player: Player, passName: string, passId: number): boolean?
