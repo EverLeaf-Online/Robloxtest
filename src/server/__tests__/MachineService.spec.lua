@@ -1,6 +1,7 @@
 --!strict
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
 
 local JestGlobals = require(ReplicatedStorage.DevPackages.JestGlobals)
 local describe = JestGlobals.describe
@@ -175,6 +176,155 @@ describe("MachineService integration", function()
 		expect(data.Machines.AssemblerJob.Active).toBe(false)
 		expect(data.Materials.ScrapMetal).toBe(100)
 		expect(StateService.GetLastResult(player).Code).toBe("ROBOT_INVENTORY_FULL")
+
+		player:Destroy()
+	end)
+
+	it("uses one instant-process token to complete a processor job immediately", function()
+		resetFakes()
+		local player = makeFakePlayer()
+		local data = deepCopy(ProfileTemplate)
+		configurePlayer(player, data)
+		local now = Workspace:GetServerTimeNow()
+		data.Consumables.InstantProcessTokens = 1
+		data.Machines.ProcessorJob.Active = true
+		data.Machines.ProcessorJob.RecipeId = "MakeWiring"
+		data.Machines.ProcessorJob.StartedAt = now
+		data.Machines.ProcessorJob.CompletesAt = now + 60
+
+		MachineService.UseInstantProcessToken(player)
+
+		expect(data.Consumables.InstantProcessTokens).toBe(0)
+		expect(data.Machines.ProcessorJob.Active).toBe(false)
+		expect(data.Machines.ProcessorJob.RecipeId).toBe("")
+		expect(data.Materials.Wiring).toBe(1)
+		expect(data.Tutorial.Milestones.FirstProcess).toBe(true)
+		expect(data.Revision).toBe(2)
+		expect(StateService.GetLastResult(player).Code).toBe("PROCESS_COMPLETE")
+		expect(StateService.GetSnapshotPushCount(player)).toBe(2)
+		expect(MonetizationService.GetRefreshCount(player)).toBe(1)
+
+		player:Destroy()
+	end)
+
+	it("uses one instant-process token to complete an assembler job immediately", function()
+		resetFakes()
+		local player = makeFakePlayer()
+		local data = deepCopy(ProfileTemplate)
+		configurePlayer(player, data)
+		local now = Workspace:GetServerTimeNow()
+		data.Consumables.InstantProcessTokens = 1
+		data.Machines.AssemblerJob.Active = true
+		data.Machines.AssemblerJob.StartedAt = now
+		data.Machines.AssemblerJob.CompletesAt = now + 60
+
+		MachineService.UseInstantProcessToken(player)
+
+		local owned = 0
+		for _ in data.Robots.OwnedByUid do
+			owned += 1
+		end
+		expect(data.Consumables.InstantProcessTokens).toBe(0)
+		expect(data.Machines.AssemblerJob.Active).toBe(false)
+		expect(owned).toBe(1)
+		expect(data.Stats.LifetimeRobotsBuilt).toBe(1)
+		expect(data.Tutorial.Milestones.FirstBotReveal).toBe(true)
+		expect(data.Revision).toBe(2)
+		expect(StateService.GetLastResult(player).Code).toBe("ASSEMBLY_COMPLETE")
+		expect(StateService.GetSnapshotPushCount(player)).toBe(2)
+		expect(MonetizationService.GetRefreshCount(player)).toBe(1)
+
+		player:Destroy()
+	end)
+
+	it("does not consume an instant-process token when no process is active", function()
+		resetFakes()
+		local player = makeFakePlayer()
+		local data = deepCopy(ProfileTemplate)
+		configurePlayer(player, data)
+		data.Consumables.InstantProcessTokens = 1
+
+		MachineService.UseInstantProcessToken(player)
+
+		expect(data.Consumables.InstantProcessTokens).toBe(1)
+		expect(data.Revision).toBe(0)
+		expect(StateService.GetLastResult(player).Code).toBe("NO_ACTIVE_PROCESS")
+		expect(StateService.GetSnapshotPushCount(player)).toBe(0)
+		expect(MonetizationService.GetRefreshCount(player)).toBe(0)
+
+		player:Destroy()
+	end)
+
+	it("rejects instant processing without a token and leaves the active job untouched", function()
+		resetFakes()
+		local player = makeFakePlayer()
+		local data = deepCopy(ProfileTemplate)
+		configurePlayer(player, data)
+		local now = Workspace:GetServerTimeNow()
+		data.Machines.ProcessorJob.Active = true
+		data.Machines.ProcessorJob.RecipeId = "MakeWiring"
+		data.Machines.ProcessorJob.StartedAt = now
+		data.Machines.ProcessorJob.CompletesAt = now + 60
+		local originalCompletesAt = data.Machines.ProcessorJob.CompletesAt
+
+		MachineService.UseInstantProcessToken(player)
+
+		expect(data.Consumables.InstantProcessTokens).toBe(0)
+		expect(data.Machines.ProcessorJob.Active).toBe(true)
+		expect(data.Machines.ProcessorJob.CompletesAt).toBe(originalCompletesAt)
+		expect(data.Materials.Wiring).toBe(0)
+		expect(data.Revision).toBe(0)
+		expect(StateService.GetLastResult(player).Code).toBe("NO_INSTANT_PROCESS_TOKENS")
+		expect(StateService.GetSnapshotPushCount(player)).toBe(0)
+
+		player:Destroy()
+	end)
+
+	it("does not consume a token when the target job is already naturally due", function()
+		resetFakes()
+		local player = makeFakePlayer()
+		local data = deepCopy(ProfileTemplate)
+		configurePlayer(player, data)
+		local now = Workspace:GetServerTimeNow()
+		data.Consumables.InstantProcessTokens = 1
+		data.Machines.ProcessorJob.Active = true
+		data.Machines.ProcessorJob.RecipeId = "MakeWiring"
+		data.Machines.ProcessorJob.StartedAt = now - 10
+		data.Machines.ProcessorJob.CompletesAt = now - 1
+
+		MachineService.UseInstantProcessToken(player)
+
+		expect(data.Consumables.InstantProcessTokens).toBe(1)
+		expect(data.Machines.ProcessorJob.Active).toBe(true)
+		expect(data.Materials.Wiring).toBe(0)
+		expect(data.Revision).toBe(0)
+		expect(StateService.GetLastResult(player).Code).toBe("NO_ACTIVE_PROCESS")
+
+		player:Destroy()
+	end)
+
+	it("rejects instant-process transaction contention without consuming the token", function()
+		resetFakes()
+		local player = makeFakePlayer()
+		local data = deepCopy(ProfileTemplate)
+		configurePlayer(player, data)
+		local now = Workspace:GetServerTimeNow()
+		data.Consumables.InstantProcessTokens = 1
+		data.Machines.ProcessorJob.Active = true
+		data.Machines.ProcessorJob.RecipeId = "MakeWiring"
+		data.Machines.ProcessorJob.StartedAt = now
+		data.Machines.ProcessorJob.CompletesAt = now + 60
+		local originalCompletesAt = data.Machines.ProcessorJob.CompletesAt
+		DataService.SetBusy(player, true)
+
+		MachineService.UseInstantProcessToken(player)
+
+		expect(data.Consumables.InstantProcessTokens).toBe(1)
+		expect(data.Machines.ProcessorJob.Active).toBe(true)
+		expect(data.Machines.ProcessorJob.CompletesAt).toBe(originalCompletesAt)
+		expect(data.Revision).toBe(0)
+		expect(StateService.GetLastResult(player).Code).toBe("TRANSACTION_BUSY")
+		expect(StateService.GetSnapshotPushCount(player)).toBe(0)
 
 		player:Destroy()
 	end)
