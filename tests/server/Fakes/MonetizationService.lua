@@ -6,12 +6,14 @@ local extraWorkSlotsByPlayer: { [Player]: number } = {}
 local storageMultiplierByPlayer: { [Player]: number } = {}
 local assemblerMultiplierByPlayer: { [Player]: number } = {}
 local refreshCountByPlayer: { [Player]: number } = {}
+local autoCollectByPlayer: { [Player]: boolean } = {}
 
 function MonetizationService.Reset()
 	table.clear(extraWorkSlotsByPlayer)
 	table.clear(storageMultiplierByPlayer)
 	table.clear(assemblerMultiplierByPlayer)
 	table.clear(refreshCountByPlayer)
+	table.clear(autoCollectByPlayer)
 end
 
 function MonetizationService.SetExtraWorkSlots(player: Player, value: number)
@@ -36,6 +38,14 @@ end
 
 function MonetizationService.GetAssemblerTimeMultiplier(player: Player): number
 	return assemblerMultiplierByPlayer[player] or 1
+end
+
+function MonetizationService.SetAutoCollect(player: Player, enabled: boolean)
+	autoCollectByPlayer[player] = enabled
+end
+
+function MonetizationService.HasAutoCollect(player: Player): boolean
+	return autoCollectByPlayer[player] == true
 end
 
 function MonetizationService.RefreshPlayer(player: Player)
