@@ -493,7 +493,6 @@ local function createLaunchers(gui: ScreenGui)
 
 	createLauncher(launchers, "Shop", "SHOP", 1, Color3.fromRGB(104, 223, 151), "Shop", nil)
 	createLauncher(launchers, "Social", "SOCIAL", 2, Color3.fromRGB(105, 183, 239), "Monogram", "2")
-	createLauncher(launchers, "Codes", "CODES", 3, Color3.fromRGB(225, 180, 84), "Monogram", "#")
 
 	local panel = Instance.new("Frame")
 	panel.Name = "HubPanel"
