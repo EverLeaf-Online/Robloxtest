@@ -58,6 +58,34 @@ describe("EconomyService", function()
 		expect(withClub).toBe(true)
 	end)
 
+	it("honors the exact Factory Club storage boundary without overflowing", function()
+		local data = deepCopy(ProfileTemplate)
+		local baseCapacity = FactoryRules.GetStorageCapacity(data.Machines.StorageLevel)
+		local clubMultiplier = GameConfig.Factory.FactoryClubStorageMultiplier
+		local clubCapacity = math.floor(baseCapacity * clubMultiplier)
+
+		data.Materials.ScrapMetal = clubCapacity - 1
+
+		expect(EconomyService.GrantMaterials(data, { Wiring = 1 }, clubMultiplier)).toBe(true)
+		expect(FactoryRules.TotalMaterials(data.Materials)).toBe(clubCapacity)
+
+		local before = deepCopy(data.Materials)
+		expect(EconomyService.GrantMaterials(data, { PowerCoreFragments = 1 }, clubMultiplier)).toBe(
+			false
+		)
+		expect(data.Materials).toEqual(before)
+	end)
+
+	it("stacks Expanded Storage and Factory Club capacity deterministically", function()
+		local data = deepCopy(ProfileTemplate)
+		local baseCapacity = FactoryRules.GetStorageCapacity(data.Machines.StorageLevel)
+		local stackedMultiplier = 2 * GameConfig.Factory.FactoryClubStorageMultiplier
+
+		expect(EconomyService.GetStorageCapacity(data, stackedMultiplier)).toBe(
+			math.floor(baseCapacity * stackedMultiplier)
+		)
+	end)
+
 	it("never lets paid material grants exceed the hard profile cap", function()
 		local data = deepCopy(ProfileTemplate)
 		data.Materials.ScrapMetal = GameConfig.Economy.MaxMaterialCount
