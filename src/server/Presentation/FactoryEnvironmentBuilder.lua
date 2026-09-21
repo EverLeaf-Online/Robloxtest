@@ -37,8 +37,13 @@ function FactoryEnvironmentBuilder.Build(plot: Model, plotId: number, center: Ve
 	end
 
 	FactoryAssetLibrary.Preload({
-		"IndustrialScrapShredder", "HydraulicScrapBaler", "MagneticSortingConveyor",
-		"InfeedConveyor", "OutfeedConveyor", "ScrapPileMedium", "MaterialBin",
+		"IndustrialScrapShredder",
+		"HydraulicScrapBaler",
+		"MagneticSortingConveyor",
+		"InfeedConveyor",
+		"OutfeedConveyor",
+		"ScrapPileMedium",
+		"MaterialBin",
 	})
 	local root = Instance.new("Model")
 	root.Name = "FactoryEnvironment"
@@ -59,7 +64,11 @@ function FactoryEnvironmentBuilder.Build(plot: Model, plotId: number, center: Ve
 		piece.Name = spec.name
 		piece.Size = Vector3.new(spec.size[1], spec.size[2], spec.size[3])
 		piece.CFrame = CFrame.new(center + Vector3.new(spec.pos[1], spec.pos[2], spec.pos[3]))
-			* CFrame.Angles(math.rad(spec.rotation[1]), math.rad(spec.rotation[2]), math.rad(spec.rotation[3]))
+			* CFrame.Angles(
+				math.rad(spec.rotation[1]),
+				math.rad(spec.rotation[2]),
+				math.rad(spec.rotation[3])
+			)
 		piece.Color = Color3.fromRGB(spec.color[1], spec.color[2], spec.color[3])
 		piece.Material = (Enum.Material :: any)[spec.material]
 		piece.Shape = (Enum.PartType :: any)[spec.shape]

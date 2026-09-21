@@ -29,11 +29,22 @@ describe("FactoryEnvironmentBuilder", function()
 	it("builds the complete workshop and retains the real processing train", function()
 		local plot = Instance.new("Model")
 		local environment = Builder.Build(plot, 1, Vector3.zero)
-		for _, name in {
-			"FactorySite", "ProductionHall", "ScrapGantryCrane", "ScrapReceivingYard",
-			"BotWorksLandmark", "MaterialWarehouse", "WorkerChargingBay", "WorkshopOffice",
-			"UtilityYard", "CircuitBridgeApproach", "CircuitAnnex", "ScrapProcessTrain",
-		} do
+		for _, name in
+			{
+				"FactorySite",
+				"ProductionHall",
+				"ScrapGantryCrane",
+				"ScrapReceivingYard",
+				"BotWorksLandmark",
+				"MaterialWarehouse",
+				"WorkerChargingBay",
+				"WorkshopOffice",
+				"UtilityYard",
+				"CircuitBridgeApproach",
+				"CircuitAnnex",
+				"ScrapProcessTrain",
+			}
+		do
 			expect(environment:FindFirstChild(name) ~= nil).toBe(true)
 		end
 		local count = 0

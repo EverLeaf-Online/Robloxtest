@@ -32,6 +32,7 @@ Working checkout: `/opt/scrap-bot-factory-assets/world-redesign`
 
 ```sh
 python3 tools/assets/generate_scrapyard_workshop.py
+stylua src/server/Content/ScrapyardWorkshopKit.lua
 blender -b -t 2 --python tools/assets/export_scrapyard_workshop.py
 python3 tools/assets/validate_scrapyard_workshop.py
 rojo build default.project.json --output build/scrapyard-workshop.rbxl
