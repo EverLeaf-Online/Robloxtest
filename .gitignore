@@ -24,3 +24,11 @@ sourcemap.json
 .vscode/settings.local.json
 .DS_Store
 Thumbs.db
+
+# Local asset-tool receipts and safe-edit backups
+assets/generated/
+*.bak.*
+__pycache__/
+
+# Full resolution review renders stay on the VM; JPEG previews are versioned.
+assets/factory/scrapyard_workshop/*.png

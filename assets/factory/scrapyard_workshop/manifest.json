@@ -1,0 +1,188 @@
+{
+  "schema": 1,
+  "source": "Original deterministic geometry; no third-party assets",
+  "runtime": "Native anchored Roblox parts from the same blueprint; GLBs are optional import sources",
+  "collision": "Explicit native primitives only",
+  "partCount": 288,
+  "assets": [
+    {
+      "name": "FactorySite",
+      "file": "meshes/FactorySite.glb",
+      "triangles": 288,
+      "pivot": "BottomCenter",
+      "placementRoblox": [
+        0.0,
+        0.5,
+        -0.0
+      ],
+      "bytes": 25180,
+      "sha256": "f79b7a44bb223d55cac0d75bec4e63880c7f519b1ad56da3264d21699c2790f6"
+    },
+    {
+      "name": "ProcessWayfinding",
+      "file": "meshes/ProcessWayfinding.glb",
+      "triangles": 336,
+      "pivot": "BottomCenter",
+      "placementRoblox": [
+        2.5,
+        0.5600000023841858,
+        25.98129653930664
+      ],
+      "bytes": 26632,
+      "sha256": "83a85d411910041caf9a7a446b13d9d90e025ee929af02c27be3609a5927498e"
+    },
+    {
+      "name": "ProductionHall",
+      "file": "meshes/ProductionHall.glb",
+      "triangles": 1056,
+      "pivot": "BottomCenter",
+      "placementRoblox": [
+        7.0,
+        0.5,
+        55.7380485534668
+      ],
+      "bytes": 80576,
+      "sha256": "e7acd275c486090fb346064d89373132d8304ec2bd8e0a8ff2127a290ae443ed"
+    },
+    {
+      "name": "BotWorksLandmark",
+      "file": "meshes/BotWorksLandmark.glb",
+      "triangles": 144,
+      "pivot": "BottomCenter",
+      "placementRoblox": [
+        37.0,
+        15.0,
+        60.849998474121094
+      ],
+      "bytes": 14600,
+      "sha256": "b42ca306742d35fbd6f96fb7fa089335215d3402a6ae968710da7afa2515facb"
+    },
+    {
+      "name": "ScrapGantryCrane",
+      "file": "meshes/ScrapGantryCrane.glb",
+      "triangles": 348,
+      "pivot": "BottomCenter",
+      "placementRoblox": [
+        -90.5,
+        0.4499998092651367,
+        27.0
+      ],
+      "bytes": 25048,
+      "sha256": "aa88e7a035b88accb3f10f774ca821c226d1d044cf192bbe9a4ab1e1fb0fe7a9"
+    },
+    {
+      "name": "ScrapReceivingYard",
+      "file": "meshes/ScrapReceivingYard.glb",
+      "triangles": 360,
+      "pivot": "BottomCenter",
+      "placementRoblox": [
+        -87.46228790283203,
+        1.0,
+        74.0
+      ],
+      "bytes": 29284,
+      "sha256": "318880ad4883a78a3159f24a069a1ed5d75423c9dd3f4b7cee8de0f330d008c2"
+    },
+    {
+      "name": "MaterialWarehouse",
+      "file": "meshes/MaterialWarehouse.glb",
+      "triangles": 240,
+      "pivot": "BottomCenter",
+      "placementRoblox": [
+        96.0,
+        0.5,
+        45.0
+      ],
+      "bytes": 20880,
+      "sha256": "bbe6a3cd344608621785dcc86a7d0761f7f5d752ced21971cacd5b54d66568d3"
+    },
+    {
+      "name": "WorkerChargingBay",
+      "file": "meshes/WorkerChargingBay.glb",
+      "triangles": 216,
+      "pivot": "BottomCenter",
+      "placementRoblox": [
+        81.5,
+        0.75,
+        -5.637499809265137
+      ],
+      "bytes": 17228,
+      "sha256": "083a4b6684c2a50335f7c6bf30fb14513d9b7c9f15164dcb3d62cb97bd407123"
+    },
+    {
+      "name": "WorkshopOffice",
+      "file": "meshes/WorkshopOffice.glb",
+      "triangles": 96,
+      "pivot": "BottomCenter",
+      "placementRoblox": [
+        -25.0,
+        0.5,
+        -42.875
+      ],
+      "bytes": 10036,
+      "sha256": "197cb3166c5813c10e426a64fde05709433a7092621ad8567271009eb4db2c3f"
+    },
+    {
+      "name": "UtilityYard",
+      "file": "meshes/UtilityYard.glb",
+      "triangles": 384,
+      "pivot": "BottomCenter",
+      "placementRoblox": [
+        96.0,
+        1.0,
+        77.0
+      ],
+      "bytes": 24472,
+      "sha256": "86f0e0d7006e47ce059f0d01f42a292b82dec867248827aad563f0b2527e2787"
+    },
+    {
+      "name": "CircuitBridgeApproach",
+      "file": "meshes/CircuitBridgeApproach.glb",
+      "triangles": 48,
+      "pivot": "BottomCenter",
+      "placementRoblox": [
+        -94.0,
+        0.49999988079071045,
+        -105.25
+      ],
+      "bytes": 6104,
+      "sha256": "2f720add02e9e5e8cec244f5b5d8fec1415aee76efe9be89002adb85d7023564"
+    },
+    {
+      "name": "CircuitAnnex",
+      "file": "meshes/CircuitAnnex.glb",
+      "triangles": 132,
+      "pivot": "BottomCenter",
+      "placementRoblox": [
+        -94.0,
+        0.5,
+        -160.6999969482422
+      ],
+      "bytes": 11944,
+      "sha256": "540228651c71fdfa61c67b658e6d3968d3d35f17bebfdf5b70529a735344cf8f"
+    },
+    {
+      "name": "SalvageTruck",
+      "file": "meshes/SalvageTruck.glb",
+      "triangles": 576,
+      "pivot": "BottomCenter",
+      "placementRoblox": [
+        -50.349998474121094,
+        0.0,
+        -70.0
+      ],
+      "bytes": 43420,
+      "sha256": "9232e1e5229e782359988e5ea31f714301098c91f4cdf05b15fb8e61f25997af"
+    }
+  ],
+  "previewContextMeshes": [
+    "magnetic_sorting_conveyor",
+    "hydraulic_scrap_baler",
+    "bot_assembler_station",
+    "infeed_conveyor_8m",
+    "outfeed_conveyor_6m",
+    "scrap_pile_medium",
+    "large_scrap_hopper"
+  ],
+  "previewLimit": "Architecture review with selected existing machinery; not a Roblox gameplay screenshot."
+}
