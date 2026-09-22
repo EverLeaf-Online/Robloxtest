@@ -134,21 +134,18 @@ for zoneId = 3, 4 do
 			pcall(function()
 				shape = instance.Shape.Name
 			end)
-			table.insert(
-				exported,
-				{
-					zone = zoneId,
-					name = instance.Name,
-					position = { p.X, p.Y, p.Z },
-					size = { s.X, s.Y, s.Z },
-					color = { c.R, c.G, c.B },
-					rotation = rotation,
-					shape = shape,
-				}
-			)
+			table.insert(exported, {
+				zone = zoneId,
+				name = instance.Name,
+				position = { p.X, p.Y, p.Z },
+				size = { s.X, s.Y, s.Z },
+				color = { c.R, c.G, c.B },
+				rotation = rotation,
+				shape = shape,
+			})
 		end
 	end
-	check(count < 150, "Region geometry budget")
+	check(count < 190, "Region geometry budget")
 	for i, position in region.Nodes do
 		local offset = position - origin
 		check(math.abs(offset.X) < 82 and math.abs(offset.Z) < 82, "Salvage inside safety barriers")

@@ -79,8 +79,8 @@ function ExpeditionBuilder.Build(plot: Model, plotId: number, center: Vector3, z
 		part(
 			root,
 			"CrossWalkway",
-			Vector3.new(144, 0.3, 14),
-			origin + Vector3.new(0, 0.15, z),
+			Vector3.new(144, 0.4, 14),
+			origin + Vector3.new(0, 0.2, z),
 			STEEL,
 			Enum.Material.Concrete
 		)
@@ -107,21 +107,83 @@ function ExpeditionBuilder.Build(plot: Model, plotId: number, center: Vector3, z
 						RUST
 					)
 				end
-				local wagon = part(
-					root,
-					"WreckedFreightCar",
-					Vector3.new(14, 8, 24),
-					origin + Vector3.new(x, 7, z),
-					RUST
-				)
-				wagon.Orientation = Vector3.new(0, if cluster == 2 then 12 else -8, 0)
 				part(
 					root,
-					"OpenCargoRim",
-					Vector3.new(15, 0.8, 25),
-					origin + Vector3.new(x, 11, z),
-					GOLD
+					"FreightChassis",
+					Vector3.new(14, 2, 24),
+					origin + Vector3.new(x, 4, z),
+					STEEL
 				)
+				if cluster == 2 then
+					local boiler = part(
+						root,
+						"SalvagedLocomotiveBoiler",
+						Vector3.new(20, 9, 9),
+						origin + Vector3.new(x, 9, z),
+						RUST
+					)
+					boiler.Shape = Enum.PartType.Cylinder
+					boiler.Orientation = Vector3.new(0, 90, 0)
+					part(
+						root,
+						"Chimney",
+						Vector3.new(3, 8, 3),
+						origin + Vector3.new(x, 16, z - 5),
+						STEEL
+					)
+					part(
+						root,
+						"EngineCab",
+						Vector3.new(12, 11, 5),
+						origin + Vector3.new(x, 9.5, z + 9),
+						RUST
+					)
+					part(
+						root,
+						"CabWindow",
+						Vector3.new(8, 4, 0.3),
+						origin + Vector3.new(x, 12, z + 11.6),
+						GOLD
+					)
+				else
+					for _, side in { -6.5, 6.5 } do
+						part(
+							root,
+							"CargoSide",
+							Vector3.new(1, 6, 24),
+							origin + Vector3.new(x + side, 8, z),
+							RUST
+						)
+						part(
+							root,
+							"CargoRim",
+							Vector3.new(1.3, 0.6, 24),
+							origin + Vector3.new(x + side, 11, z),
+							GOLD
+						)
+					end
+					part(
+						root,
+						"CargoEnd",
+						Vector3.new(12, 6, 1),
+						origin + Vector3.new(x, 8, z + 11.5),
+						RUST
+					)
+					for index = 1, 3 do
+						local scrap = part(
+							root,
+							"CargoScrap",
+							Vector3.new(7, 1, 8),
+							origin + Vector3.new(
+									x + (index % 2) * 2 - 1,
+									6 + index,
+									z + (index - 2) * 6
+								),
+							if index == 2 then GOLD else STEEL
+						)
+						scrap.Orientation = Vector3.new(index * 8, index * 25, 10)
+					end
+				end
 				for _, side in { -6, 6 } do
 					for _, axle in { -8, 8 } do
 						local wheel = part(
@@ -147,8 +209,8 @@ function ExpeditionBuilder.Build(plot: Model, plotId: number, center: Vector3, z
 				local tower = part(
 					root,
 					"Dynamo",
-					Vector3.new(20, 12, 12),
-					origin + Vector3.new(x, 12, z),
+					Vector3.new(14 + cluster * 4, 12, 12),
+					origin + Vector3.new(x, 9 + cluster * 2, z),
 					STEEL
 				)
 				tower.Shape = Enum.PartType.Cylinder
@@ -205,6 +267,16 @@ function ExpeditionBuilder.Build(plot: Model, plotId: number, center: Vector3, z
 		)
 		rotor.Shape = Enum.PartType.Cylinder
 		rotor.Orientation = Vector3.new(0, 90, 0)
+		for index = 0, 5 do
+			local blade = part(
+				root,
+				"RotorBlade",
+				Vector3.new(3, 24, 1),
+				origin + Vector3.new(0, 20, -51.5),
+				GOLD
+			)
+			blade.Orientation = Vector3.new(0, 0, index * 30)
+		end
 		part(root, "RotorPedestal", Vector3.new(18, 8, 10), origin + Vector3.new(0, 4, -55), STEEL)
 	end
 	sign(root, "LOST PARTS CACHES →", origin + Vector3.new(-54, 8, -77), accent)

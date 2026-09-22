@@ -6,7 +6,7 @@ import json
 import math
 from pathlib import Path
 import bpy
-from mathutils import Vector
+from mathutils import Vector, Matrix, Euler
 
 geometry = json.loads(Path("build/expeditions-geometry.json").read_text())
 for zone in (3, 4):
@@ -23,17 +23,25 @@ for zone in (3, 4):
         if item["shape"] == "Cylinder":
             bpy.ops.mesh.primitive_cylinder_add(vertices=20, radius=1, depth=2, location=position)
             obj = bpy.context.object
-            # Roblox cylinder axis is X; native orientation follows afterwards.
-            obj.rotation_euler[1] = math.pi/2
-            obj.dimensions = (sx, sz, sy)
-            bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
+            # Bake the mesh onto Roblox local X, then scale in that local frame.
+            rotation = Matrix.Rotation(math.pi/2, 4, "Y")
+            for vertex in obj.data.vertices:
+                vertex.co = rotation @ vertex.co
+                vertex.co.x *= sx/2
+                vertex.co.y *= sy/2
+                vertex.co.z *= sz/2
         else:
             bpy.ops.mesh.primitive_cube_add(size=1, location=position)
             obj = bpy.context.object
-            obj.dimensions = (sx, sz, sy)
-            bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+            for vertex in obj.data.vertices:
+                vertex.co.x *= sx
+                vertex.co.y *= sy
+                vertex.co.z *= sz
         rx, ry, rz = item["rotation"]
-        obj.rotation_euler = (math.radians(rx), -math.radians(rz), math.radians(ry))
+        source_rotation = Euler(tuple(math.radians(v) for v in (rx,ry,rz)), "YXZ").to_matrix()
+        basis = Matrix(((1,0,0),(0,0,-1),(0,1,0)))
+        for vertex in obj.data.vertices:
+            vertex.co = basis @ source_rotation @ vertex.co
         obj.name = item["name"]
         color = tuple(item["color"])
         if color not in materials:
