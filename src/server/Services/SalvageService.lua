@@ -171,6 +171,12 @@ function SalvageService.Collect(player: Player, nodeId: any)
 
 	local firstCollect = data.Tutorial.Milestones.FirstScrap ~= true
 	local rewards = makeRewards(authoritativeZoneId, firstCollect)
+	local isCache = authoritativeZoneId >= 3 and node:GetAttribute("ExpeditionCache") == true
+	if isCache then
+		for materialId, amount in Salvage.ExpeditionCacheBonus do
+			rewards[materialId] = (rewards[materialId] or 0) + amount
+		end
+	end
 	local storageMultiplier = MonetizationService.GetStorageMultiplier(player)
 	local executed, transactionResult = DataService.Transaction(player, function(profileData)
 		if profileData.Progression.Zone < authoritativeZoneId then
@@ -237,9 +243,14 @@ function SalvageService.Collect(player: Player, nodeId: any)
 		return
 	end
 	StateService.PushSnapshot(player)
-	task.delay(GameConfig.World.NodeRespawnSeconds, function()
-		setNodeActive(nodeId, true)
-	end)
+	task.delay(
+		if isCache
+			then Salvage.ExpeditionCacheRespawnSeconds
+			else GameConfig.World.NodeRespawnSeconds,
+		function()
+			setNodeActive(nodeId, true)
+		end
+	)
 end
 
 function SalvageService.TryAutoCollect(player: Player)

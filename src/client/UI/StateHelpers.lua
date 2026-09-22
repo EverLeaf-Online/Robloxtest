@@ -128,7 +128,21 @@ function StateHelpers.GetObjective(snapshot: any): (string, string)
 			)
 	end
 
-	return "Explore Circuit Yard", "Follow NEXT to its higher-value salvage piles."
+	local zoneId = snapshot.Progression.Zone
+	local nextZone = Zones[zoneId + 1]
+	if step == "UnlockExpedition" and nextZone ~= nil then
+		return "Unlock " .. nextZone.DisplayName,
+			("Factory expedition terminal • %s Credits • %d bots. Travel is free after unlocking."):format(
+				StateHelpers.FormatNumber(nextZone.UnlockCredits),
+				nextZone.RequiredLifetimeRobots
+			)
+	elseif zoneId >= 3 then
+		local zone = Zones[zoneId]
+		return "Explore " .. zone.DisplayName,
+			"Follow the salvage loop to lost parts caches. Use RETURN TO FACTORY to process your haul."
+	end
+	return "Explore Circuit Yard",
+		"Collect richer salvage. Next: Rustrail Depot • 8,000 Credits • 8 bots built. Expedition terminals are at your factory entrance."
 end
 
 function StateHelpers.GetAssignedPad(snapshot: any, robotUid: string): string?

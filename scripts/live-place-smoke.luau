@@ -98,3 +98,28 @@ end
 assert(count <= 900, "Factory part budget exceeded")
 print("SCRAPYARD_RUNTIME_OK", count, game.PlaceVersion)
 testPlot:Destroy()
+
+local expeditionModule = presentation:FindFirstChild("ExpeditionBuilder")
+assert(
+	expeditionModule ~= nil and expeditionModule:IsA("ModuleScript"),
+	"Expedition builder missing"
+)
+local expeditionBuilder = require(expeditionModule)
+local probe = Instance.new("Model")
+for zoneId = 3, 4 do
+	local region = expeditionBuilder.Build(probe, 999, Vector3.zero, zoneId)
+	assert(#region.Nodes == 12, "Expedition salvage layout incomplete")
+	assert(
+		region.Root:GetAttribute("ArtRevision") == "SalvageExpeditions1",
+		"Wrong expedition revision"
+	)
+	assert(region.Return:GetAttribute("CurrentZone") == zoneId, "Return portal zone mismatch")
+	assert(region.Arrival.Position.Y > 0, "Arrival below floor")
+end
+local zones = require(ReplicatedStorage.Shared.Config.Zones)
+assert(
+	zones[3].DisplayName == "Rustrail Depot" and zones[4].DisplayName == "Dynamo Works",
+	"Missing expedition catalog"
+)
+probe:Destroy()
+print("SALVAGE_EXPEDITIONS_RUNTIME_OK", game.PlaceVersion)
