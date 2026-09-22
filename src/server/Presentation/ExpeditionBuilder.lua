@@ -174,7 +174,8 @@ function ExpeditionBuilder.Build(plot: Model, plotId: number, center: Vector3, z
 							root,
 							"CargoScrap",
 							Vector3.new(7, 1, 8),
-							origin + Vector3.new(
+							origin
+								+ Vector3.new(
 									x + (index % 2) * 2 - 1,
 									6 + index,
 									z + (index - 2) * 6
