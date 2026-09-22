@@ -47,6 +47,12 @@ local function teleportToZone(player: Player, zoneId: number): boolean
 		return false
 	end
 
+	pcall(function()
+		player:RequestStreamAroundAsync(arrival.Position, 3)
+	end)
+	if player.Character ~= character or character.Parent == nil then
+		return false
+	end
 	character:PivotTo(CFrame.new(arrival.Position + Vector3.new(0, 4, 0)))
 	return true
 end
@@ -124,6 +130,9 @@ function ZoneService.UseGate(player: Player, targetZone: any)
 		return
 	end
 	if currentData.Progression.Zone >= authoritativeTarget then
+		if gate:GetAttribute("TravelGate") == true then
+			teleportToZone(player, authoritativeTarget)
+		end
 		StateService.ActionResult(
 			player,
 			RemoteNames.RequestUnlockZone,
@@ -189,6 +198,9 @@ function ZoneService.UseGate(player: Player, targetZone: any)
 	sendTransactionResult(player, executed, transactionResult)
 	if executed and typeof(transactionResult) == "table" and transactionResult.Success == true then
 		PlotService.RefreshPresentation(player)
+		if gate:GetAttribute("TravelGate") == true then
+			teleportToZone(player, authoritativeTarget)
+		end
 	end
 end
 

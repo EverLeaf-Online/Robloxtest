@@ -19,7 +19,7 @@ describe("ProgressionRules", function()
 	it("normalizes persisted progression to the contiguous configured catalog", function()
 		expect(ProgressionRules.NormalizeCurrentZone(1)).toBe(1)
 		expect(ProgressionRules.NormalizeCurrentZone(2)).toBe(2)
-		expect(ProgressionRules.NormalizeCurrentZone(99)).toBe(2)
+		expect(ProgressionRules.NormalizeCurrentZone(99)).toBe(4)
 	end)
 
 	it("repairs malformed persisted zone values to the starter zone", function()

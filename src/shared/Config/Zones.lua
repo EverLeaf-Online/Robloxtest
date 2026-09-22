@@ -38,6 +38,20 @@ local Zones: { [number]: ZoneDefinition } = {
 			CoreChance = 0.08,
 		},
 	},
+	[3] = {
+		Id = 3,
+		DisplayName = "Rustrail Depot",
+		UnlockCredits = 8000,
+		RequiredLifetimeRobots = 8,
+		Salvage = { ScrapMin = 6, ScrapMax = 10, WiringChance = 0.42, CoreChance = 0.12 },
+	},
+	[4] = {
+		Id = 4,
+		DisplayName = "Dynamo Works",
+		UnlockCredits = 20000,
+		RequiredLifetimeRobots = 16,
+		Salvage = { ScrapMin = 8, ScrapMax = 13, WiringChance = 0.55, CoreChance = 0.2 },
+	},
 }
 
 return table.freeze(Zones)

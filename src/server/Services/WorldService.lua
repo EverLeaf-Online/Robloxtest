@@ -11,6 +11,8 @@ local Zones = require(ReplicatedStorage.Shared.Config.Zones)
 local CircuitUnlockButtonBuilder =
 	require(script.Parent.Parent.Presentation.CircuitUnlockButtonBuilder)
 
+local ExpeditionBuilder = require(script.Parent.Parent.Presentation.ExpeditionBuilder)
+
 local WorldService = {}
 local initialized = false
 local root: Folder? = nil
@@ -199,7 +201,7 @@ local function registerSalvageNode(
 		node:SetAttribute("PrivateSalvage", true)
 	end
 
-	addPrompt(node, "Collect", if zoneId == 1 then "Your Scrap Pile" else "Your Circuit Scrap")
+	addPrompt(node, "Collect", Zones[zoneId].DisplayName .. " Salvage")
 	salvageNodes[nodeId] = node
 end
 
@@ -418,6 +420,66 @@ local function buildPlotZoneAccess(plot: Model, plotId: number, center: Vector3)
 	end
 end
 
+local function buildExpeditions(plot: Model, plotId: number, center: Vector3)
+	for zoneId = 3, 4 do
+		local definition = Zones[zoneId]
+		local expedition = ExpeditionBuilder.Build(plot, plotId, center, zoneId)
+		for index, position in expedition.Nodes do
+			local nodeId = ("P%02d_Expedition%d_%02d"):format(plotId, zoneId, index)
+			registerSalvageNode(expedition.Root, nodeId, position, zoneId, plotId)
+			if index > 10 then
+				local node = salvageNodes[nodeId]
+				node:SetAttribute("ExpeditionCache", true)
+				local cachePrompt = node:FindFirstChildOfClass("ProximityPrompt")
+				if cachePrompt then
+					cachePrompt.ObjectText = "Lost Parts Cache • Wiring + Core"
+					cachePrompt.HoldDuration = 0.7
+				end
+			end
+		end
+		local gate = makePart(
+			plot,
+			("ExpeditionGate%d"):format(zoneId),
+			Vector3.new(6, 3, 6),
+			center + Vector3.new(-45 + (zoneId - 3) * 26, 1.5, -67)
+		)
+		gate.Color = if zoneId == 3
+			then Color3.fromRGB(243, 182, 65)
+			else Color3.fromRGB(85, 231, 174)
+		gate.Material = Enum.Material.Metal
+		tagPlotPart(gate, plotId)
+		gate:SetAttribute("TargetZone", zoneId)
+		gate:SetAttribute("TravelGate", true)
+		local prompt = addPrompt(gate, "Unlock expedition", definition.DisplayName)
+		addBillboard(gate, definition.DisplayName .. "\nSALVAGE EXPEDITION", nil)
+		local function refresh()
+			local unlockedZone = plot:GetAttribute("UnlockedZone")
+			local unlocked = typeof(unlockedZone) == "number" and unlockedZone >= zoneId
+			prompt.ActionText = if unlocked then "Travel" else "Unlock expedition"
+			prompt.ObjectText = if unlocked
+				then definition.DisplayName .. " • FREE RETURN"
+				else ("%s • %d Credits • %d Bots"):format(
+					definition.DisplayName,
+					definition.UnlockCredits,
+					definition.RequiredLifetimeRobots
+				)
+		end
+		refresh()
+		plot:GetAttributeChangedSignal("UnlockedZone"):Connect(refresh)
+		addPrompt(expedition.Return, "Return", "Your Factory • Free")
+		plotZoneGates[plotId][zoneId] = gate
+		plotZoneArrivals[plotId][zoneId] = expedition.Arrival
+		plotZoneReturns[plotId][zoneId] = expedition.Return
+		table.insert(allZoneGates, gate)
+		table.insert(allZoneReturns, expedition.Return)
+		if plotId == 1 then
+			zoneGateByTarget[zoneId] = gate
+			zoneArrivalById[zoneId] = expedition.Arrival
+			zoneReturnById[zoneId] = expedition.Return
+		end
+	end
+end
+
 local function buildFactoryPlot(parent: Folder, plotId: number, center: Vector3)
 	local plot = Instance.new("Model")
 	plot.Name = ("Plot%02d"):format(plotId)
@@ -543,6 +605,7 @@ local function buildFactoryPlot(parent: Folder, plotId: number, center: Vector3)
 	buildPrivateSalvage(plot, plotId, center)
 	buildBotWorkNodes(plot, plotId, center)
 	buildPlotZoneAccess(plot, plotId, center)
+	buildExpeditions(plot, plotId, center)
 end
 
 local function buildPlots(folder: Folder)

@@ -743,7 +743,33 @@ function NativeAssetBuilder.BuildSalvage(
 	anchor.CanQuery = false
 	local root = model(anchor, "SalvageVisual")
 	local cf = anchor.CFrame
-	local accent = if zoneId >= 2 then COLORS.Cyan else COLORS.Copper
+	local accent = if zoneId == 3
+		then COLORS.Brass
+		elseif zoneId == 4 then Color3.fromRGB(85, 231, 174)
+		elseif zoneId >= 2 then COLORS.Cyan
+		else COLORS.Copper
+	if anchor:GetAttribute("ExpeditionCache") == true then
+		part(
+			root,
+			plotId,
+			"CacheCrate",
+			Vector3.new(5, 2.4, 4),
+			cf,
+			COLORS.Dark,
+			Enum.Material.Metal,
+			nil
+		)
+		part(
+			root,
+			plotId,
+			"CacheLatch",
+			Vector3.new(0.6, 2.6, 4.2),
+			cf,
+			accent,
+			Enum.Material.Neon,
+			nil
+		)
+	end
 	local metal = if zoneId >= 2 then Color3.fromRGB(67, 84, 92) else Color3.fromRGB(94, 79, 67)
 
 	part(

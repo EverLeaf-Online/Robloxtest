@@ -156,12 +156,12 @@ describe("ZoneService integration", function()
 		PlotService.SetStations(player, {
 			PlotId = 1,
 		})
-		local forgedGate = makeGate(1, 3)
-		WorldService.SetPlotZoneGate(1, 3, forgedGate)
+		local forgedGate = makeGate(1, 99)
+		WorldService.SetPlotZoneGate(1, 99, forgedGate)
 		PlayerCharacter.SetNear(player, true)
 		DataService.SetData(player, data)
 
-		ZoneService.UseGate(player, 3)
+		ZoneService.UseGate(player, 99)
 
 		expect(data.Progression.Zone).toBe(1)
 		expect(data.Currencies.Credits).toBe(1_000_000)

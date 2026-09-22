@@ -41,6 +41,8 @@ local STEP_LABELS: { [ObjectiveGuidanceRules.ObjectiveStep]: string } = {
 	BuyFirstUpgrade = "UPGRADE FACTORY",
 	UnlockCircuitYard = "UNLOCK CIRCUIT YARD",
 	ExploreCircuitYard = "CIRCUIT SALVAGE",
+	UnlockExpedition = "UNLOCK EXPEDITION",
+	ExploreExpedition = "EXPEDITION SALVAGE",
 }
 
 local function getCharacterPosition(): Vector3?
@@ -151,6 +153,23 @@ local function resolveTarget(currentSnapshot: any): (BasePart?, string)
 		return nil, ""
 	end
 
+	local position = getCharacterPosition()
+	if position ~= nil then
+		local localSalvage = nearestMatchingPart(plot, function(part)
+			local zone = part:GetAttribute("ZoneId")
+			local prompt = part:FindFirstChildOfClass("ProximityPrompt")
+			return typeof(zone) == "number"
+				and zone >= 3
+				and zone <= currentSnapshot.Progression.Zone
+				and typeof(part:GetAttribute("SalvageNodeId")) == "string"
+				and prompt ~= nil
+				and prompt.Enabled
+				and (part.Position - position).Magnitude < 200
+		end)
+		if localSalvage ~= nil then
+			return localSalvage, "EXPEDITION SALVAGE"
+		end
+	end
 	local step = ObjectiveGuidanceRules.GetStep(currentSnapshot)
 	local label = STEP_LABELS[step]
 
@@ -168,6 +187,15 @@ local function resolveTarget(currentSnapshot: any): (BasePart?, string)
 		return findAssignedPad(plot, currentSnapshot) or findNamedPart(plot, "BotConsole"), label
 	elseif step == "BuyFirstUpgrade" then
 		return findNamedPart(plot, "UpgradeConsole"), label
+	elseif step == "UnlockExpedition" then
+		return findNamedPart(
+			plot,
+			("ExpeditionGate%d"):format(currentSnapshot.Progression.Zone + 1)
+		),
+			label
+	elseif step == "ExploreExpedition" then
+		return findNamedPart(plot, ("ExpeditionGate%d"):format(currentSnapshot.Progression.Zone)),
+			"TRAVEL TO SALVAGE"
 	elseif step == "UnlockCircuitYard" then
 		return findNamedPart(plot, "CircuitYardGate"), label
 	end
@@ -499,6 +527,24 @@ function ObjectiveGuidanceController.Init()
 
 	Workspace.DescendantAdded:Connect(function()
 		if snapshot ~= nil and currentTarget == nil then
+			queueRefresh()
+		end
+	end)
+
+	local lastGuidancePosition: Vector3? = nil
+	local travelRefreshElapsed = 0
+	RunService.Heartbeat:Connect(function(deltaTime)
+		travelRefreshElapsed += deltaTime
+		if travelRefreshElapsed < 1 then
+			return
+		end
+		travelRefreshElapsed = 0
+		local position = getCharacterPosition()
+		if
+			position ~= nil
+			and (lastGuidancePosition == nil or (position - lastGuidancePosition).Magnitude > 12)
+		then
+			lastGuidancePosition = position
 			queueRefresh()
 		end
 	end)

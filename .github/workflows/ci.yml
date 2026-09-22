@@ -67,6 +67,9 @@ jobs:
           mkdir -p build
           rojo build default.project.json --output build/ScrapToBotFactory.rbxlx
 
+      - name: Check expedition progression, travel, salvage, and geometry
+        run: lune run scripts/test-expeditions.luau build/ScrapToBotFactory.rbxlx
+
       - name: Verify TextChatService is enabled in built place
         shell: bash
         run: |

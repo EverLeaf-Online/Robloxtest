@@ -98,3 +98,53 @@ end
 assert(count <= 900, "Factory part budget exceeded")
 print("SCRAPYARD_RUNTIME_OK", count, game.PlaceVersion)
 testPlot:Destroy()
+
+local expeditionModule = presentation:FindFirstChild("ExpeditionBuilder")
+assert(
+	expeditionModule ~= nil and expeditionModule:IsA("ModuleScript"),
+	"Expedition builder missing"
+)
+local expeditionBuilder = require(expeditionModule)
+local probe = Instance.new("Model")
+for zoneId = 3, 4 do
+	local region = expeditionBuilder.Build(probe, 999, Vector3.zero, zoneId)
+	assert(#region.Nodes == 12, "Expedition salvage layout incomplete")
+	assert(
+		region.Root:GetAttribute("ArtRevision") == "SalvageExpeditions1",
+		"Wrong expedition revision"
+	)
+	assert(region.Return:GetAttribute("CurrentZone") == zoneId, "Return portal zone mismatch")
+	assert(region.Arrival.Position.Y > 0, "Arrival below floor")
+end
+local zones = require(ReplicatedStorage.Shared.Config.Zones)
+assert(
+	zones[3].DisplayName == "Rustrail Depot" and zones[4].DisplayName == "Dynamo Works",
+	"Missing expedition catalog"
+)
+probe:Destroy()
+print("SALVAGE_EXPEDITIONS_RUNTIME_OK", game.PlaceVersion)
+
+-- Build the full private factory in this isolated session to verify service wiring.
+local worldService = require(server.Services.WorldService)
+worldService.Init()
+local expeditionNodeCount = 0
+local cacheCount = 0
+for _, node in worldService.GetSalvageNodes() do
+	local zone = node:GetAttribute("ZoneId")
+	if typeof(zone) == "number" and zone >= 3 then
+		expeditionNodeCount += 1
+		if node:GetAttribute("ExpeditionCache") == true then
+			cacheCount += 1
+		end
+	end
+end
+assert(expeditionNodeCount == 24 and cacheCount == 4, "Expedition nodes not registered")
+for zoneId = 3, 4 do
+	local gate = worldService.GetPlotZoneGate(1, zoneId)
+	local arrival = worldService.GetPlotZoneArrival(1, zoneId)
+	local returnPortal = worldService.GetPlotZoneReturn(1, zoneId)
+	assert(gate ~= nil and gate:GetAttribute("TravelGate") == true, "Travel terminal missing")
+	assert(arrival ~= nil and returnPortal ~= nil, "Travel route incomplete")
+	assert(returnPortal:FindFirstChildOfClass("ProximityPrompt") ~= nil, "Return prompt missing")
+end
+print("SALVAGE_EXPEDITIONS_WORLD_OK", expeditionNodeCount, cacheCount)
