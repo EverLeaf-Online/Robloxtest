@@ -70,6 +70,10 @@ local WorldLayout = {
 	}),
 
 	CircuitGateOffset = Vector3.new(-94, 1.1, -87),
+	ExpeditionGateOffsets = table.freeze({
+		[3] = Vector3.new(-110, 1.5, -74),
+		[4] = Vector3.new(-98, 1.5, -74),
+	}),
 	CircuitArrivalOffset = Vector3.new(-94, 1, -120),
 }
 
