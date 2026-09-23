@@ -79,6 +79,27 @@ describe("WorldLayout", function()
 		expect((attendant - circuitGate).Magnitude >= 18).toBe(true)
 	end)
 
+	it("groups expedition unlock controls beside the transit bot", function()
+		local attendant = WorldLayout.Plot.HubReturnAttendantOffset
+		local zoneThree = WorldLayout.ExpeditionGateOffsets[3]
+		local zoneFour = WorldLayout.ExpeditionGateOffsets[4]
+		local halfX = WorldLayout.Plot.Size.X / 2
+		local halfZ = WorldLayout.Plot.Size.Z / 2
+
+		assert(zoneThree ~= nil, "zone 3 expedition gate offset missing")
+		assert(zoneFour ~= nil, "zone 4 expedition gate offset missing")
+		expect((zoneThree - attendant).Magnitude <= 16).toBe(true)
+		expect((zoneFour - attendant).Magnitude <= 22).toBe(true)
+		expect((zoneThree - zoneFour).Magnitude >= 10).toBe(true)
+		expect((zoneThree - WorldLayout.CircuitGateOffset).Magnitude >= 10).toBe(true)
+		expect((zoneFour - WorldLayout.CircuitGateOffset).Magnitude >= 10).toBe(true)
+
+		for _, offset in { zoneThree, zoneFour } do
+			expect(math.abs(offset.X) < halfX).toBe(true)
+			expect(math.abs(offset.Z) < halfZ).toBe(true)
+		end
+	end)
+
 	it("keeps the Hub return kiosk tight to the corner and square to the perimeter", function()
 		local halfX = WorldLayout.Plot.Size.X / 2
 		local halfZ = WorldLayout.Plot.Size.Z / 2

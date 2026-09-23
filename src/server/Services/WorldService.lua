@@ -437,11 +437,13 @@ local function buildExpeditions(plot: Model, plotId: number, center: Vector3)
 				end
 			end
 		end
+		local gateOffset = WorldLayout.ExpeditionGateOffsets[zoneId]
+		assert(gateOffset ~= nil, ("Missing expedition gate offset for zone %d"):format(zoneId))
 		local gate = makePart(
 			plot,
 			("ExpeditionGate%d"):format(zoneId),
 			Vector3.new(6, 3, 6),
-			center + Vector3.new(-45 + (zoneId - 3) * 26, 1.5, -67)
+			center + gateOffset
 		)
 		gate.Color = if zoneId == 3
 			then Color3.fromRGB(243, 182, 65)
