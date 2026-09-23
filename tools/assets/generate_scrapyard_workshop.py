@@ -148,25 +148,61 @@ for x in [-128,-111,-94,-77,-60]:
 
 
 # Parked reclaim truck makes the receiving apron read as a working scrap business.
+# Keep the prop under the architecture part budget while preserving a real truck silhouette.
 g="SalvageTruck"
-part(g,"Chassis",[-53,3,-70],[30,1.2,9],"ink",collision=True)
-part(g,"Cab",[-41,6,-70],[7,6,8],"orange",collision=True)
-part(g,"Windshield",[-37.4,7,-70],[.2,2.4,6],"glass","Glass")
-part(g,"CabRoof",[-41,9.3,-70],[8,.6,9],"cream")
-part(g,"Hood",[-35.5,4.5,-70],[4,2.5,8],"orange",collision=True)
-part(g,"Bumper",[-33,3.5,-70],[.6,1,9],"cream")
-for z in [-72.6,-67.4]:
-    part(g,"Headlight",[-33.4,4.8,z],[.25,1,1.5],"cream","Neon")
-for x in [-41,-58,-64]:
-    for z in [-75,-65]:
-        part(g,"Tire",[x,2,z],[1.3,4,4],"rubber",shape="Cylinder",rotation=(0,90,0))
-part(g,"SkipFloor",[-58,4,-70],[18,.7,9],"rust")
-for z in [-74.5,-65.5]:
-    part(g,"SkipSide",[-58,6,z],[18,4,.6],"teal")
-part(g,"SkipBack",[-67,6,-70],[.6,4,9],"teal")
-for i in range(5):
-    part(g,"ScrapLoad",[-64+i*3,6+(i%2),-70],[3,.6,7],"steel",rotation=(i*12,0,20))
-sign(g,"TruckIdentity",[-56,6,-75],[13,2,.2],"SALVAGE CO.","ink")
+
+# Frame, bumper and grille establish the road-truck proportions.
+part(g,"ChassisRail",[-53.5,2.8,-70],[31,1.0,4.8],"ink",collision=True)
+part(g,"FrontBumper",[-32.9,3.2,-70],[.9,1.2,8.6],"cream",collision=True)
+part(g,"FrontGrille",[-33.35,4.8,-70],[.35,2.8,5.9],"ink")
+
+# A long two-piece hood reads much more naturally than the old rectangular nose.
+part(g,"HoodLower",[-36.2,4.65,-70],[5.8,2.5,7.7],"orange",collision=True)
+part(g,"HoodTop",[-37.4,5.9,-70],[4.1,1.05,7.3],"orange",rotation=(0,0,-8),collision=True)
+
+# Cab shell and greenhouse.
+part(g,"CabLower",[-42.0,5.7,-70],[6.8,4.9,7.9],"orange",collision=True)
+part(g,"CabUpper",[-42.25,8.3,-70],[5.6,3.25,7.45],"orange",rotation=(0,0,-3),collision=True)
+part(g,"CabRoof",[-42.35,10.05,-70],[6.5,.65,8.05],"cream")
+part(g,"Windshield",[-39.45,8.35,-70],[.22,2.7,6.4],"glass","Glass",rotation=(0,0,-14))
+for z in [-74.02,-65.98]:
+    part(g,"SideWindow",[-42.45,8.35,z],[2.75,2.45,.18],"glass","Glass")
+    part(g,"Mirror",[-39.95,8.85,z + (-.7 if z < -70 else .7)],[.2,1.05,.85],"glass","Glass")
+
+# Truck-specific utility details.
+part(g,"FuelTank",[-47.0,3.55,-73.8],[4.5,1.55,1.55],"steel",shape="Cylinder",rotation=(0,90,0))
+part(g,"ExhaustStack",[-46.1,8.0,-66.5],[.55,6.3,.55],"ink")
+
+# Deep salvage bed with a separate headboard, side walls and tailgate.
+part(g,"BedFloor",[-58.2,4.15,-70],[18.2,.9,8.8],"rust",collision=True)
+part(g,"BedHeadboard",[-49.35,7.0,-70],[.7,5.9,8.4],"teal",collision=True)
+for z in [-74.15,-65.85]:
+    part(g,"BedSide",[-58.25,6.95,z],[17.5,5.4,.7],"teal",collision=True)
+part(g,"Tailgate",[-67.1,6.85,-70],[.7,5.1,8.2],"teal",collision=True)
+
+# A small irregular load keeps the bed from reading as an empty box.
+for i,(x,y,z,r) in enumerate((
+    (-54.5,6.35,-71.3,18),
+    (-59.1,6.75,-68.7,-23),
+    (-63.2,6.55,-71.0,37),
+)):
+    part(g,"BedScrap",[x,y,z],[4.0,.7,2.1],"steel" if i else "cream",rotation=(8*(i%2),r,12))
+
+# Front steer axle plus tandem rear axles.
+for x in [-41.0,-58.3,-63.9]:
+    for z in [-74.55,-65.45]:
+        part(g,"Tire",[x,2.3,z],[1.7,4.6,4.6],"rubber",shape="Cylinder",rotation=(0,90,0),collision=True)
+
+# Front fenders visually tie the steer wheels into the cab.
+for z in [-74.18,-65.82]:
+    part(g,"FrontFender",[-41.0,4.0,z],[4.9,1.35,.65],"orange",collision=True)
+
+for z in [-72.55,-67.45]:
+    part(g,"Headlight",[-33.52,4.75,z],[.28,1.15,1.2],"cream","Neon")
+for z in [-72.5,-67.5]:
+    part(g,"TailLamp",[-67.47,5.5,z],[.24,1.0,1.0],"orange","Neon")
+
+sign(g,"TruckIdentity",[-58.2,7.0,-74.52],[11.5,2.0,.2],"SALVAGE CO.","ink")
 
 def lua(v):
     if isinstance(v,dict): return "{" + ", ".join(k+" = "+lua(x) for k,x in v.items() if x is not None) + "}"
