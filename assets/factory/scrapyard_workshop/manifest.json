@@ -3,7 +3,7 @@
   "source": "Original deterministic geometry; no third-party assets",
   "runtime": "Native anchored Roblox parts from the same blueprint; GLBs are optional import sources",
   "collision": "Explicit native primitives only",
-  "partCount": 288,
+  "partCount": 300,
   "assets": [
     {
       "name": "FactorySite",
@@ -164,15 +164,15 @@
     {
       "name": "SalvageTruck",
       "file": "meshes/SalvageTruck.glb",
-      "triangles": 576,
+      "triangles": 768,
       "pivot": "BottomCenter",
       "placementRoblox": [
-        -50.349998474121094,
+        -50.724998474121094,
         0.0,
-        -70.0
+        -70.32499694824219
       ],
-      "bytes": 43420,
-      "sha256": "9232e1e5229e782359988e5ea31f714301098c91f4cdf05b15fb8e61f25997af"
+      "bytes": 57776,
+      "sha256": "85a7622227aa4ca3dace07ddcef08eed6eb12734d97bd0cb0a50416b068a1375"
     }
   ],
   "previewContextMeshes": [
