@@ -127,6 +127,27 @@ print("SALVAGE_EXPEDITIONS_RUNTIME_OK", game.PlaceVersion)
 -- Build the full private factory in this isolated session to verify service wiring.
 local worldService = require(server.Services.WorldService)
 worldService.Init()
+local worldLayout = require(ReplicatedStorage.Shared.Config.WorldLayout)
+local factoryPlot = worldService.GetPlot(1)
+assert(factoryPlot ~= nil, "Factory plot missing")
+local factoryFloor = factoryPlot:FindFirstChild("Floor")
+assert(factoryFloor ~= nil and factoryFloor:IsA("BasePart"), "Factory floor missing")
+local transitPosition = factoryFloor.Position + worldLayout.Plot.HubReturnAttendantOffset
+
+for zoneId = 3, 4 do
+	local gate = worldService.GetPlotZoneGate(1, zoneId)
+	local gateOffset = worldLayout.ExpeditionGateOffsets[zoneId]
+	assert(gate ~= nil, ("Expedition gate %d missing"):format(zoneId))
+	assert(gateOffset ~= nil, ("Expedition gate offset %d missing"):format(zoneId))
+	local expectedPosition = factoryFloor.Position + gateOffset
+	assert((gate.Position - expectedPosition).Magnitude < 0.01, "Expedition gate layout mismatch")
+	assert(
+		(gate.Position - transitPosition).Magnitude <= 22,
+		"Expedition gate too far from transit bot"
+	)
+end
+print("EXPEDITION_TRANSIT_CLUSTER_OK", game.PlaceVersion)
+
 local expeditionNodeCount = 0
 local cacheCount = 0
 for _, node in worldService.GetSalvageNodes() do
