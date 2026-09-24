@@ -13,32 +13,32 @@ local FactoryAssetRegistry: { [string]: FactoryAssetSpec } = {
 		TargetMaxDimension = 18,
 	}),
 	HydraulicScrapBaler = table.freeze({
-		AssetId = 119687239055490,
+		AssetId = 84444976587250,
 		DisplayName = "Hydraulic Scrap Baler",
 		TargetMaxDimension = 15,
 	}),
 	MagneticSortingConveyor = table.freeze({
-		AssetId = 82587853233083,
+		AssetId = 107116249649986,
 		DisplayName = "Magnetic Sorting Conveyor",
 		TargetMaxDimension = 24,
 	}),
 	LargeScrapHopper = table.freeze({
-		AssetId = 96263374977934,
+		AssetId = 105012050478324,
 		DisplayName = "Large Scrap Hopper",
 		TargetMaxDimension = 10,
 	}),
 	BotAssemblerStation = table.freeze({
-		AssetId = 88933326882163,
+		AssetId = 94018253290056,
 		DisplayName = "Bot Assembler Station",
 		TargetMaxDimension = 12,
 	}),
 	InfeedConveyor = table.freeze({
-		AssetId = 112925855673224,
+		AssetId = 81363791665301,
 		DisplayName = "Infeed Conveyor",
 		TargetMaxDimension = 24,
 	}),
 	OutfeedConveyor = table.freeze({
-		AssetId = 112992563260380,
+		AssetId = 137929434328583,
 		DisplayName = "Outfeed Conveyor",
 		TargetMaxDimension = 22,
 	}),
@@ -48,7 +48,7 @@ local FactoryAssetRegistry: { [string]: FactoryAssetSpec } = {
 		TargetMaxDimension = 12,
 	}),
 	ExpandedStorageRack = table.freeze({
-		AssetId = 133330484140056,
+		AssetId = 118800985728623,
 		DisplayName = "Expanded Storage Rack",
 		TargetMaxDimension = 13,
 	}),
@@ -73,12 +73,12 @@ local FactoryAssetRegistry: { [string]: FactoryAssetSpec } = {
 		TargetMaxDimension = 10,
 	}),
 	ElectricalCabinet = table.freeze({
-		AssetId = 77920368437090,
+		AssetId = 75379655395195,
 		DisplayName = "Electrical Control Cabinet",
 		TargetMaxDimension = 8,
 	}),
 	MaterialBin = table.freeze({
-		AssetId = 90582751977534,
+		AssetId = 97856479635885,
 		DisplayName = "Material Bin",
 		TargetMaxDimension = 10,
 	}),
@@ -91,6 +91,11 @@ local FactoryAssetRegistry: { [string]: FactoryAssetSpec } = {
 		AssetId = 84439007347573,
 		DisplayName = "Structural Column",
 		TargetMaxDimension = 18,
+	}),
+	SalvageTruck = table.freeze({
+		AssetId = 115224937966494,
+		DisplayName = "Salvage Truck",
+		TargetMaxDimension = 36,
 	}),
 }
 
