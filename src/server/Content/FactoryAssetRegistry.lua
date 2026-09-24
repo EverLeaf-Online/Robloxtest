@@ -8,7 +8,7 @@ export type FactoryAssetSpec = {
 
 local FactoryAssetRegistry: { [string]: FactoryAssetSpec } = {
 	IndustrialScrapShredder = table.freeze({
-		AssetId = 76139540142450,
+		AssetId = 125655812080459,
 		DisplayName = "Industrial Scrap Shredder",
 		TargetMaxDimension = 18,
 	}),
