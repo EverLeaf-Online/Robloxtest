@@ -10,7 +10,7 @@
   "textures": "single baked 1024x1024 PBR atlas embedded in GLB",
   "physics": "Roblox GLB import does not encode Anchored. Static placements must set Anchored=true.",
   "reason": "Hard-surface rebuild replaces the box-heavy source with modeled hopper plates, cutter shafts, bearing housings, gearboxes, industrial motors, service panels, conduit, and safety hardware; final static export is one mesh for Roblox stability and performance.",
-  "roblox_asset_id": 76139540142450,
+  "roblox_asset_id": 125655812080459,
   "moderation": "Approved",
   "runtime": "Loaded with AssetService:LoadAssetAsync; sanitized; every BasePart forced Anchored=true before parenting.",
   "texture_resolution": 1024,
