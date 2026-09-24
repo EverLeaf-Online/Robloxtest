@@ -1,0 +1,15 @@
+{
+  "name": "Salvage Truck",
+  "use": "static_factory_environment_prop",
+  "source_generator": "tools/assets/build_factory_hardsurface_batch2.py",
+  "roblox_asset_id": 115224937966494,
+  "moderation": "Approved",
+  "triangle_count": 4500,
+  "mesh_count": 1,
+  "material_count": 1,
+  "textures": "shared factory PBR atlas embedded in uploaded GLB",
+  "pivot": "BottomCenter",
+  "target_max_dimension": 36,
+  "runtime": "Loaded with AssetService:LoadAssetAsync; sanitized; static visual is anchored and the native WorkshopKit collision shell remains server-authored and invisible when the mesh loads.",
+  "placement_roblox": [-50.725, 0.0, -70.325]
+}

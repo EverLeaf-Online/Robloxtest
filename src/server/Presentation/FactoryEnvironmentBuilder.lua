@@ -44,14 +44,38 @@ function FactoryEnvironmentBuilder.Build(plot: Model, plotId: number, center: Ve
 		"OutfeedConveyor",
 		"ScrapPileMedium",
 		"MaterialBin",
+		"SalvageTruck",
 	})
 	local root = Instance.new("Model")
 	root.Name = "FactoryEnvironment"
 	root:SetAttribute("FactoryEnvironmentAsset", true)
-	root:SetAttribute("ArtRevision", "ScrapyardWorkshop1")
+	root:SetAttribute("ArtRevision", "ScrapyardWorkshop2")
 	-- Build off-tree to avoid showing a partially assembled kit.
 	local groups: { [string]: Model } = {}
+
+	-- Prefer the authored hard-surface truck, while retaining the native
+	-- WorkshopKit collision shell as an invisible server-owned proxy/fallback.
+	local salvageTruckGroup = Instance.new("Model")
+	salvageTruckGroup.Name = "SalvageTruck"
+	salvageTruckGroup:SetAttribute("FactoryEnvironmentAsset", true)
+	salvageTruckGroup.Parent = root
+	groups.SalvageTruck = salvageTruckGroup
+	local importedSalvageTruck = FactoryAssetLibrary.TryPlace(
+		"SalvageTruck",
+		salvageTruckGroup,
+		CFrame.new(center + Vector3.new(-50.725, 0, -70.325)),
+		plotId,
+		36
+	)
+	local hasImportedSalvageTruck = importedSalvageTruck ~= nil
+	if importedSalvageTruck ~= nil then
+		importedSalvageTruck.Name = "SalvageTruckVisual"
+	end
+
 	for _, spec in Kit do
+		if hasImportedSalvageTruck and spec.group == "SalvageTruck" and not spec.collision then
+			continue
+		end
 		local group = groups[spec.group]
 		if group == nil then
 			group = Instance.new("Model")
@@ -82,6 +106,10 @@ function FactoryEnvironmentBuilder.Build(plot: Model, plotId: number, center: Ve
 		piece:SetAttribute("PlotId", plotId)
 		piece:SetAttribute("PresentationPart", true)
 		piece.Parent = group
+		if hasImportedSalvageTruck and spec.group == "SalvageTruck" then
+			piece.Transparency = 1
+			piece.CastShadow = false
+		end
 		if spec.text ~= nil then
 			addSign(piece, spec.text)
 		end

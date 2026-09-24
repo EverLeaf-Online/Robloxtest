@@ -1,5 +1,5 @@
 {
-  "generator": "tools/assets/generate_factory_support_assets.py",
+  "generator": "tools/assets/generate_factory_support_assets.py + tools/assets/build_factory_hardsurface_batch2.py",
   "optimizer": "tools/assets/optimize_factory_glb.py",
   "atlas_builder": "tools/assets/build_factory_material_atlas.py",
   "style": "worn galvanized steel / charcoal steel / industrial yellow",
@@ -7,10 +7,10 @@
   "assets": [
     {
       "key": "ExpandedStorageRack",
-      "roblox_asset_id": 133330484140056,
+      "roblox_asset_id": 118800985728623,
       "moderation": "Approved",
       "source_name": "expanded_storage_rack",
-      "triangle_count": 880,
+      "triangle_count": 2500,
       "material_count": 1,
       "optimization": "atlas merged to one mesh/one material with base-color + metallic-roughness PBR textures",
       "runtime_use": "warehouse storage presentation"
@@ -57,20 +57,20 @@
     },
     {
       "key": "ElectricalCabinet",
-      "roblox_asset_id": 77920368437090,
+      "roblox_asset_id": 75379655395195,
       "moderation": "Approved",
       "source_name": "electrical_control_cabinet",
-      "triangle_count": 544,
+      "triangle_count": 1464,
       "material_count": 1,
       "optimization": "atlas merged to one mesh/one material with base-color + metallic-roughness PBR textures",
       "runtime_use": "circuit annex control cabinet presentation; collision remains server-authored"
     },
     {
       "key": "MaterialBin",
-      "roblox_asset_id": 90582751977534,
+      "roblox_asset_id": 97856479635885,
       "moderation": "Approved",
       "source_name": "material_bin",
-      "triangle_count": 308,
+      "triangle_count": 882,
       "material_count": 1,
       "optimization": "atlas merged to one mesh/one material with base-color + metallic-roughness PBR textures",
       "runtime_use": "approved support asset reserved for material handling polish"

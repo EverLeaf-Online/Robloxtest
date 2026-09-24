@@ -1,64 +1,64 @@
 {
-  "generator": "tools/assets/generate_factory_core_assets.py",
+  "generator": "tools/assets/generate_factory_core_assets.py + tools/assets/build_factory_hardsurface_batch2.py",
   "style": "worn galvanized steel / charcoal steel / industrial yellow",
   "source": "deterministic local Blender generation; no third-party geometry or textures",
   "assets": [
     {
       "key": "HydraulicScrapBaler",
-      "roblox_asset_id": 119687239055490,
+      "roblox_asset_id": 84444976587250,
       "moderation": "Approved",
       "source_name": "hydraulic_scrap_baler",
-      "triangle_count": 1200,
+      "triangle_count": 3500,
       "material_count": 1,
       "runtime_use": "optimized single-mesh PBR visual; replaces procedural hydraulic baler; collision remains server-authored",
       "optimization": "atlas merged to one mesh/one material with base-color + metallic-roughness PBR textures"
     },
     {
       "key": "MagneticSortingConveyor",
-      "roblox_asset_id": 82587853233083,
+      "roblox_asset_id": 107116249649986,
       "moderation": "Approved",
       "source_name": "magnetic_sorting_conveyor",
-      "triangle_count": 2672,
+      "triangle_count": 3999,
       "material_count": 1,
       "runtime_use": "optimized single-mesh PBR visual; replaces procedural overband magnetic sorter; collision remains server-authored",
       "optimization": "atlas merged to one mesh/one material with base-color + metallic-roughness PBR textures"
     },
     {
       "key": "LargeScrapHopper",
-      "roblox_asset_id": 96263374977934,
+      "roblox_asset_id": 105012050478324,
       "moderation": "Approved",
       "source_name": "large_scrap_hopper",
-      "triangle_count": 602,
+      "triangle_count": 1610,
       "material_count": 1,
       "runtime_use": "optimized single-mesh PBR scrap receiving yard presentation",
       "optimization": "atlas merged to one mesh/one material with base-color + metallic-roughness PBR textures"
     },
     {
       "key": "BotAssemblerStation",
-      "roblox_asset_id": 88933326882163,
+      "roblox_asset_id": 94018253290056,
       "moderation": "Approved",
       "source_name": "bot_assembler_station",
-      "triangle_count": 932,
+      "triangle_count": 4292,
       "material_count": 1,
       "runtime_use": "optimized single-mesh PBR assembler frame; animated gameplay feedback remains native",
       "optimization": "atlas merged to one mesh/one material with base-color + metallic-roughness PBR textures"
     },
     {
       "key": "InfeedConveyor",
-      "roblox_asset_id": 112925855673224,
+      "roblox_asset_id": 81363791665301,
       "moderation": "Approved",
       "source_name": "infeed_conveyor_8m",
-      "triangle_count": 2000,
+      "triangle_count": 2500,
       "material_count": 1,
       "runtime_use": "optimized single-mesh PBR process conveyor; collision remains server-authored",
       "optimization": "atlas merged to one mesh/one material with base-color + metallic-roughness PBR textures"
     },
     {
       "key": "OutfeedConveyor",
-      "roblox_asset_id": 112992563260380,
+      "roblox_asset_id": 137929434328583,
       "moderation": "Approved",
       "source_name": "outfeed_conveyor_6m",
-      "triangle_count": 2144,
+      "triangle_count": 2500,
       "material_count": 1,
       "runtime_use": "optimized single-mesh PBR robot outfeed conveyor; collision remains server-authored",
       "optimization": "atlas merged to one mesh/one material with base-color + metallic-roughness PBR textures"
