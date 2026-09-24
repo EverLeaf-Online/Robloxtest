@@ -4,13 +4,15 @@
   "roblox_glb": "industrial_scrap_shredder_static_atlas_roblox.glb",
   "source_blend": "industrial_scrap_shredder_static_atlas.blend",
   "preview": "industrial_scrap_shredder_preview.png",
-  "triangle_count": 18500,
+  "triangle_count": 4800,
   "mesh_count": 1,
   "material_count": 1,
-  "textures": "single baked PBR atlas embedded in GLB",
+  "textures": "single baked 1024x1024 PBR atlas embedded in GLB",
   "physics": "Roblox GLB import does not encode Anchored. Static placements must set Anchored=true.",
-  "reason": "Single-mesh export prevents the 144 source objects from separating under Roblox physics during Play.",
+  "reason": "Hard-surface rebuild replaces the box-heavy source with modeled hopper plates, cutter shafts, bearing housings, gearboxes, industrial motors, service panels, conduit, and safety hardware; final static export is one mesh for Roblox stability and performance.",
   "roblox_asset_id": 76139540142450,
   "moderation": "Approved",
-  "runtime": "Loaded with AssetService:LoadAssetAsync; sanitized; every BasePart forced Anchored=true before parenting."
+  "runtime": "Loaded with AssetService:LoadAssetAsync; sanitized; every BasePart forced Anchored=true before parenting.",
+  "texture_resolution": 1024,
+  "source_geometry": "13,216 triangle detailed Blender source; optimized to 4,800 triangles for Roblox presentation"
 }
